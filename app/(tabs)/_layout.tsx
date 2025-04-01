@@ -8,6 +8,8 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+//aqui estan las navegaciones
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
