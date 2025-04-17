@@ -82,7 +82,7 @@ export default function LogScreen() {
                   buttonColor="#5124A5"
                   style={styles.button}
                   labelStyle={styles.buttonLabel}>
-                  SELECCIONAR
+                  INGRESAR
                 </Button>
               </Card.Content>
             </Card>
