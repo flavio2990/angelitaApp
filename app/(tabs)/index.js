@@ -9,7 +9,6 @@ import { Dropdown } from 'react-native-paper-dropdown';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 
 export default function LogScreen() {
-  // const [text, setText] = React.useState("");
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
 
