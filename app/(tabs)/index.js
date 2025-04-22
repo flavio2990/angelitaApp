@@ -3,20 +3,24 @@ import { StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image, StyleSheet, View, ScrollView } from 'react-native';
 
-import { Card, Text, TextInput, Button } from 'react-native-paper';
+import CustomModal from '@/components/CustomModal';
 import { ThemedText } from '@/components/ThemedText';
+
 import { Dropdown } from 'react-native-paper-dropdown';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
+import { Card, Text, TextInput, Button } from 'react-native-paper';
 
 export default function LogScreen() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [gender, setGender] = React.useState("")
+
 
   const OPTIONS = [
     { label: 'Administrador', value: 'Administrador' },
     { label: 'Enfermeria', value: 'Enfermeria' },
   ];
-  const [gender, setGender] = React.useState("")
   const theme = {
     ...DefaultTheme,
     colors: {
@@ -78,12 +82,14 @@ export default function LogScreen() {
                 </View>
                 <Button
                   mode="contained"
-                  onPress={() => console.log('Pressed')}
+                  // onPress={() => console.log('Pressed')}
+                  onPress={() => setModalVisible(true)}
                   buttonColor="#5124A5"
                   style={styles.button}
                   labelStyle={styles.buttonLabel}>
                   INGRESAR
                 </Button>
+                <CustomModal visible={modalVisible} onDismiss={() => setModalVisible(false)} />
               </Card.Content>
             </Card>
           </ScrollView>
