@@ -68,7 +68,7 @@ export default function LogScreen() {
                 />
                 <View style={{ margin: 16, width: 260 }}>
                   <Dropdown
-                    label="Sector"
+                    label="Seleccione Sector"
                     placeholder="Seleccione Sector"
                     options={OPTIONS}
                     value={gender}
