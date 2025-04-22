@@ -9,7 +9,9 @@ import { Dropdown } from 'react-native-paper-dropdown';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 
 export default function LogScreen() {
-  const [text, setText] = React.useState("");
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
+
   const OPTIONS = [
     { label: 'Administrador', value: 'Administrador' },
     { label: 'Enfermeria', value: 'Enfermeria' },
@@ -49,15 +51,24 @@ export default function LogScreen() {
               <Card.Content style={styles.cardContent}>
                 <Text variant="titleLarge" style={styles.bigWelcomeText}>Bienvenido</Text>
                 <TextInput
+                  value={username}
+                  onChangeText={text => setUsername(text)}
                   label="Usuario"
-                  value={text}
-                  onChangeText={text => setText(text)}
+                  style={styles.textInput}
+                  theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+                />
+                <View style={{ margin: 8 }} />
+                <TextInput
+                  label="Contraseña"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={text => setPassword(text)}
                   style={styles.textInput}
                   theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
                 />
                 <View style={{ margin: 16, width: 260 }}>
                   <Dropdown
-                    label="Sector"
+                    label="Seleccione Sector"
                     placeholder="Seleccione Sector"
                     options={OPTIONS}
                     value={gender}
@@ -105,7 +116,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   titleText: {
-    fontSize: 20,
+    fontSize: 30,
     color: '#000',
   },
   card: {
