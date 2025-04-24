@@ -2,25 +2,20 @@ import * as React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image, StyleSheet, View, ScrollView } from 'react-native';
-
 import CustomModal from '@/components/CustomModal';
 import { ThemedText } from '@/components/ThemedText';
-
 import { Dropdown } from 'react-native-paper-dropdown';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 import { Card, Text, TextInput, Button } from 'react-native-paper';
+import { TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES } from '../../constants/Strings';
 
 export default function LogScreen() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [modalVisible, setModalVisible] = React.useState(false);
-  const [gender, setGender] = React.useState("")
+  const [modalAreaVisible, setModalAreaVisible] = React.useState(false);
+  const [modalUserTypeVisible, setModalUserTypeVisible] = React.useState(false);
+  const [gender, setGender] = React.useState("");
 
-
-  const OPTIONS = [
-    { label: 'Administrador', value: 'Administrador' },
-    { label: 'Enfermeria', value: 'Enfermeria' },
-  ];
   const theme = {
     ...DefaultTheme,
     colors: {
@@ -33,7 +28,17 @@ export default function LogScreen() {
     },
   };
 
+  const handleAreaSelect = (area) => {
+    console.log("Área seleccionada:", area);
+    setModalAreaVisible(false);
+    setTimeout(() => setModalUserTypeVisible(true), 300);
+  };
 
+  const handleUserTypeSelect = (userType) => {
+    console.log("Tipo de usuario seleccionado:", userType);
+    setModalUserTypeVisible(false);
+    // Aquí podés navegar o guardar info en estado global
+  };
 
   return (
     <>
@@ -74,22 +79,53 @@ export default function LogScreen() {
                   <Dropdown
                     label="Seleccione Sector"
                     placeholder="Seleccione Sector"
-                    options={OPTIONS}
+                    options={[
+                      { label: 'Administrador', value: 'Administrador' },
+                      { label: 'Enfermería', value: 'Enfermería' },
+                    ]}
                     value={gender}
                     onSelect={setGender}
                     theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
                   />
                 </View>
+
                 <Button
                   mode="contained"
-                  // onPress={() => console.log('Pressed')}
-                  onPress={() => setModalVisible(true)}
+                  onPress={() => setModalAreaVisible(true)}
                   buttonColor="#5124A5"
                   style={styles.button}
                   labelStyle={styles.buttonLabel}>
                   INGRESAR
                 </Button>
-                <CustomModal visible={modalVisible} onDismiss={() => setModalVisible(false)} />
+
+                {/* Modal Selección Área */}
+                <CustomModal
+                  visible={modalAreaVisible}
+                  onDismiss={() => setModalAreaVisible(false)}
+                  title={TITLES.selectArea}
+                  actions={AREA_OPTIONS.map(option => ({
+                    label: option.label,
+                    icon: option.icon,
+                    onPress: () => handleAreaSelect(option.value),
+                  }))}
+                />
+
+                {/* Modal Selección Empleado/Paciente */}
+                <CustomModal
+                  visible={modalUserTypeVisible}
+                  onDismiss={() => setModalUserTypeVisible(false)}
+                  title={TITLES.selectTipe}
+                  topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
+                  showTopbar={true}
+                  onBackPress={() => {
+                    setModalUserTypeVisible(false);
+                  }}
+                  actions={TIPE_OPTIONS.map(opt => ({
+                    label: opt.label,
+                    icon: opt.icon,
+                    onPress: () => handleUserTypeSelect(opt.value),
+                  }))}
+                />
               </Card.Content>
             </Card>
           </ScrollView>
@@ -98,6 +134,8 @@ export default function LogScreen() {
     </>
   );
 }
+
+
 
 
 const styles = StyleSheet.create({
