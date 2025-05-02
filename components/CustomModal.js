@@ -11,8 +11,8 @@ const CustomModal = ({
   content = null,
   actions = [],
   showTopbar = false,
-  onBackPress,
-  topbarTitle
+  onBack,
+  topbarTitle,
 }) => {
   return (
     <Portal>
@@ -21,22 +21,21 @@ const CustomModal = ({
         onDismiss={onDismiss}
         contentContainerStyle={styles.fullscreenContainer}
       >
-        {/* <StatusBar barStyle="dark-content" /> */}
-
         {showTopbar && (
           <View style={styles.topbarBackground}>
             <View style={styles.topbarContent}>
-              <IconButton
-                icon="arrow-left"
-                onPress={onBackPress}
-                style={styles.backButton}
-                iconColor="white"
-              />
+              {onBack && (
+                <IconButton
+                  icon="arrow-left"
+                  onPress={onBack}
+                  iconColor="white"
+                  style={styles.backButton}
+                />
+              )}
               <Text style={styles.topbarTextTitle}>{topbarTitle}</Text>
             </View>
           </View>
         )}
-
         <Card style={styles.card}>
           <View style={styles.titleWrapper}>
             <Text style={styles.title}>{title}</Text>
@@ -91,7 +90,7 @@ const styles = StyleSheet.create({
   },
   topbarTextTitle: {
     color: 'white',
-    fontSize: 40,
+    fontSize: 35,
     fontWeight: 'bold',
     textAlign: 'center',
   },
