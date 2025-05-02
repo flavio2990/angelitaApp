@@ -1,20 +1,30 @@
-import * as React from 'react';
-import { StatusBar } from 'react-native';
+import React, { useEffect } from 'react';
+
+
+import { StatusBar, StyleSheet, View, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image, StyleSheet, View, ScrollView } from 'react-native';
+
 import CustomModal from '@/components/CustomModal';
+import CustomList from '@/components/CustomList';
 import { ThemedText } from '@/components/ThemedText';
+
 import { Dropdown } from 'react-native-paper-dropdown';
-import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
-import { Card, Text, TextInput, Button } from 'react-native-paper';
-import { TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES } from '../../constants/Strings';
+import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput, Button } from 'react-native-paper';
+
+import { TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR } from './../../constants/Strings';
+import peopleData from '@/constants/peopleData.json'
+
 
 export default function LogScreen() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [modalAreaVisible, setModalAreaVisible] = React.useState(false);
   const [modalUserTypeVisible, setModalUserTypeVisible] = React.useState(false);
-  const [gender, setGender] = React.useState("");
+  const [selectedArea, setSelectedArea] = React.useState(null);
+  const [selectedOption, setSelectedOption] = React.useState(null);
+  const [showEmployeeList, setShowEmployeeList] = React.useState(false);
+  const [userType, setUserType] = React.useState(null);
+
 
   const theme = {
     ...DefaultTheme,
@@ -29,23 +39,50 @@ export default function LogScreen() {
   };
 
   const handleAreaSelect = (area) => {
-    console.log("Área seleccionada:", area);
+    setSelectedArea(area);
     setModalAreaVisible(false);
-    setTimeout(() => setModalUserTypeVisible(true), 300);
+    setModalUserTypeVisible(true);
   };
 
-  const handleUserTypeSelect = (userType) => {
-    console.log("Tipo de usuario seleccionado:", userType);
+  const handleUserTypeSelect = (type) => {
+    setSelectedOption(type);
+    setUserType(type);
     setModalUserTypeVisible(false);
-    // Aquí podés navegar o guardar info en estado global
+    setShowEmployeeList(true);
+  };
+  const handleBackPress = () => {
+    if (showEmployeeList) {
+      setShowEmployeeList(false);
+      setModalUserTypeVisible(true);
+    } else if (modalUserTypeVisible) {
+      setModalUserTypeVisible(false);
+      setModalAreaVisible(true);
+    } else if (modalAreaVisible) {
+      setModalAreaVisible(false);
+    }
   };
 
   return (
-    <>
-      <PaperProvider theme={theme}>
-        <StatusBar />
-        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+    <PaperProvider theme={theme}>
+      <StatusBar />
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        {showEmployeeList ? (
+          <CustomList
+            data={peopleData.filter(
+              (p) =>
+                p.tipo?.toLowerCase() === userType?.toLowerCase() &&
+                p.area?.toLowerCase() === selectedArea?.toLowerCase()
+            )}
+            onPress={handleBackPress}
+            topBarTitleEmploy={
+              userType === 'pacientes'
+                ? TOP_BAR.topBarTitlePatient
+                : TOP_BAR.topBarTitleEmploy
+            }
+          />
+
+        ) : (
+          <View style={styles.content}>
             <View style={styles.imageContainer}>
               <Image
                 source={require('@/assets/images/grandma.png')}
@@ -55,13 +92,12 @@ export default function LogScreen() {
                 Hogar Angelita!
               </ThemedText>
             </View>
-
             <Card style={styles.card}>
               <Card.Content style={styles.cardContent}>
                 <Text variant="titleLarge" style={styles.bigWelcomeText}>Bienvenido</Text>
                 <TextInput
                   value={username}
-                  onChangeText={text => setUsername(text)}
+                  onChangeText={setUsername}
                   label="Usuario"
                   style={styles.textInput}
                   theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
@@ -71,7 +107,7 @@ export default function LogScreen() {
                   label="Contraseña"
                   secureTextEntry
                   value={password}
-                  onChangeText={text => setPassword(text)}
+                  onChangeText={setPassword}
                   style={styles.textInput}
                   theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
                 />
@@ -83,12 +119,9 @@ export default function LogScreen() {
                       { label: 'Administrador', value: 'Administrador' },
                       { label: 'Enfermería', value: 'Enfermería' },
                     ]}
-                    value={gender}
-                    onSelect={setGender}
                     theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
                   />
                 </View>
-
                 <Button
                   mode="contained"
                   onPress={() => setModalAreaVisible(true)}
@@ -97,28 +130,28 @@ export default function LogScreen() {
                   labelStyle={styles.buttonLabel}>
                   INGRESAR
                 </Button>
-
-                {/* Modal Selección Área */}
+                {/* modal eleccion de area */}
                 <CustomModal
                   visible={modalAreaVisible}
                   onDismiss={() => setModalAreaVisible(false)}
                   title={TITLES.selectArea}
-                  actions={AREA_OPTIONS.map(option => ({
-                    label: option.label,
-                    icon: option.icon,
-                    onPress: () => handleAreaSelect(option.value),
+                  actions={AREA_OPTIONS.map(opt => ({
+                    label: opt.label,
+                    icon: opt.icon,
+                    onPress: () => handleAreaSelect(opt.value),
                   }))}
                 />
-
-                {/* Modal Selección Empleado/Paciente */}
+                {/* modal eleccion de empleados/pacientes */}
                 <CustomModal
                   visible={modalUserTypeVisible}
                   onDismiss={() => setModalUserTypeVisible(false)}
-                  title={TITLES.selectTipe}
+                  title={`Seleccionar de ${selectedArea}:`}
                   topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
                   showTopbar={true}
-                  onBackPress={() => {
+                  onBack={() => {
                     setModalUserTypeVisible(false);
+                    setModalAreaVisible(true);
+                    setSelectedArea(null);
                   }}
                   actions={TIPE_OPTIONS.map(opt => ({
                     label: opt.label,
@@ -128,25 +161,23 @@ export default function LogScreen() {
                 />
               </Card.Content>
             </Card>
-          </ScrollView>
-        </SafeAreaView>
-      </PaperProvider>
-    </>
+          </View>
+        )}
+      </SafeAreaView>
+    </PaperProvider>
   );
 }
-
-
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    top: 25
+    top: 25,
   },
-  scrollContent: {
-    padding: 16,
+  content: {
+    flex: 1,
     alignItems: 'center',
+    padding: 16,
   },
   imageContainer: {
     alignItems: 'center',
