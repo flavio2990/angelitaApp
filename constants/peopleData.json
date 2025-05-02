@@ -1,0 +1,168 @@
+[
+  {
+    "nombre": "Angelita Gomez",
+    "edad": "74",
+    "dni": "23.456.789",
+    "nacimiento": "12/04/1950",
+    "ingreso": "01/04/2025",
+    "coberturaSocial": "PAMI",
+    "nacionalidad": "Argentina",
+    "estadoCivil": "Viuda",
+    "area": "UTI",
+    "tipo": "Pacientes"
+  },
+  {
+    "nombre": "Jorge Díaz",
+    "edad": "63",
+    "dni": "18.345.672",
+    "nacimiento": "05/10/1961",
+    "ingreso": "10/04/2025",
+    "coberturaSocial": "OSDE",
+    "nacionalidad": "Argentina",
+    "estadoCivil": "Casado",
+    "area": "UCG",
+    "tipo": "Pacientes"
+  },
+  {
+    "nombre": "Lucía Fernández",
+    "edad": "45",
+    "dni": "32.987.654",
+    "nacimiento": "21/08/1979",
+    "ingreso": "15/04/2025",
+    "coberturaSocial": "Swiss Medical",
+    "nacionalidad": "Argentina",
+    "estadoCivil": "Soltera",
+    "area": "UTI",
+    "tipo": "Pacientes"
+  },
+  {
+    "nombre": "Mariano Ruiz",
+    "edad": "39",
+    "dni": "27.345.678",
+    "nacimiento": "11/11/1985",
+    "ingreso": "20/04/2025",
+    "nacionalidad": "Argentina",
+    "area": "UCG",
+    "tipo": "Empleados"
+  },
+  {
+    "nombre": "Soledad Martínez",
+    "edad": "46",
+    "dni": "26.789.012",
+    "nacimiento": "23/07/1978",
+    "ingreso": "03/04/2025",
+    "nacionalidad": "Argentina",
+    "area": "UCG",
+    "tipo": "Empleados"
+  },
+  {
+    "nombre": "Carlos López",
+    "edad": "50",
+    "dni": "25.678.901",
+    "nacimiento": "30/01/1975",
+    "ingreso": "08/04/2025",
+    "nacionalidad": "Argentina",
+    "area": "UTI",
+    "tipo": "Empleados"
+  },
+  {
+    "nombre": "Valeria Castro",
+    "edad": "52",
+    "dni": "24.123.456",
+    "nacimiento": "10/06/1972",
+    "ingreso": "12/04/2025",
+    "coberturaSocial": "IOMA",
+    "nacionalidad": "Argentina",
+    "estadoCivil": "Casada",
+    "area": "UTI",
+    "tipo": "Pacientes"
+  },
+  {
+    "nombre": "Federico Gómez",
+    "edad": "31",
+    "dni": "33.789.456",
+    "nacimiento": "19/09/1993",
+    "ingreso": "05/04/2025",
+    "nacionalidad": "Argentina",
+    "area": "UTI",
+    "tipo": "Empleados"
+  },
+  {
+    "nombre": "Laura Benítez",
+    "edad": "66",
+    "dni": "19.876.543",
+    "nacimiento": "30/11/1958",
+    "ingreso": "02/04/2025",
+    "coberturaSocial": "PAMI",
+    "nacionalidad": "Argentina",
+    "estadoCivil": "Divorciada",
+    "area": "UCG",
+    "tipo": "Pacientes"
+  },
+  {
+    "nombre": "Ignacio Pereira",
+    "edad": "44",
+    "dni": "29.456.789",
+    "nacimiento": "15/03/1980",
+    "ingreso": "11/04/2025",
+    "nacionalidad": "Argentina",
+    "area": "UCG",
+    "tipo": "Empleados"
+  },
+  {
+    "nombre": "Julieta Arrieta",
+    "edad": "29",
+    "dni": "36.789.123",
+    "nacimiento": "07/12/1995",
+    "ingreso": "13/04/2025",
+    "coberturaSocial": "Galeno",
+    "nacionalidad": "Argentina",
+    "estadoCivil": "Soltera",
+    "area": "UTI",
+    "tipo": "Pacientes"
+  },
+  {
+    "nombre": "Diego Montiel",
+    "edad": "38",
+    "dni": "28.901.234",
+    "nacimiento": "22/05/1986",
+    "ingreso": "06/04/2025",
+    "nacionalidad": "Argentina",
+    "area": "UTI",
+    "tipo": "Empleados"
+  },
+  {
+    "nombre": "Marta Ceballos",
+    "edad": "70",
+    "dni": "21.345.987",
+    "nacimiento": "01/02/1955",
+    "ingreso": "04/04/2025",
+    "coberturaSocial": "PAMI",
+    "nacionalidad": "Argentina",
+    "estadoCivil": "Viuda",
+    "area": "UCG",
+    "tipo": "Pacientes"
+  },
+  {
+    "nombre": "Sebastián Varela",
+    "edad": "42",
+    "dni": "30.123.456",
+    "nacimiento": "17/08/1982",
+    "ingreso": "09/04/2025",
+    "nacionalidad": "Argentina",
+    "area": "UTI",
+    "tipo": "Empleados"
+  },
+  {
+    "nombre": "Paula Méndez",
+    "edad": "57",
+    "dni": "22.234.567",
+    "nacimiento": "25/09/1967",
+    "ingreso": "07/04/2025",
+    "coberturaSocial": "OSDE",
+    "nacionalidad": "Argentina",
+    "estadoCivil": "Casada",
+    "area": "UTI",
+    "tipo": "Pacientes"
+  }
+]

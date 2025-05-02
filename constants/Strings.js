@@ -16,7 +16,7 @@ export const TITLES = {
   export const TOP_BAR = {
     topBarTitleChoice: "Empleados/ Pacientes",
     topBarTitlePatient: "Seleccione Paciente:",
-    topBarTitleEmploy: "Seleccione Empleado",
+    topBarTitleEmploy: "Seleccione Empleado:",
   };
   export const MODAL_TITLES = {
     modalTitleEmployPatients: "Empleados/ Pacientes",
