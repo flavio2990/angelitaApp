@@ -1,22 +1,25 @@
 import React from 'react';
 import { FlatList, Text, View, StyleSheet } from 'react-native';
 
-import { Card, IconButton } from 'react-native-paper';
+import { Card, IconButton, TouchableRipple } from 'react-native-paper';
 
 
-const CustomList = ({ 
+const CustomList = ({
   data,
   onPress,
-  topBarTitleEmploy
+  topBarTitleEmploy,
+  onItemPress
 }) => {
 
   const renderItem = ({ item }) => (
+    <TouchableRipple onPress={() => onItemPress(item)} rippleColor="rgba(0, 0, 0, .1)">
     <Card style={styles.card}>
       <Card.Content>
         <Text style={styles.cardTitle}>{item.nombre}</Text>
         <Text style={styles.cardText}>Num: {item.dni}</Text>
       </Card.Content>
     </Card>
+    </TouchableRipple>
   );
 
   return (
@@ -29,7 +32,8 @@ const CustomList = ({
         </IconButton>
         <Text style={styles.topbarTitle}>{topBarTitleEmploy}</Text>
       </View>
-    </View><FlatList
+    </View>
+    <FlatList
         data={data}
         renderItem={renderItem}
         keyExtractor={(item) => item.dni.toString()}

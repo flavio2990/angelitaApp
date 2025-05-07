@@ -24,7 +24,8 @@ export default function LogScreen() {
   const [selectedOption, setSelectedOption] = React.useState(null);
   const [showEmployeeList, setShowEmployeeList] = React.useState(false);
   const [userType, setUserType] = React.useState(null);
-
+  const [selectedPerson, setSelectedPerson] = React.useState(null);
+  const [detailModalVisible, setDetailModalVisible] = React.useState(false);
 
   const theme = {
     ...DefaultTheme,
@@ -37,6 +38,12 @@ export default function LogScreen() {
       placeholder: '#A9A9A9',
     },
   };
+
+  const handleItemPress = (person) => {
+    setSelectedPerson(person);
+    setDetailModalVisible(true);
+  };
+
 
   const handleAreaSelect = (area) => {
     setSelectedArea(area);
@@ -74,6 +81,7 @@ export default function LogScreen() {
                 p.area?.toLowerCase() === selectedArea?.toLowerCase()
             )}
             onPress={handleBackPress}
+            onItemPress={handleItemPress} //
             topBarTitleEmploy={
               userType === 'pacientes'
                 ? TOP_BAR.topBarTitlePatient
@@ -81,88 +89,156 @@ export default function LogScreen() {
             }
           />
 
-        ) : (
-          <View style={styles.content}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={require('@/assets/images/grandma.png')}
-                style={styles.homeLogo}
-              />
-              <ThemedText type="title" style={styles.titleText}>
-                Hogar Angelita!
-              </ThemedText>
-            </View>
-            <Card style={styles.card}>
-              <Card.Content style={styles.cardContent}>
-                <Text variant="titleLarge" style={styles.bigWelcomeText}>Bienvenido</Text>
-                <TextInput
-                  value={username}
-                  onChangeText={setUsername}
-                  label="Usuario"
-                  style={styles.textInput}
-                  theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
-                />
-                <View style={{ margin: 8 }} />
-                <TextInput
-                  label="Contraseña"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                  style={styles.textInput}
-                  theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
-                />
-                <View style={{ margin: 16, width: 260 }}>
-                  <Dropdown
-                    label="Seleccione Sector"
-                    placeholder="Seleccione Sector"
-                    options={[
-                      { label: 'Administrador', value: 'Administrador' },
-                      { label: 'Enfermería', value: 'Enfermería' },
-                    ]}
-                    theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
-                  />
-                </View>
-                <Button
-                  mode="contained"
-                  onPress={() => setModalAreaVisible(true)}
-                  buttonColor="#5124A5"
-                  style={styles.button}
-                  labelStyle={styles.buttonLabel}>
-                  INGRESAR
-                </Button>
-                {/* modal eleccion de area */}
-                <CustomModal
-                  visible={modalAreaVisible}
-                  onDismiss={() => setModalAreaVisible(false)}
-                  title={TITLES.selectArea}
-                  actions={AREA_OPTIONS.map(opt => ({
-                    label: opt.label,
-                    icon: opt.icon,
-                    onPress: () => handleAreaSelect(opt.value),
-                  }))}
-                />
-                {/* modal eleccion de empleados/pacientes */}
-                <CustomModal
-                  visible={modalUserTypeVisible}
-                  onDismiss={() => setModalUserTypeVisible(false)}
-                  title={`Seleccionar de ${selectedArea}:`}
-                  topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
-                  showTopbar={true}
-                  onBack={() => {
-                    setModalUserTypeVisible(false);
-                    setModalAreaVisible(true);
-                    setSelectedArea(null);
-                  }}
-                  actions={TIPE_OPTIONS.map(opt => ({
-                    label: opt.label,
-                    icon: opt.icon,
-                    onPress: () => handleUserTypeSelect(opt.value),
-                  }))}
-                />
-              </Card.Content>
-            </Card>
+        ) : (<View style={styles.content}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('@/assets/images/grandma.png')}
+              style={styles.homeLogo}
+            />
+            <ThemedText type="title" style={styles.titleText}>
+              Hogar Angelita!
+            </ThemedText>
           </View>
+          <Card style={styles.card}>
+            <Card.Content style={styles.cardContent}>
+              <Text variant="titleLarge" style={styles.bigWelcomeText}>Bienvenido</Text>
+              <TextInput
+                value={username}
+                onChangeText={setUsername}
+                label="Usuario"
+                style={styles.textInput}
+                theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+              />
+              <View style={{ margin: 8 }} />
+              <TextInput
+                label="Contraseña"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+                style={styles.textInput}
+                theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+              />
+              <View style={{ margin: 16, width: 260 }}>
+                <Dropdown
+                  label="Seleccione Sector"
+                  placeholder="Seleccione Sector"
+                  options={[
+                    { label: 'Administrador', value: 'Administrador' },
+                    { label: 'Enfermería', value: 'Enfermería' },
+                  ]}
+                  theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+                />
+              </View>
+              <Button
+                mode="contained"
+                onPress={() => setModalAreaVisible(true)}
+                buttonColor="#5124A5"
+                style={styles.button}
+                labelStyle={styles.buttonLabel}>
+                INGRESAR
+              </Button>
+
+              {/* modal eleccion de area */}
+              <CustomModal
+                visible={modalAreaVisible}
+                onDismiss={() => setModalAreaVisible(false)}
+                title={TITLES.selectArea}
+                actions={AREA_OPTIONS.map(opt => ({
+                  label: opt.label,
+                  icon: opt.icon,
+                  onPress: () => handleAreaSelect(opt.value),
+                }))}
+              />
+
+              {/* modal eleccion de empleados/pacientes */}
+              <CustomModal
+                visible={modalUserTypeVisible}
+                onDismiss={() => setModalUserTypeVisible(false)}
+                title={`Seleccionar de ${selectedArea}:`}
+                topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
+                showTopbar={true}
+                onBack={() => {
+                  setModalUserTypeVisible(false);
+                  setModalAreaVisible(true);
+                  setSelectedArea(null);
+                }}
+                actions={TIPE_OPTIONS.map(opt => ({
+                  label: opt.label,
+                  icon: opt.icon,
+                  onPress: () => handleUserTypeSelect(opt.value),
+                }))}
+              />
+            </Card.Content>
+          </Card>
+        </View>
         )}
+
+        {/* modal con detalles */}
+        <CustomModal
+          visible={detailModalVisible}
+          onRequestClose={() => setDetailModalVisible(false)}
+          showTopbar={true}
+          topbarTitle={
+            userType === 'pacientes'
+              ? TOP_BAR.topBarModalTitlePatient
+              : TOP_BAR.topBarModalTitleEmploy
+          }
+          onBack={() => setDetailModalVisible(false)}
+          title={
+            userType === 'pacientes'
+              ? MODAL_TITLES.modalTitlePatient
+              : MODAL_TITLES.modalTitleEmploy
+          }
+        >
+          <View style={{ padding: 20 }}>
+            <Text>
+              <Text style={styles.detailsModal}>Nombre: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.nombre}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>Edad: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.edad}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>DNI: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.dni}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>Nacimiento: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.nacimiento}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>Ingresó: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.ingreso}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>Obra Social: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.coberturaSocial}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>Nacionalidad: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.nacionalidad}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>Estado Civil: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.estadoCivil}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>Area: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.area}</Text>
+            </Text>
+            <Text>
+              <Text style={styles.detailsModal}>Tipo: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.tipo}</Text>
+            </Text>
+            {userType === 'pacientes' && (
+              <Text>
+              <Text style={styles.detailsModal}>Peso: </Text>
+              <Text style={styles.dynamicText}>{selectedPerson?.peso}</Text>
+            </Text>
+            )}
+          </View>
+        </CustomModal>
       </SafeAreaView>
     </PaperProvider>
   );
@@ -228,5 +304,14 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontWeight: 'bold',
     fontSize: 20,
+  },
+  detailsModal: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  dynamicText: {
+    fontSize: 16,
+    color: '#0a0a1e',
+    fontWeight: 'regular',
   },
 });
