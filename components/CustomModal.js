@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal as PaperModal, Portal, Text, Button, Card, IconButton } from 'react-native-paper';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, StatusBar, Platform } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -13,6 +13,7 @@ const CustomModal = ({
   showTopbar = false,
   onBack,
   topbarTitle,
+  children
 }) => {
   return (
     <Portal>
@@ -43,6 +44,7 @@ const CustomModal = ({
 
           <Card.Content style={styles.cardContent}>
             {content}
+            {children}
             {actions.map((action, index) => (
               <Button
                 key={index}
@@ -139,19 +141,22 @@ const styles = StyleSheet.create({
   topbarBackground: {
     backgroundColor: '#5124A5',
     width: '100%',
-    height: 100,
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Espacio para el StatusBar
+    height: Platform.OS === 'android' ? 100 + StatusBar.currentHeight : 100, // Ajustar altura total
     position: 'absolute',
     top: 0,
     zIndex: 2,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-  },
   topbarContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
   },
   topbarTitle: {
     color: 'white',

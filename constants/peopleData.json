@@ -8,6 +8,7 @@
     "coberturaSocial": "PAMI",
     "nacionalidad": "Argentina",
     "estadoCivil": "Viuda",
+    "peso": "70 kgs",
     "area": "UTI",
     "tipo": "Pacientes"
   },
@@ -20,6 +21,7 @@
     "coberturaSocial": "OSDE",
     "nacionalidad": "Argentina",
     "estadoCivil": "Casado",
+    "peso": "70 kgs",
     "area": "UCG",
     "tipo": "Pacientes"
   },
@@ -32,6 +34,7 @@
     "coberturaSocial": "Swiss Medical",
     "nacionalidad": "Argentina",
     "estadoCivil": "Soltera",
+    "peso": "70 kgs",
     "area": "UTI",
     "tipo": "Pacientes"
   },
@@ -74,6 +77,7 @@
     "coberturaSocial": "IOMA",
     "nacionalidad": "Argentina",
     "estadoCivil": "Casada",
+    "peso": "100 kgs",
     "area": "UTI",
     "tipo": "Pacientes"
   },
@@ -96,6 +100,7 @@
     "coberturaSocial": "PAMI",
     "nacionalidad": "Argentina",
     "estadoCivil": "Divorciada",
+    "peso": "85 kgs",
     "area": "UCG",
     "tipo": "Pacientes"
   },
@@ -118,6 +123,7 @@
     "coberturaSocial": "Galeno",
     "nacionalidad": "Argentina",
     "estadoCivil": "Soltera",
+    "peso": "75 kgs",
     "area": "UTI",
     "tipo": "Pacientes"
   },
@@ -140,6 +146,7 @@
     "coberturaSocial": "PAMI",
     "nacionalidad": "Argentina",
     "estadoCivil": "Viuda",
+    "peso": "90 kgs",
     "area": "UCG",
     "tipo": "Pacientes"
   },
@@ -162,6 +169,7 @@
     "coberturaSocial": "OSDE",
     "nacionalidad": "Argentina",
     "estadoCivil": "Casada",
+    "peso": "70 kgs",
     "area": "UTI",
     "tipo": "Pacientes"
   }

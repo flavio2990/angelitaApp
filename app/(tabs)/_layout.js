@@ -44,3 +44,30 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+// import { Stack } from 'expo-router';
+
+// export default function Layout() {
+//   return <Stack />;
+// }
+// Esto reemplaza el diseño de pestañas con un diseño de pila (Stack), que renderiza las rutas de forma independiente.
+// 2. Mover las rutas fuera de (tabs)
+// Si no necesitas agrupar las rutas bajo (tabs), puedes mover los archivos index.js y explore.js a un directorio superior, como app.
+
+// Por ejemplo:
+// app/
+  // index.js
+  // explore.js
+  // Luego, actualiza el archivo tsconfig.json para reflejar los cambios:
+//   "include": [
+//   "**/*.ts",
+//   "**/*.tsx",
+//   ".expo/types/**/*.ts",
+//   "expo-env.d.ts",
+//   "app/index.js",
+//   "app/explore.js"
+// ]
+// 3. Actualizar las rutas en tsconfig.json
+// Si decides mantener las rutas en (tabs) pero sin un _layout.js, asegúrate de que las rutas estén correctamente configuradas en tsconfig.json. Sin embargo, Expo Router requiere un _layout.js para manejar directorios con rutas agrupadas, por lo que esta opción no es ideal.
+
+// Recomendación:
+// La solución más sencilla es mantener un archivo _layout.js básico con un diseño de pila (Stack) si no necesitas pestañas. Esto asegura que las rutas dentro de (tabs) sigan funcionando correctamente.
