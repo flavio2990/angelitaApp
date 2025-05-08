@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomModal from '@/components/CustomModal';
 import CustomList from '@/components/CustomList';
 import { ThemedText } from '@/components/ThemedText';
+import CustomButton from '@/components/CustomButton';
 
 import { Dropdown } from 'react-native-paper-dropdown';
 import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput, Button } from 'react-native-paper';
@@ -129,14 +130,11 @@ export default function LogScreen() {
                   theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
                 />
               </View>
-              <Button
-                mode="contained"
+              
+              <CustomButton
                 onPress={() => setModalAreaVisible(true)}
-                buttonColor="#5124A5"
-                style={styles.button}
-                labelStyle={styles.buttonLabel}>
-                INGRESAR
-              </Button>
+                label="INGRESAR"
+              />
 
               {/* modal eleccion de area */}
               <CustomModal
@@ -233,9 +231,9 @@ export default function LogScreen() {
             </Text>
             {userType === 'pacientes' && (
               <Text>
-              <Text style={styles.detailsModal}>Peso: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.peso}</Text>
-            </Text>
+                <Text style={styles.detailsModal}>Peso: </Text>
+                <Text style={styles.dynamicText}>{selectedPerson?.peso}</Text>
+              </Text>
             )}
           </View>
         </CustomModal>
