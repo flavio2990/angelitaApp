@@ -9,9 +9,9 @@ export const TITLES = {
   ];
   
   export const TIPE_OPTIONS = [
-    { label: "Empleados", icon: "account", value: "empleados" },
-    { label: "Pacientes", icon: "account-group", value: "pacientes" },
-  ];
+  { label: "Empleados", icon: "account", value: "Enfermería" },
+  { label: "Pacientes", icon: "account-group", value: "Paciente" },
+];
 
   export const TOP_BAR = {
     topBarTitleChoice: "Empleados/ Pacientes",
@@ -19,10 +19,13 @@ export const TITLES = {
     topBarTitleEmploy: "Seleccione Empleado:",
     topBarModalTitlePatient: "Datos del Paciente",
     topBarModalTitleEmploy: "Datos del Empleado",
+    topBarNoData: "UPS! Aún no hay datos",
+    topBarNewData: "Agregar nuevo",
   };
   export const MODAL_TITLES = {
     modalTitleEmployPatients: "Empleados/ Pacientes",
     modalTitlePatient: "Datos del Paciente:",
     modalTitleEmploy: "Datos del Empleado:",
+    modalNoData: "Ingresalos aquí",
   };
   
