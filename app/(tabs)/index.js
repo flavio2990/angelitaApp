@@ -1,19 +1,19 @@
 import React from 'react';
 
+import { StatusBar, StyleSheet, View, Image, ScrollView } from 'react-native';
 
-import { StatusBar, StyleSheet, View, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CustomModal from '@/components/CustomModal';
 import CustomList from '@/components/CustomList';
 import { ThemedText } from '@/components/ThemedText';
 import CustomButton from '@/components/CustomButton';
+import EditPersonForm from '@/components/EditPersonForm';
 
-import { Dropdown } from 'react-native-paper-dropdown';
-import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput, Button } from 'react-native-paper';
+import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR } from './../../constants/Strings';
-import peopleData from '@/constants/peopleData.json'
 
 
 export default function LogScreen() {
@@ -27,6 +27,12 @@ export default function LogScreen() {
   const [userType, setUserType] = React.useState(null);
   const [selectedPerson, setSelectedPerson] = React.useState(null);
   const [detailModalVisible, setDetailModalVisible] = React.useState(false);
+  const [editModalVisible, setEditModalVisible] = React.useState(false);
+  const [editablePerson, setEditablePerson] = React.useState(null);
+  const [noDataModalVisible, setNoDataModalVisible] = React.useState(false);
+  const [newPerson, setNewPerson] = React.useState({});
+  const [addMode, setAddMode] = React.useState(false);
+
 
   const theme = {
     ...DefaultTheme,
@@ -45,19 +51,35 @@ export default function LogScreen() {
     setDetailModalVisible(true);
   };
 
-
   const handleAreaSelect = (area) => {
     setSelectedArea(area);
     setModalAreaVisible(false);
     setModalUserTypeVisible(true);
   };
 
-  const handleUserTypeSelect = (type) => {
+  const handleUserTypeSelect = async (type) => {
     setSelectedOption(type);
     setUserType(type);
     setModalUserTypeVisible(false);
-    setShowEmployeeList(true);
+
+    let stored = await AsyncStorage.getItem('peopleData');
+    let peopleList = stored ? JSON.parse(stored) : [];
+
+    const filteredData = peopleList.filter(
+      (p) =>
+        p.tipo?.toLowerCase() === type.toLowerCase() &&
+        p.area?.toLowerCase() === selectedArea?.toLowerCase()
+    );
+
+    if (filteredData.length === 0) {
+      setTimeout(() => {
+        setNoDataModalVisible(true);
+      }, 300);
+    } else {
+      setShowEmployeeList(true);
+    }
   };
+
   const handleBackPress = () => {
     if (showEmployeeList) {
       setShowEmployeeList(false);
@@ -70,123 +92,197 @@ export default function LogScreen() {
     }
   };
 
+  const handleModifyPress = () => {
+    setDetailModalVisible(false);
+    setEditablePerson({ ...selectedPerson });
+    setEditModalVisible(true);
+  };
+
+  const handleSaveNewPerson = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('peopleData');
+      let peopleList = stored ? JSON.parse(stored) : [];
+
+      const updatedList = [...peopleList, newPerson];
+      await AsyncStorage.setItem('peopleData', JSON.stringify(updatedList));
+      console.log("Guardado en AsyncStorage:", newPerson);
+      setNoDataModalVisible(false);
+      setNewPerson({});
+      setShowEmployeeList(true);
+    } catch (error) {
+      console.error("Error guardando persona:", error);
+    }
+  };
+
+  const handleSaveEditPerson = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('peopleData');
+      let peopleList = stored ? JSON.parse(stored) : [];
+
+      const index = peopleList.findIndex(p => p.dni === editablePerson.dni);
+
+      if (index !== -1) {
+        peopleList[index] = editablePerson;
+        await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
+        setEditModalVisible(false);
+        setDetailModalVisible(false);
+        setSelectedPerson(null);
+        setShowEmployeeList(false);
+        setTimeout(() => setShowEmployeeList(true), 0);
+      }
+    } catch (error) {
+      console.error("Error actualizando persona:", error);
+    }
+  };
+
+  const [asyncPeopleData, setAsyncPeopleData] = React.useState([]);
+  React.useEffect(() => {
+    const loadPeople = async () => {
+      const stored = await AsyncStorage.getItem('peopleData');
+      setAsyncPeopleData(stored ? JSON.parse(stored) : []);
+    };
+    if (showEmployeeList) loadPeople();
+  }, [showEmployeeList, noDataModalVisible]);
+
   return (
     <PaperProvider theme={theme}>
       <StatusBar />
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {showEmployeeList ? (
           <CustomList
-            data={peopleData.filter(
+            data={asyncPeopleData.filter(
               (p) =>
                 p.tipo?.toLowerCase() === userType?.toLowerCase() &&
                 p.area?.toLowerCase() === selectedArea?.toLowerCase()
             )}
             onPress={handleBackPress}
-            onItemPress={handleItemPress} //
+            onItemPress={handleItemPress}
             topBarTitleEmploy={
-              userType === 'pacientes'
+              userType?.toLowerCase() === 'pacientes'
                 ? TOP_BAR.topBarTitlePatient
                 : TOP_BAR.topBarTitleEmploy
             }
+            onAddPress={() => {
+              setNewPerson({});
+              setNoDataModalVisible(true);
+              setAddMode(true);
+            }}
           />
-
-        ) : (<View style={styles.content}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={require('@/assets/images/grandma.png')}
-              style={styles.homeLogo}
-            />
-            <ThemedText type="title" style={styles.titleText}>
-              Hogar Angelita!
-            </ThemedText>
-          </View>
-          <Card style={styles.card}>
-            <Card.Content style={styles.cardContent}>
-              <Text variant="titleLarge" style={styles.bigWelcomeText}>Bienvenido</Text>
-              <TextInput
-                value={username}
-                onChangeText={setUsername}
-                label="Usuario"
-                style={styles.textInput}
-                theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+        ) : (
+          <View style={styles.content}>
+            <View style={styles.imageContainer}>
+              <Image
+                source={require('@/assets/images/grandma.png')}
+                style={styles.homeLogo}
               />
-              <View style={{ margin: 8 }} />
-              <TextInput
-                label="Contraseña"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                style={styles.textInput}
-                theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
-              />
-              <View style={{ margin: 16, width: 260 }}>
-                <Dropdown
-                  label="Seleccione Sector"
-                  placeholder="Seleccione Sector"
-                  options={[
-                    { label: 'Administrador', value: 'Administrador' },
-                    { label: 'Enfermería', value: 'Enfermería' },
-                  ]}
+              <ThemedText type="title" style={styles.titleText}>
+                Hogar Angelita!
+              </ThemedText>
+            </View>
+            <Card style={styles.card}>
+              <Card.Content style={styles.cardContent}>
+                <Text variant="titleLarge" style={styles.bigWelcomeText}>Bienvenido</Text>
+                <TextInput
+                  value={username}
+                  onChangeText={setUsername}
+                  label="Usuario"
+                  style={styles.textInput}
                   theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
                 />
-              </View>
-              
-              <CustomButton
-                onPress={() => setModalAreaVisible(true)}
-                label="INGRESAR"
-              />
+                <View style={{ margin: 8 }} />
+                <TextInput
+                  label="Contraseña"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                  style={styles.textInput}
+                  theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+                />
+                <View style={{ margin: 8 }} />
+                <CustomButton
+                  onPress={() => setModalAreaVisible(true)}
+                  label="INGRESAR"
+                />
 
-              {/* modal eleccion de area */}
-              <CustomModal
-                visible={modalAreaVisible}
-                onDismiss={() => setModalAreaVisible(false)}
-                title={TITLES.selectArea}
-                actions={AREA_OPTIONS.map(opt => ({
-                  label: opt.label,
-                  icon: opt.icon,
-                  onPress: () => handleAreaSelect(opt.value),
-                }))}
-              />
+                {/* modal eleccion de area */}
+                <CustomModal
+                  visible={modalAreaVisible}
+                  onDismiss={() => setModalAreaVisible(false)}
+                  title={TITLES.selectArea}
+                  actions={AREA_OPTIONS.map(opt => ({
+                    label: opt.label,
+                    icon: opt.icon,
+                    onPress: () => handleAreaSelect(opt.value),
+                  }))}
+                />
 
-              {/* modal eleccion de empleados/pacientes */}
-              <CustomModal
-                visible={modalUserTypeVisible}
-                onDismiss={() => setModalUserTypeVisible(false)}
-                title={`Seleccionar de ${selectedArea}:`}
-                topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
-                showTopbar={true}
-                onBack={() => {
-                  setModalUserTypeVisible(false);
-                  setModalAreaVisible(true);
-                  setSelectedArea(null);
-                }}
-                actions={TIPE_OPTIONS.map(opt => ({
-                  label: opt.label,
-                  icon: opt.icon,
-                  onPress: () => handleUserTypeSelect(opt.value),
-                }))}
-              />
-            </Card.Content>
-          </Card>
-        </View>
+                {/* modal eleccion de empleados/pacientes */}
+                <CustomModal
+                  visible={modalUserTypeVisible}
+                  onDismiss={() => setModalUserTypeVisible(false)}
+                  topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
+                  title={`Seleccionar de ${selectedArea}:`}
+                  showTopbar={true}
+                  onBack={() => {
+                    setModalUserTypeVisible(false);
+                    setModalAreaVisible(true);
+                    setSelectedArea(null);
+                  }}
+                  actions={TIPE_OPTIONS.map(opt => ({
+                    label: opt.label,
+                    icon: opt.icon,
+                    onPress: () => handleUserTypeSelect(opt.value),
+                  }))}
+                />
+              </Card.Content>
+            </Card>
+          </View>
         )}
+
+        {/* modal aviso sin datos */}
+        <CustomModal
+          visible={noDataModalVisible}
+          onRequestClose={() => setNoDataModalVisible(false)}
+          showTopbar={true}
+          topbarTitle={addMode ? TOP_BAR.topBarNewData : TOP_BAR.topBarNoData}
+          title={MODAL_TITLES.modalNoData}
+          isEditModal={true}
+          onSavePress={handleSaveNewPerson}
+          onBack={() => {
+            setNoDataModalVisible(false);
+            setModalUserTypeVisible(true);
+            setAddMode(false);
+          }}
+        >
+          <EditPersonForm
+            person={newPerson}
+            onChange={setNewPerson}
+            isAdding={true}
+          />
+        </CustomModal>
 
         {/* modal con detalles */}
         <CustomModal
           visible={detailModalVisible}
-          onRequestClose={() => setDetailModalVisible(false)}
+          onRequestClose={() => {
+            setNoDataModalVisible(false);
+            setAddMode(false);
+          }}
           showTopbar={true}
+          onBack={() => setDetailModalVisible(false)}
           topbarTitle={
             userType === 'pacientes'
               ? TOP_BAR.topBarModalTitlePatient
-              : TOP_BAR.topBarModalTitleEmploy
+              : TOP_BAR.topBarTitleEmploy
           }
-          onBack={() => setDetailModalVisible(false)}
           title={
             userType === 'pacientes'
               ? MODAL_TITLES.modalTitlePatient
               : MODAL_TITLES.modalTitleEmploy
           }
+          isDetailModal={true}
+          onGoToPlanPress={() => console.log('Ir a planilla presionado')}
+          onModifyPress={handleModifyPress}
         >
           <View style={{ padding: 20 }}>
             <Text>
@@ -235,6 +331,32 @@ export default function LogScreen() {
                 <Text style={styles.dynamicText}>{selectedPerson?.peso}</Text>
               </Text>
             )}
+          </View>
+        </CustomModal>
+
+        {/* Modal para editar datos */}
+        <CustomModal
+          visible={editModalVisible}
+          onRequestClose={() => setEditModalVisible(false)}
+          showTopbar={true}
+          topbarTitle="Editar Datos"
+          onBack={() => {
+            setEditModalVisible(false);
+            setDetailModalVisible(true);
+          }}
+          title="Modificar Información:"
+          isEditModal={true}
+          onSavePress={handleSaveEditPerson}
+        >
+          <View
+            contentContainerStyle={{ padding: 20, backgroundColor: 'rgba(0, 255, 0, 0.2)' }}
+            style={{ flexGrow: 1 }}
+          >
+            <EditPersonForm
+              person={editablePerson}
+              onChange={setEditablePerson}
+              onSave={handleSaveEditPerson}
+            />
           </View>
         </CustomModal>
       </SafeAreaView>
