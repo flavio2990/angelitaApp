@@ -1,43 +1,53 @@
 import React from 'react';
 import { FlatList, Text, View, StyleSheet } from 'react-native';
 
-import { Card, IconButton, TouchableRipple } from 'react-native-paper';
+import { Card, IconButton, TouchableRipple, FAB } from 'react-native-paper';
 
 
 const CustomList = ({
   data,
   onPress,
   topBarTitleEmploy,
-  onItemPress
+  onItemPress,
+  onAddPress
 }) => {
 
   const renderItem = ({ item }) => (
     <TouchableRipple onPress={() => onItemPress(item)} rippleColor="rgba(0, 0, 0, .1)">
-    <Card style={styles.card}>
-      <Card.Content>
-        <Text style={styles.cardTitle}>{item.nombre}</Text>
-        <Text style={styles.cardText}>Num: {item.dni}</Text>
-      </Card.Content>
-    </Card>
+      <Card style={styles.card}>
+        <Card.Content>
+          <Text style={styles.cardTitle}>{item.nombre}</Text>
+          <Text style={styles.cardText}>Num: {item.dni}</Text>
+        </Card.Content>
+      </Card>
     </TouchableRipple>
   );
 
   return (
-    <><View style={styles.topbarBackground}>
-      <View style={styles.topbarContent}>
-        <IconButton icon="arrow-left"
-          onPress={onPress}
-          style={styles.backButton}
-          iconColor="white">
-        </IconButton>
-        <Text style={styles.topbarTitle}>{topBarTitleEmploy}</Text>
+    <>
+      <View style={styles.topbarBackground}>
+        <View style={styles.topbarContent}>
+          <IconButton icon="arrow-left"
+            onPress={onPress}
+            style={styles.backButton}
+            iconColor="white">
+          </IconButton>
+          <Text style={styles.topbarTitle}>{topBarTitleEmploy}</Text>
+        </View>
       </View>
-    </View>
-    <FlatList
+      <FlatList
         data={data}
         renderItem={renderItem}
         keyExtractor={(item) => item.dni.toString()}
-        contentContainerStyle={[styles.listContent, { paddingTop: 120 }]} /></>
+        contentContainerStyle={[styles.listContent, { paddingTop: 120 }]}
+      />
+      <FAB
+        icon="account-plus"
+        style={styles.fab}
+        onPress={onAddPress}
+        color="white"
+      />
+    </>
   );
 };
 
@@ -63,7 +73,7 @@ const styles = StyleSheet.create({
   },
   topbarTitle: {
     color: 'white',
-    fontSize: 35,
+    fontSize: 30,
     fontWeight: 'bold',
   },
   listContent: {
@@ -85,5 +95,12 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 18,
     color: '#555',
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 34,
+    backgroundColor: '#5124A5',
+    zIndex: 10,
   },
 });
