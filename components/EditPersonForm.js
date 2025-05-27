@@ -138,8 +138,7 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingBottom: 20,
-
+    paddingBottom: 50,
   },
   styleInput: {
     width: 250,

@@ -1,20 +1,15 @@
-import React from 'react';
-import { FlatList, Text, View, StyleSheet } from 'react-native';
+import { FlatList, Text, StyleSheet, View } from 'react-native';
 
-import { Card, IconButton, TouchableRipple, FAB } from 'react-native-paper';
+import { Card, TouchableRipple, FAB } from 'react-native-paper';
+
+import TopBarHeader from './TopBarHeader';
 
 
-const CustomList = ({
-  data,
-  onPress,
-  topBarTitleEmploy,
-  onItemPress,
-  onAddPress
-}) => {
+export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPress, onAddPress }) {
 
   const renderItem = ({ item }) => (
     <TouchableRipple onPress={() => onItemPress(item)} rippleColor="rgba(0, 0, 0, .1)">
-      <Card style={styles.card}>
+      <Card style={styles.cardStyle}>
         <Card.Content>
           <Text style={styles.cardTitle}>{item.nombre}</Text>
           <Text style={styles.cardText}>Num: {item.dni}</Text>
@@ -25,51 +20,27 @@ const CustomList = ({
 
   return (
     <>
-      <View style={styles.topbarBackground}>
-        <View style={styles.topbarContent}>
-          <IconButton icon="arrow-left"
-            onPress={onPress}
-            style={styles.backButton}
-            iconColor="white">
-          </IconButton>
-          <Text style={styles.topbarTitle}>{topBarTitleEmploy}</Text>
-        </View>
-      </View>
+      <TopBarHeader
+        showTopBar={true}
+        topBarTitle={topBarTitleEmploy}
+        onBack={onPress} />
       <FlatList
         data={data}
         renderItem={renderItem}
         keyExtractor={(item) => item.dni.toString()}
-        contentContainerStyle={[styles.listContent, { paddingTop: 120 }]}
-      />
+        contentContainerStyle={styles.listContent} />
       <FAB
         icon="account-plus"
-        style={styles.fab}
+        style={styles.fabStyle}
         onPress={onAddPress}
-        color="white"
-      />
+        color="white" />
     </>
   );
 };
 
-export default CustomList;
-
 const styles = StyleSheet.create({
-  topbarBackground: {
-    backgroundColor: '#5124A5',
-    width: '100%',
-    height: 100,
-    justifyContent: 'center',
-    position: 'absolute',
-    top: 0,
-    zIndex: 2,
-  },
   backButton: {
     alignSelf: 'flex-start',
-  },
-  topbarContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
   },
   topbarTitle: {
     color: 'white',
@@ -77,15 +48,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   listContent: {
-    paddingBottom: 20,
     paddingHorizontal: 16,
+    paddingTop: 24
   },
-  card: {
+  cardStyle: {
     marginBottom: 10,
     padding: 16,
     borderRadius: 16,
     backgroundColor: '#ffffff',
-    elevation: 3,
   },
   cardTitle: {
     fontSize: 20,
@@ -94,9 +64,9 @@ const styles = StyleSheet.create({
   },
   cardText: {
     fontSize: 18,
-    color: '#555',
+    // color: '#555',
   },
-  fab: {
+  fabStyle: {
     position: 'absolute',
     right: 24,
     bottom: 34,
