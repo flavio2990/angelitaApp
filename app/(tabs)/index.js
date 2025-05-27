@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { StatusBar, StyleSheet, View, Image, ScrollView } from 'react-native';
+import { StatusBar, StyleSheet, View, Image, Dimensions } from 'react-native';
 
 
 import CustomModal from '@/components/CustomModal';
@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR } from './../../constants/Strings';
 
+const { height } = Dimensions.get('window');
 
 export default function LogScreen() {
   const [username, setUsername] = React.useState("");
@@ -206,6 +207,7 @@ export default function LogScreen() {
 
                 {/* modal eleccion de area */}
                 <CustomModal
+                  cardMarginTop={height * 0.3}
                   visible={modalAreaVisible}
                   onDismiss={() => setModalAreaVisible(false)}
                   title={TITLES.selectArea}
@@ -218,6 +220,7 @@ export default function LogScreen() {
 
                 {/* modal eleccion de empleados/pacientes */}
                 <CustomModal
+                  cardMarginTop={height * 0.2}
                   visible={modalUserTypeVisible}
                   onDismiss={() => setModalUserTypeVisible(false)}
                   topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
@@ -253,6 +256,7 @@ export default function LogScreen() {
             setModalUserTypeVisible(true);
             setAddMode(false);
           }}
+          cardMarginTop={height * 0.07}
         >
           <EditPersonForm
             person={newPerson}
@@ -263,6 +267,7 @@ export default function LogScreen() {
 
         {/* modal con detalles */}
         <CustomModal
+          cardMarginTop={height * 0.07}
           visible={detailModalVisible}
           onRequestClose={() => {
             setNoDataModalVisible(false);
@@ -336,6 +341,7 @@ export default function LogScreen() {
 
         {/* Modal para editar datos */}
         <CustomModal
+          cardMarginTop={height * 0.07}
           visible={editModalVisible}
           onRequestClose={() => setEditModalVisible(false)}
           showTopbar={true}
@@ -368,10 +374,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    top: 25,
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     padding: 16,
   },
@@ -383,7 +387,6 @@ const styles = StyleSheet.create({
     height: 150,
     width: 150,
     borderRadius: 100,
-    resizeMode: 'cover',
     marginBottom: 12,
   },
   titleText: {

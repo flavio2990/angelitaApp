@@ -1,7 +1,7 @@
-import React from 'react';
 import { Modal as PaperModal, Portal, Text, Button, Card, IconButton } from 'react-native-paper';
 import { View, StyleSheet, Dimensions, StatusBar, Platform, ScrollView } from 'react-native';
 
+import TopBarHeader from '@/components/TopBarHeader';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,6 +21,7 @@ const CustomModal = ({
   isEditModal = false,
   onSavePress,
   centerTopbarTitle = false,
+  cardMarginTop = 0,
 }) => {
   return (
     <Portal>
@@ -30,26 +31,14 @@ const CustomModal = ({
         contentContainerStyle={styles.fullscreenContainer}
       >
         {showTopbar && (
-          <View style={styles.topbarBackground}>
-            <View style={styles.topbarContent}>
-              {onBack && (
-                <IconButton
-                  icon="arrow-left"
-                  onPress={onBack}
-                  iconColor="white"
-                  style={styles.backButton}
-                />
-              )}
-              <Text
-                style={[
-                  styles.topbarTextTitle,
-                  centerTopbarTitle && { textAlign: 'center', flex: 1 },
-                ]}
-              >{topbarTitle}</Text>
-            </View>
-          </View>
+          <TopBarHeader
+            showTopBar={true}
+            topBarTitle={topbarTitle}
+            onBack={onBack}
+            centerTitle={centerTopbarTitle}
+          />
         )}
-        <Card style={styles.theCard}>
+        <Card style={[styles.theCard, cardMarginTop !== undefined ? { marginTop: cardMarginTop } : null]}>
           <View style={styles.titleWrapper}>
             <Text style={styles.title}>{title}</Text>
           </View>
@@ -79,7 +68,7 @@ const CustomModal = ({
           </Card.Content>
         </Card>
         {isDetailModal && (
-          <View >
+          <View style={{ alignItems: 'center' }}>
             <Button
               mode="contained"
               onPress={onModifyPress}
@@ -101,7 +90,7 @@ const CustomModal = ({
           </View>
         )}
         {isEditModal && (
-          <View>
+          <View style={{ alignItems: 'center' }}>
             <Button
               mode="contained"
               onPress={onSavePress}
@@ -122,11 +111,12 @@ export default CustomModal;
 
 const styles = StyleSheet.create({
   fullscreenContainer: {
+    flex: 1,
     backgroundColor: 'white',
     width,
     height,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-start',
+    // alignItems: 'stretch',
     borderColor: '#5124A5',
   },
   topbar: {
@@ -167,7 +157,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     maxHeight: height * 0.6,
     overflow: 'hidden',
-    marginTop: height * 0.1,
+    marginTop: height * 0.2,
     alignSelf: 'center',
   },
   cardContent: {
@@ -186,18 +176,6 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontWeight: 'bold',
     fontSize: 18,
-  },
-  topbarBackground: { // ver aca para el status bar
-    backgroundColor: '#5124A5',
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Espacio para el StatusBar
-    height: Platform.OS === 'android' ? 100 + StatusBar.currentHeight : 100, // Ajustar altura total
-    position: 'absolute',
-    top: 0,
-    zIndex: 2,
-    marginBottom: 30,
   },
   topbarContent: {
     flexDirection: 'row',
