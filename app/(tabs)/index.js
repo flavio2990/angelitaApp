@@ -136,6 +136,22 @@ export default function LogScreen() {
     }
   };
 
+  function getTopBarTitle(type, TOP_BAR) {
+    if (!type) return TOP_BAR.topBarTitleEmploy;
+    const t = type.toLowerCase();
+    if (t.includes('paciente')) return TOP_BAR.topBarTitlePatient;
+    if (t.includes('enfermero')) return TOP_BAR.topBarTitleEmploy;
+    return TOP_BAR.topBarTitleEmploy;
+  }
+
+  function getModalTitle(type, MODAL_TITLES) {
+    if (!type) return MODAL_TITLES.modalTitleEmploy;
+    const t = type.toLowerCase();
+    if (t.includes('paciente')) return MODAL_TITLES.modalTitlePatient;
+    if (t.includes('enfermero')) return MODAL_TITLES.modalTitleEmploy;
+    return MODAL_TITLES.modalTitleEmploy;
+  }
+
   const [asyncPeopleData, setAsyncPeopleData] = React.useState([]);
   React.useEffect(() => {
     const loadPeople = async () => {
@@ -158,11 +174,7 @@ export default function LogScreen() {
             )}
             onPress={handleBackPress}
             onItemPress={handleItemPress}
-            topBarTitleEmploy={
-              userType?.toLowerCase() === 'pacientes'
-                ? TOP_BAR.topBarTitlePatient
-                : TOP_BAR.topBarTitleEmploy
-            }
+            topBarTitleEmploy={getTopBarTitle(userType, TOP_BAR)}
             onAddPress={() => {
               setNewPerson({});
               setNoDataModalVisible(true);
@@ -275,16 +287,8 @@ export default function LogScreen() {
           }}
           showTopbar={true}
           onBack={() => setDetailModalVisible(false)}
-          topbarTitle={
-            userType === 'pacientes'
-              ? TOP_BAR.topBarModalTitlePatient
-              : TOP_BAR.topBarTitleEmploy
-          }
-          title={
-            userType === 'pacientes'
-              ? MODAL_TITLES.modalTitlePatient
-              : MODAL_TITLES.modalTitleEmploy
-          }
+          topbarTitle={getTopBarTitle(userType, TOP_BAR)}
+          title={getModalTitle(userType, MODAL_TITLES)}
           isDetailModal={true}
           onGoToPlanPress={() => console.log('Ir a planilla presionado')}
           onModifyPress={handleModifyPress}
