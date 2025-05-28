@@ -33,6 +33,9 @@ export default function LogScreen() {
   const [noDataModalVisible, setNoDataModalVisible] = React.useState(false);
   const [newPerson, setNewPerson] = React.useState({});
   const [addMode, setAddMode] = React.useState(false);
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+  const [saveSuccess, setSaveSuccess] = React.useState(false);
+  const [originalDni, setOriginalDni] = React.useState(null);
 
 
   const theme = {
@@ -97,6 +100,7 @@ export default function LogScreen() {
     setDetailModalVisible(false);
     setEditablePerson({ ...selectedPerson });
     setEditModalVisible(true);
+    setOriginalDni(selectedPerson.dni);
   };
 
   const handleSaveNewPerson = async () => {
@@ -115,27 +119,6 @@ export default function LogScreen() {
     }
   };
 
-  const handleSaveEditPerson = async () => {
-    try {
-      const stored = await AsyncStorage.getItem('peopleData');
-      let peopleList = stored ? JSON.parse(stored) : [];
-
-      const index = peopleList.findIndex(p => p.dni === editablePerson.dni);
-
-      if (index !== -1) {
-        peopleList[index] = editablePerson;
-        await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
-        setEditModalVisible(false);
-        setDetailModalVisible(false);
-        setSelectedPerson(null);
-        setShowEmployeeList(false);
-        setTimeout(() => setShowEmployeeList(true), 0);
-      }
-    } catch (error) {
-      console.error("Error actualizando persona:", error);
-    }
-  };
-
   function getTopBarTitle(type, TOP_BAR) {
     if (!type) return TOP_BAR.topBarTitleEmploy;
     const t = type.toLowerCase();
@@ -151,6 +134,23 @@ export default function LogScreen() {
     if (t.includes('enfermero')) return MODAL_TITLES.modalTitleEmploy;
     return MODAL_TITLES.modalTitleEmploy;
   }
+
+  const handleSaveEditPerson = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('peopleData');
+      let peopleList = stored ? JSON.parse(stored) : [];
+      const index = peopleList.findIndex(p => p.dni === originalDni);
+      if (index !== -1) {
+        peopleList[index] = editablePerson;
+        await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
+
+        setShowEmployeeList(false);
+        setTimeout(() => setShowEmployeeList(true), 0);
+      }
+    } catch (error) {
+      console.error("Error actualizando persona:", error);
+    }
+  };
 
   const [asyncPeopleData, setAsyncPeopleData] = React.useState([]);
   React.useEffect(() => {
@@ -356,7 +356,10 @@ export default function LogScreen() {
           }}
           title="Modificar Información:"
           isEditModal={true}
-          onSavePress={handleSaveEditPerson}
+          onSavePress={() => {
+            setEditModalVisible(false);
+            setTimeout(() => setShowConfirmModal(true), 300);
+          }}
         >
           <View
             contentContainerStyle={{ padding: 20, backgroundColor: 'rgba(0, 255, 0, 0.2)' }}
@@ -369,6 +372,55 @@ export default function LogScreen() {
             />
           </View>
         </CustomModal>
+
+        {/* modal de confirmación */}
+        <CustomModal
+          visible={showConfirmModal}
+          onDismiss={() => {
+            setShowConfirmModal(false);
+            setSaveSuccess(false);
+          }}
+          title={saveSuccess ? "¡GUARDADO!" : "¿Guardar todo?"}
+          centerCard={true}
+          actions={
+            saveSuccess
+              ? [
+                {
+                  label: "OK",
+                  mode: "contained",
+                  buttonColor: "white",
+                  textColor: "#5124A5",
+                  onPress: () => {
+                    setShowConfirmModal(false);
+                    setSaveSuccess(false);
+                    setEditModalVisible(false);
+                    setDetailModalVisible(false);
+                    setSelectedPerson(null);
+                    setOriginalDni(null);
+                  }
+                }
+              ]
+              : [
+                {
+                  label: "Sí",
+                  mode: "contained",
+                  buttonColor: "white",
+                  textColor: "#5124A5",
+                  onPress: async () => {
+                    await handleSaveEditPerson();
+                    setSaveSuccess(true);
+                  }
+                },
+                {
+                  label: "No",
+                  mode: "outlined",
+                  buttonColor: "white",
+                  textColor: "#5124A5",
+                  onPress: () => setShowConfirmModal(false)
+                }
+              ]
+          }
+        />
       </SafeAreaView>
     </PaperProvider>
   );

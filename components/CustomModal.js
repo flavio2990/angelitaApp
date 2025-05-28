@@ -22,13 +22,17 @@ const CustomModal = ({
   onSavePress,
   centerTopbarTitle = false,
   cardMarginTop = 0,
+  centerCard = false,
 }) => {
   return (
     <Portal>
       <PaperModal
         visible={visible}
         onDismiss={onDismiss}
-        contentContainerStyle={styles.fullscreenContainer}
+        contentContainerStyle={[
+          styles.fullscreenContainer,
+          centerCard && { justifyContent: 'center', alignItems: 'center' }
+        ]}
       >
         {showTopbar && (
           <TopBarHeader
