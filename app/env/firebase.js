@@ -1,0 +1,1 @@
+export const FIREBASE_DB_URL = "https://recidenciasapp-default-rtdb.firebaseio.com/";
