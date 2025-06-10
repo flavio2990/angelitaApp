@@ -1,11 +1,14 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import { Dropdown } from 'react-native-paper-dropdown';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 export default function EditPersonForm({ person, onChange, isAdding, selectedArea, userType }) {
   const [showDropDown, setShowDropDown] = React.useState(false);
+
+const insets = useSafeAreaInsets();
 
   const showArea =
     isAdding &&
@@ -13,8 +16,16 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
     person.tipo !== 'Administrador';
 
   return (
+    <KeyboardAvoidingView
+    behavior={Platform.OS === "ios" ? "padding" : "height"}
+    style={{ flex: 1 }}
+    keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 80} >
     <View style={styles.container}>
-      <ScrollView style={{ flexGrow: 1, width: '100%' }}>
+      <ScrollView 
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+      style={{ flexGrow: 1 }}
+      >
         {isAdding && (
           <View style={styles.dropDownContainer}>
             <Dropdown
@@ -132,16 +143,17 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
         />
       </ScrollView>
     </View>
+</KeyboardAvoidingView>
+
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingBottom: 50,
   },
   styleInput: {
-    width: 250,
+    width: 350,
     marginBottom: 12,
   },
   dropDownContainer: {

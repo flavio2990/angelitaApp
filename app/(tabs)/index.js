@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { StatusBar, StyleSheet, View, Image, Dimensions } from 'react-native';
+import { StatusBar, StyleSheet, View, Image, Dimensions, TouchableOpacity } from 'react-native';
 
 
 import CustomModal from '@/components/CustomModal';
@@ -8,12 +8,15 @@ import CustomList from '@/components/CustomList';
 import { ThemedText } from '@/components/ThemedText';
 import CustomButton from '@/components/CustomButton';
 import EditPersonForm from '@/components/EditPersonForm';
+import PersonDetails from '@/components/PersonDetails';
+import RegisterAdminForm from '../../components/RegisterAdminForm';
+
 
 import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR } from './../../constants/Strings';
+import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from './../../constants/Strings';
 
 const { height } = Dimensions.get('window');
 
@@ -36,6 +39,10 @@ export default function LogScreen() {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState(false);
   const [originalDni, setOriginalDni] = React.useState(null);
+  const [showRoleModal, setShowRoleModal] = React.useState(true);
+  const [isAdminSelected, setIsAdminSelected] = React.useState(false);
+  const [emailTouched, setEmailTouched] = React.useState(false);
+  const [showRegisterModal, setShowRegisterModal] = React.useState(false);
 
 
   const theme = {
@@ -109,22 +116,25 @@ export default function LogScreen() {
       let peopleList = stored ? JSON.parse(stored) : [];
 
       const updatedList = [...peopleList, newPerson];
-      await AsyncStorage.setItem('peopleData', JSON.stringify(updatedList));
+      await AsyncStorage.setItem('peopleData', JSON.stringify([...asyncPeopleData, newPerson, updatedList]));
+
       console.log("Guardado en AsyncStorage:", newPerson);
       setNoDataModalVisible(false);
       setNewPerson({});
       setShowEmployeeList(true);
+      setAsyncPeopleData(stored ? JSON.parse(stored) : []);
+      setAddMode(false);
     } catch (error) {
       console.error("Error guardando persona:", error);
     }
   };
 
-  function getTopBarTitle(type, TOP_BAR) {
-    if (!type) return TOP_BAR.topBarTitleEmploy;
+  function getTopBarTitle(type, TOP_BAR_HEADER_TITLES) {
+    if (!type) return TOP_BAR_HEADER_TITLES.topBarTitleEmploy;
     const t = type.toLowerCase();
-    if (t.includes('paciente')) return TOP_BAR.topBarTitlePatient;
-    if (t.includes('enfermero')) return TOP_BAR.topBarTitleEmploy;
-    return TOP_BAR.topBarTitleEmploy;
+    if (t.includes('paciente')) return TOP_BAR_HEADER_TITLES.topBarTitlePatient;
+    if (t.includes('enfermero')) return TOP_BAR_HEADER_TITLES.topBarTitleEmploy;
+    return TOP_BAR_HEADER_TITLES.topBarTitleEmploy;
   }
 
   function getModalTitle(type, MODAL_TITLES) {
@@ -153,6 +163,23 @@ export default function LogScreen() {
   };
 
   const [asyncPeopleData, setAsyncPeopleData] = React.useState([]);
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function generateRandomCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos
+  }
+
+  // function handleSendCode() {
+  //   const code = generateRandomCode();
+  //   setSentCode(code);
+  //   setCodeStep(true);
+  //   // Aquí deberías enviar el código por mail usando tu backend o Firebase en el futuro
+  //   alert(`Código de validación enviado a ${registerEmail} (simulado): ${code}`);
+  // }
+
   React.useEffect(() => {
     const loadPeople = async () => {
       const stored = await AsyncStorage.getItem('peopleData');
@@ -164,6 +191,33 @@ export default function LogScreen() {
   return (
     <PaperProvider theme={theme}>
       <StatusBar />
+
+      {/* modal inicial para el roll */}
+      <CustomModal
+        visible={showRoleModal}
+        onDismiss={() => { }}
+        title="Seleccione:"
+        centerCard={true}
+        actions={[]}
+      >
+        <CustomButton
+          label="Soy Administrador"
+          onPress={() => {
+            setIsAdminSelected(true);
+            setShowRoleModal(false);
+          }}
+        />
+        <View style={{ height: 16 }} />
+        <CustomButton
+          label="Soy Empleado"
+          onPress={() => {
+            setIsAdminSelected(false);
+            setShowRoleModal(false);
+          }}
+          style={{ marginTop: 16 }}
+        />
+      </CustomModal>
+
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {showEmployeeList ? (
           <CustomList
@@ -174,7 +228,7 @@ export default function LogScreen() {
             )}
             onPress={handleBackPress}
             onItemPress={handleItemPress}
-            topBarTitleEmploy={getTopBarTitle(userType, TOP_BAR)}
+            topBarTitleEmploy={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
             onAddPress={() => {
               setNewPerson({});
               setNoDataModalVisible(true);
@@ -197,11 +251,23 @@ export default function LogScreen() {
                 <Text variant="titleLarge" style={styles.bigWelcomeText}>Bienvenido</Text>
                 <TextInput
                   value={username}
-                  onChangeText={setUsername}
+                  onChangeText={text => {
+                    setUsername(text);
+                    if (!emailTouched) setEmailTouched(true);
+                  }}
                   label="Usuario"
                   style={styles.textInput}
                   theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onBlur={() => setEmailTouched(true)}
                 />
+                {emailTouched && !isValidEmail(username) && (
+                  <Text style={{ color: 'red', marginTop: 4, marginBottom: 4, fontSize: 18 }}>
+                    Ingrese un mail válido
+                  </Text>
+                )}
                 <View style={{ margin: 8 }} />
                 <TextInput
                   label="Contraseña"
@@ -215,14 +281,47 @@ export default function LogScreen() {
                 <CustomButton
                   onPress={() => setModalAreaVisible(true)}
                   label="INGRESAR"
+                  disabled={!isValidEmail(username)}
                 />
+                {isAdminSelected && (
+                  <TouchableOpacity
+                    onPress={() => setShowRegisterModal(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{
+                      color: '#5124A5',
+                      fontWeight: 'bold',
+                      marginTop: 16,
+                      fontSize: 18,
+                    }}
+                    >
+                      Crea Tu Usuario
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* modal registro de usuario */}
+                <CustomModal
+                  visible={showRegisterModal}
+                  onDismiss={() => setShowRegisterModal(false)}
+                  title="Crear Usuario Administrador"
+                  centerCard={true}
+                >
+                  <RegisterAdminForm
+                    onRegister={(email, password) => {
+                      setShowRegisterModal(false);
+                    }}
+                    onSendCode={(email, code) => {
+                    }}
+                  />
+                </CustomModal>
 
                 {/* modal eleccion de area */}
                 <CustomModal
                   cardMarginTop={height * 0.3}
                   visible={modalAreaVisible}
                   onDismiss={() => setModalAreaVisible(false)}
-                  title={TITLES.selectArea}
+                  title={CARD_TITLES.selectArea}
                   actions={AREA_OPTIONS.map(opt => ({
                     label: opt.label,
                     icon: opt.icon,
@@ -259,7 +358,7 @@ export default function LogScreen() {
           visible={noDataModalVisible}
           onRequestClose={() => setNoDataModalVisible(false)}
           showTopbar={true}
-          topbarTitle={addMode ? TOP_BAR.topBarNewData : TOP_BAR.topBarNoData}
+          topbarTitle={addMode ? TOP_BAR_HEADER_TITLES.topBarNewData : TOP_BAR_HEADER_TITLES.topBarNoData}
           title={MODAL_TITLES.modalNoData}
           isEditModal={true}
           onSavePress={handleSaveNewPerson}
@@ -287,59 +386,14 @@ export default function LogScreen() {
           }}
           showTopbar={true}
           onBack={() => setDetailModalVisible(false)}
-          topbarTitle={getTopBarTitle(userType, TOP_BAR)}
+          topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
           title={getModalTitle(userType, MODAL_TITLES)}
           isDetailModal={true}
           onGoToPlanPress={() => console.log('Ir a planilla presionado')}
           onModifyPress={handleModifyPress}
         >
-          <View style={{ padding: 20 }}>
-            <Text>
-              <Text style={styles.detailsModal}>Nombre: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.nombre}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>Edad: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.edad}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>DNI: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.dni}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>Nacimiento: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.nacimiento}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>Ingresó: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.ingreso}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>Obra Social: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.coberturaSocial}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>Nacionalidad: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.nacionalidad}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>Estado Civil: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.estadoCivil}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>Area: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.area}</Text>
-            </Text>
-            <Text>
-              <Text style={styles.detailsModal}>Tipo: </Text>
-              <Text style={styles.dynamicText}>{selectedPerson?.tipo}</Text>
-            </Text>
-            {userType === 'pacientes' && (
-              <Text>
-                <Text style={styles.detailsModal}>Peso: </Text>
-                <Text style={styles.dynamicText}>{selectedPerson?.peso}</Text>
-              </Text>
-            )}
+          <View >
+            <PersonDetails person={selectedPerson} userType={userType} />
           </View>
         </CustomModal>
 
@@ -483,14 +537,5 @@ const styles = StyleSheet.create({
   buttonLabel: {
     fontWeight: 'bold',
     fontSize: 20,
-  },
-  detailsModal: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  dynamicText: {
-    fontSize: 16,
-    color: '#0a0a1e',
-    fontWeight: 'regular',
   },
 });

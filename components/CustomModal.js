@@ -8,7 +8,7 @@ const { width, height } = Dimensions.get('window');
 const CustomModal = ({
   visible,
   onDismiss,
-  title = "Colocar el titulo que corresponda",
+  title = "Colocar el titulo aqui",
   content = null,
   actions = [],
   showTopbar = false,
@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  titleWrapper: {
+  titleWrapper: { // Styles for the title wrapper
     backgroundColor: '#5124A5',
-    width: 320,
+    width: '100%',
     paddingVertical: 12,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
@@ -154,9 +154,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: 'white',
   },
-  theCard: {
+  theCard: { // Styles for the card
     backgroundColor: '#ffffff',
-    width: '70%',
+    width: '95%',
     borderRadius: 50,
     marginVertical: 10,
     maxHeight: height * 0.6,
