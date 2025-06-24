@@ -9,18 +9,18 @@ import { ThemedText } from '@/components/ThemedText';
 import CustomButton from '@/components/CustomButton';
 import EditPersonForm from '@/components/EditPersonForm';
 import PersonDetails from '@/components/PersonDetails';
-import RegisterAdminForm from '../../components/RegisterAdminForm';
+import RegisterAdminForm from '../components/RegisterAdminForm';
 
 
 import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from './../../constants/Strings';
+import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
 
 const { height } = Dimensions.get('window');
 
-export default function LogScreen() {
+export default function MasterScreen() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [modalAreaVisible, setModalAreaVisible] = React.useState(false);

@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "844528127037",
+    "firebase_url": "https://recidenciasapp-default-rtdb.firebaseio.com",
+    "project_id": "recidenciasapp",
+    "storage_bucket": "recidenciasapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:844528127037:android:159900d40f776f1d1dee54",
+        "android_client_info": {
+          "package_name": "com.hogaresapp.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIMLUf5yxWFcBXxxsV63Mccv_4P6JFmHE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
