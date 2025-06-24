@@ -13,11 +13,8 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
-    },
+      "package": "com.hogaresApp.app"
+      },
     "web": {
       "bundler": "metro",
       "output": "static",
