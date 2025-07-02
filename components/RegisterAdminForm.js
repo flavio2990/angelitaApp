@@ -3,8 +3,9 @@ import { Text } from 'react-native';
 import { TextInput } from 'react-native-paper';
 
 import CustomButton from './CustomButton';
-import { auth } from './../env/firebase';
+import { auth, database } from './../env/firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { ref, set } from "firebase/database";
 
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -20,6 +21,14 @@ export default function RegisterAdminForm({ onRegister }) {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, registerEmail, registerPassword);
             const user = userCredential.user;
+            const uid = user.uid;
+
+            await set(ref(database, 'users/' + uid), {
+                email: registerEmail,
+                role: "admin",
+                createdAt: new Date().toISOString(),
+                uid: uid
+            });
 
             await sendEmailVerification(user);
 

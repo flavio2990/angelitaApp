@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { getDatabase } from "firebase/database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const firebaseConfig = {
@@ -8,7 +9,8 @@ const firebaseConfig = {
   projectId: "recidenciasapp",
   storageBucket: "recidenciasapp.appspot.com",
   messagingSenderId: "844528127037",
-  appId: "1:844528127037:android:159900d40f776f1d1dee54"
+  appId: "1:844528127037:android:159900d40f776f1d1dee54",
+  databaseURL: "https://hogaresapp-default-rtdb.firebaseio.com/"
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -17,5 +19,7 @@ const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage)
 });
 
-export { auth };
-export const FIREBASE_DB_URL = "https://recidenciasapp-default-rtdb.firebaseio.com/";
+const database = getDatabase(app);
+
+export { auth, database };
+export const FIREBASE_DB_URL = "https://hogaresapp-default-rtdb.firebaseio.com/";
