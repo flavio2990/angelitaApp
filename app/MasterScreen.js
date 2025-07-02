@@ -15,6 +15,9 @@ import RegisterAdminForm from '../components/RegisterAdminForm';
 import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, database } from "../env/firebase";
+import { ref, set } from "firebase/database";
 
 import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
 
@@ -172,13 +175,6 @@ export default function MasterScreen() {
     return Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos
   }
 
-  // function handleSendCode() {
-  //   const code = generateRandomCode();
-  //   setSentCode(code);
-  //   setCodeStep(true);
-  //   // Aquí deberías enviar el código por mail usando tu backend o Firebase en el futuro
-  //   alert(`Código de validación enviado a ${registerEmail} (simulado): ${code}`);
-  // }
 
   React.useEffect(() => {
     const loadPeople = async () => {
@@ -187,6 +183,8 @@ export default function MasterScreen() {
     };
     if (showEmployeeList) loadPeople();
   }, [showEmployeeList, noDataModalVisible]);
+
+
 
   return (
     <PaperProvider theme={theme}>
