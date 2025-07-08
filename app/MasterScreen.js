@@ -1,4 +1,6 @@
 import React from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 
 import { StatusBar, StyleSheet, View, Image, Dimensions, TouchableOpacity } from 'react-native';
 
@@ -15,10 +17,6 @@ import RegisterAdminForm from '../components/RegisterAdminForm';
 import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, database } from "../env/firebase";
-import { ref, set } from "firebase/database";
-
 import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
 
 const { height } = Dimensions.get('window');
@@ -47,6 +45,7 @@ export default function MasterScreen() {
   const [emailTouched, setEmailTouched] = React.useState(false);
   const [showRegisterModal, setShowRegisterModal] = React.useState(false);
 
+  const router = useRouter();
 
   const theme = {
     ...DefaultTheme,
@@ -115,20 +114,36 @@ export default function MasterScreen() {
 
   const handleSaveNewPerson = async () => {
     try {
+      // Generar ID único para la persona
+      const personId = Date.now().toString();
+      const personWithId = { ...newPerson, id: personId };
+
+      // 1. Guardar en AsyncStorage
       const stored = await AsyncStorage.getItem('peopleData');
       let peopleList = stored ? JSON.parse(stored) : [];
+      const updatedList = [...peopleList, personWithId];
+      await AsyncStorage.setItem('peopleData', JSON.stringify(updatedList));
 
-      const updatedList = [...peopleList, newPerson];
-      await AsyncStorage.setItem('peopleData', JSON.stringify([...asyncPeopleData, newPerson, updatedList]));
+      // 2. Guardar en Realtime Database
+      const { ref, set } = await import("firebase/database");
+      const { database } = await import("../env/firebase");
+      
+      await set(ref(database, `people/${personId}`), {
+        ...personWithId,
+        createdAt: new Date().toISOString()
+      });
 
-      console.log("Guardado en AsyncStorage:", newPerson);
+      console.log("Guardado en AsyncStorage y Realtime Database:", personWithId);
+      
+      // Actualizar el estado local inmediatamente
+      setAsyncPeopleData(updatedList);
       setNoDataModalVisible(false);
       setNewPerson({});
       setShowEmployeeList(true);
-      setAsyncPeopleData(stored ? JSON.parse(stored) : []);
       setAddMode(false);
     } catch (error) {
       console.error("Error guardando persona:", error);
+      alert("Error al guardar: " + error.message);
     }
   };
 
@@ -172,17 +187,28 @@ export default function MasterScreen() {
   }
 
   function generateRandomCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
 
-  React.useEffect(() => {
+ useEffect(() => {
     const loadPeople = async () => {
       const stored = await AsyncStorage.getItem('peopleData');
       setAsyncPeopleData(stored ? JSON.parse(stored) : []);
     };
     if (showEmployeeList) loadPeople();
   }, [showEmployeeList, noDataModalVisible]);
+
+  // Cargar datos al iniciar la app
+  useEffect(() => {
+    const loadInitialData = async () => {
+      const stored = await AsyncStorage.getItem('peopleData');
+      setAsyncPeopleData(stored ? JSON.parse(stored) : []);
+    };
+    loadInitialData();
+  }, []);
+
+
 
 
 
@@ -387,7 +413,15 @@ export default function MasterScreen() {
           topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
           title={getModalTitle(userType, MODAL_TITLES)}
           isDetailModal={true}
-          onGoToPlanPress={() => console.log('Ir a planilla presionado')}
+          onGoToPlanPress={() => {
+            setDetailModalVisible(false);
+            if (selectedPerson?.nombre) {
+              router.push({
+                pathname: '/SpreadsheetManagementScreen',
+                params: { patientName: selectedPerson.nombre }
+              });
+            }
+          }}
           onModifyPress={handleModifyPress}
         >
           <View >

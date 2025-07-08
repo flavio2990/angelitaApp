@@ -26,6 +26,6 @@ export const CARD_TITLES = {
     modalTitleEmployPatients: "Empleados/ Pacientes",
     modalTitlePatient: "Datos del Paciente:",
     modalTitleEmploy: "Datos del Empleado:",
-    modalNoData: "Ingresalos aquí",
+    modalNoData: "Ingresalos aquí:",
   };
   
