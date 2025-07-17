@@ -18,6 +18,8 @@ import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
+import { ref, get, onValue } from 'firebase/database';
+import { database } from '../env/firebase';
 
 const { height } = Dimensions.get('window');
 
@@ -133,7 +135,7 @@ export default function MasterScreen() {
         createdAt: new Date().toISOString()
       });
 
-      console.log("Guardado en AsyncStorage y Realtime Database:", personWithId);
+
       
       // Actualizar el estado local inmediatamente
       setAsyncPeopleData(updatedList);
@@ -148,33 +150,42 @@ export default function MasterScreen() {
   };
 
   function getTopBarTitle(type, TOP_BAR_HEADER_TITLES) {
-    if (!type) return TOP_BAR_HEADER_TITLES.topBarTitleEmploy;
+    if (!type) return TOP_BAR_HEADER_TITLES.topBarModalTitleEmploy;
     const t = type.toLowerCase();
-    if (t.includes('paciente')) return TOP_BAR_HEADER_TITLES.topBarTitlePatient;
-    if (t.includes('enfermero')) return TOP_BAR_HEADER_TITLES.topBarTitleEmploy;
-    return TOP_BAR_HEADER_TITLES.topBarTitleEmploy;
+    if (t === 'paciente') return TOP_BAR_HEADER_TITLES.topBarModalTitlePatient;
+    if (t === 'enfermería') return TOP_BAR_HEADER_TITLES.topBarModalTitleEmploy;
+    return TOP_BAR_HEADER_TITLES.topBarModalTitleEmploy;
   }
 
   function getModalTitle(type, MODAL_TITLES) {
     if (!type) return MODAL_TITLES.modalTitleEmploy;
     const t = type.toLowerCase();
-    if (t.includes('paciente')) return MODAL_TITLES.modalTitlePatient;
-    if (t.includes('enfermero')) return MODAL_TITLES.modalTitleEmploy;
+    if (t === 'paciente') return MODAL_TITLES.modalTitlePatient;
+    if (t === 'enfermería') return MODAL_TITLES.modalTitleEmploy;
     return MODAL_TITLES.modalTitleEmploy;
   }
 
   const handleSaveEditPerson = async () => {
     try {
+      // 1. Actualizar en AsyncStorage
       const stored = await AsyncStorage.getItem('peopleData');
       let peopleList = stored ? JSON.parse(stored) : [];
       const index = peopleList.findIndex(p => p.dni === originalDni);
       if (index !== -1) {
         peopleList[index] = editablePerson;
         await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
-
-        setShowEmployeeList(false);
-        setTimeout(() => setShowEmployeeList(true), 0);
       }
+
+      // 2. Actualizar en Firebase
+      const { ref, set } = await import("firebase/database");
+      const { database } = await import("../env/firebase");
+      await set(ref(database, `people/${editablePerson.id}`), {
+        ...editablePerson,
+        updatedAt: new Date().toISOString()
+      });
+
+      // 3. Sincronizar desde Firebase para asegurar que todo esté igual en todos los dispositivos
+      // await syncPeopleDataFromFirebase(); // Eliminado
     } catch (error) {
       console.error("Error actualizando persona:", error);
     }
@@ -192,24 +203,20 @@ export default function MasterScreen() {
 
 
  useEffect(() => {
-    const loadPeople = async () => {
-      const stored = await AsyncStorage.getItem('peopleData');
-      setAsyncPeopleData(stored ? JSON.parse(stored) : []);
-    };
-    if (showEmployeeList) loadPeople();
-  }, [showEmployeeList, noDataModalVisible]);
-
-  // Cargar datos al iniciar la app
-  useEffect(() => {
-    const loadInitialData = async () => {
-      const stored = await AsyncStorage.getItem('peopleData');
-      setAsyncPeopleData(stored ? JSON.parse(stored) : []);
-    };
-    loadInitialData();
-  }, []);
-
-
-
+  const peopleRef = ref(database, 'people');
+  const unsubscribe = onValue(peopleRef, async (snapshot) => {
+    if (snapshot.exists()) {
+      const peopleObj = snapshot.val();
+      const peopleList = Object.values(peopleObj);
+      await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
+      setAsyncPeopleData(peopleList);
+    } else {
+      await AsyncStorage.setItem('peopleData', JSON.stringify([]));
+      setAsyncPeopleData([]);
+    }
+  });
+  return () => unsubscribe();
+}, []);
 
 
   return (
@@ -267,7 +274,7 @@ export default function MasterScreen() {
                 style={styles.homeLogo}
               />
               <ThemedText type="title" style={styles.titleText}>
-                Hogar Angelita!
+              Bienvenido a tu Hogar!
               </ThemedText>
             </View>
             <Card style={styles.card}>
@@ -401,18 +408,15 @@ export default function MasterScreen() {
         </CustomModal>
 
         {/* modal con detalles */}
-        <CustomModal
-          cardMarginTop={height * 0.07}
-          visible={detailModalVisible}
-          onRequestClose={() => {
-            setNoDataModalVisible(false);
-            setAddMode(false);
-          }}
-          showTopbar={true}
-          onBack={() => setDetailModalVisible(false)}
-          topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
-          title={getModalTitle(userType, MODAL_TITLES)}
-          isDetailModal={true}
+                  <CustomModal
+            cardMarginTop={height * 0.07}
+            visible={detailModalVisible}
+            onRequestClose={() => setDetailModalVisible(false)}
+            showTopbar={true}
+            onBack={() => setDetailModalVisible(false)}
+            topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
+            title={getModalTitle(userType, MODAL_TITLES)}
+            isDetailModal={true}
           onGoToPlanPress={() => {
             setDetailModalVisible(false);
             if (selectedPerson?.nombre) {

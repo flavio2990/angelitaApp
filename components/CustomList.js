@@ -6,13 +6,15 @@ import TopBarHeader from './TopBarHeader';
 
 
 export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPress, onAddPress }) {
+  console.log("CustomList renderizado con", data?.length, "elementos");
+  console.log("Datos en CustomList:", data);
 
   const renderItem = ({ item }) => (
     <TouchableRipple onPress={() => onItemPress(item)} rippleColor="rgba(0, 0, 0, .1)">
       <Card style={styles.cardStyle}>
         <Card.Content>
-          <Text style={styles.cardTitle}>{item.nombre}</Text>
-          <Text style={styles.cardText}>Num: {item.dni}</Text>
+          <Text style={styles.cardTitle}>{item.nombre || 'Sin nombre'}</Text>
+          <Text style={styles.cardText}>Num: {item.dni || 'Sin DNI'}</Text>
         </Card.Content>
       </Card>
     </TouchableRipple>
@@ -25,10 +27,13 @@ export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPre
         topBarTitle={topBarTitleEmploy}
         onBack={onPress} />
       <FlatList
+        key={`list-${data?.length || 0}`}
         data={data}
         renderItem={renderItem}
-        keyExtractor={(item) => item.dni.toString()}
-        contentContainerStyle={styles.listContent} />
+        keyExtractor={(item) => (item.dni || item.id || Math.random()).toString()}
+        contentContainerStyle={styles.listContent}
+        extraData={data?.length}
+        removeClippedSubviews={false} />
       <FAB
         icon="account-plus"
         style={styles.fabStyle}
@@ -69,7 +74,7 @@ const styles = StyleSheet.create({
   fabStyle: {
     position: 'absolute',
     right: 24,
-    bottom: 34,
+    bottom: 50,
     backgroundColor: '#5124A5',
     zIndex: 10,
   },
