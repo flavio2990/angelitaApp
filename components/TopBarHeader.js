@@ -12,7 +12,13 @@ const TopBarHeader = ({
   if (!showTopBar) return null;
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.safeAreaStyle, style]}>
+    <SafeAreaView
+      edges={['top']}
+      style={[
+        styles.safeAreaStyle,
+        style,
+      ]}
+    >
       <View style={styles.topBar}>
         <View style={styles.left}>
           {onBack && (
@@ -30,7 +36,6 @@ const TopBarHeader = ({
             style={[
               styles.topbarTextTitle,
               centerTopbarTitle && { textAlign: 'center' },
-              { marginLeft: -22 },
             ]}
             numberOfLines={1}
             ellipsizeMode="tail"
@@ -38,6 +43,7 @@ const TopBarHeader = ({
             {topBarTitle}
           </Text>
         </View>
+        <View style={styles.right} />
       </View>
     </SafeAreaView>
   );
@@ -62,6 +68,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  right: {
+    width: 36,
+  },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -70,12 +79,13 @@ const styles = StyleSheet.create({
   backButton: {
     marginLeft: 0,
     marginRight: 0,
-    alignSelf: 'center',
   },
   topbarTextTitle: {
     color: 'white',
     fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
