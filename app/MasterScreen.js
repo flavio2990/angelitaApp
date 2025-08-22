@@ -1,9 +1,12 @@
-import React from 'react';
-import { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
+
 import { useRouter } from 'expo-router';
 
-import { StatusBar, StyleSheet, View, Image, Dimensions, TouchableOpacity } from 'react-native';
+import { StatusBar, StyleSheet, View, Image, Dimensions, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from 'react-native-paper';
 
 import CustomModal from '@/components/CustomModal';
 import CustomList from '@/components/CustomList';
@@ -12,40 +15,50 @@ import CustomButton from '@/components/CustomButton';
 import EditPersonForm from '@/components/EditPersonForm';
 import PersonDetails from '@/components/PersonDetails';
 import RegisterAdminForm from '../components/RegisterAdminForm';
-
-
-import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../components/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
-import { ref, get, onValue } from 'firebase/database';
+
+import { ref, onValue, set } from 'firebase/database';
 import { database } from '../env/firebase';
 
 const { height } = Dimensions.get('window');
 
 export default function MasterScreen() {
-  const [username, setUsername] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [modalAreaVisible, setModalAreaVisible] = React.useState(false);
-  const [modalUserTypeVisible, setModalUserTypeVisible] = React.useState(false);
-  const [selectedArea, setSelectedArea] = React.useState(null);
-  const [selectedOption, setSelectedOption] = React.useState(null);
-  const [showEmployeeList, setShowEmployeeList] = React.useState(false);
-  const [userType, setUserType] = React.useState(null);
-  const [selectedPerson, setSelectedPerson] = React.useState(null);
-  const [detailModalVisible, setDetailModalVisible] = React.useState(false);
-  const [editModalVisible, setEditModalVisible] = React.useState(false);
-  const [editablePerson, setEditablePerson] = React.useState(null);
-  const [noDataModalVisible, setNoDataModalVisible] = React.useState(false);
-  const [newPerson, setNewPerson] = React.useState({});
-  const [addMode, setAddMode] = React.useState(false);
-  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-  const [saveSuccess, setSaveSuccess] = React.useState(false);
-  const [originalDni, setOriginalDni] = React.useState(null);
-  const [showRoleModal, setShowRoleModal] = React.useState(true);
-  const [isAdminSelected, setIsAdminSelected] = React.useState(false);
-  const [emailTouched, setEmailTouched] = React.useState(false);
-  const [showRegisterModal, setShowRegisterModal] = React.useState(false);
+  const { user, loading, login, register, firebaseUser, resendVerification, refreshUser, logout, sendPasswordResetEmail } = useAuth();
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [modalAreaVisible, setModalAreaVisible] = useState(false);
+  const [modalUserTypeVisible, setModalUserTypeVisible] = useState(false);
+  const [selectedArea, setSelectedArea] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showEmployeeList, setShowEmployeeList] = useState(false);
+  const [userType, setUserType] = useState(null);
+  const [selectedPerson, setSelectedPerson] = useState(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editablePerson, setEditablePerson] = useState(null);
+  const [noDataModalVisible, setNoDataModalVisible] = useState(false);
+  const [newPerson, setNewPerson] = useState({});
+  const [addMode, setAddMode] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [originalDni, setOriginalDni] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [isAdminSelected, setIsAdminSelected] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [empleados, setEmpleados] = useState({});
+  const [loginError, setLoginError] = useState(null);
+  const [asyncPeopleData, setAsyncPeopleData] = useState([]);
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const [showLoginAfterVerification, setShowLoginAfterVerification] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [showVerificationModalAfterRegister, setShowVerificationModalAfterRegister] = useState(false);
 
   const router = useRouter();
 
@@ -60,6 +73,10 @@ export default function MasterScreen() {
       placeholder: '#A9A9A9',
     },
   };
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
 
   const handleItemPress = (person) => {
     setSelectedPerson(person);
@@ -115,29 +132,24 @@ export default function MasterScreen() {
   };
 
   const handleSaveNewPerson = async () => {
+    if (!user || !user.uid) {
+      Alert.alert("Debes iniciar sesión como administrador para guardar datos.");
+      return;
+    }
     try {
-      // Generar ID único para la persona
       const personId = Date.now().toString();
       const personWithId = { ...newPerson, id: personId };
 
-      // 1. Guardar en AsyncStorage
       const stored = await AsyncStorage.getItem('peopleData');
       let peopleList = stored ? JSON.parse(stored) : [];
       const updatedList = [...peopleList, personWithId];
       await AsyncStorage.setItem('peopleData', JSON.stringify(updatedList));
 
-      // 2. Guardar en Realtime Database
-      const { ref, set } = await import("firebase/database");
-      const { database } = await import("../env/firebase");
-      
-      await set(ref(database, `people/${personId}`), {
+      await set(ref(database, `admins/${user.uid}/people/${personId}`), {
         ...personWithId,
         createdAt: new Date().toISOString()
       });
 
-
-      
-      // Actualizar el estado local inmediatamente
       setAsyncPeopleData(updatedList);
       setNoDataModalVisible(false);
       setNewPerson({});
@@ -145,7 +157,7 @@ export default function MasterScreen() {
       setAddMode(false);
     } catch (error) {
       console.error("Error guardando persona:", error);
-      alert("Error al guardar: " + error.message);
+      Alert.alert("Error al guardar: " + error.message);
     }
   };
 
@@ -167,7 +179,6 @@ export default function MasterScreen() {
 
   const handleSaveEditPerson = async () => {
     try {
-      // 1. Actualizar en AsyncStorage
       const stored = await AsyncStorage.getItem('peopleData');
       let peopleList = stored ? JSON.parse(stored) : [];
       const index = peopleList.findIndex(p => p.dni === originalDni);
@@ -176,80 +187,604 @@ export default function MasterScreen() {
         await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
       }
 
-      // 2. Actualizar en Firebase
-      const { ref, set } = await import("firebase/database");
-      const { database } = await import("../env/firebase");
-      await set(ref(database, `people/${editablePerson.id}`), {
+      await set(ref(database, `admins/${user.uid}/people/${editablePerson.id}`), {
         ...editablePerson,
         updatedAt: new Date().toISOString()
       });
 
-      // 3. Sincronizar desde Firebase para asegurar que todo esté igual en todos los dispositivos
-      // await syncPeopleDataFromFirebase(); // Eliminado
     } catch (error) {
       console.error("Error actualizando persona:", error);
     }
   };
 
-  const [asyncPeopleData, setAsyncPeopleData] = React.useState([]);
-
-  function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  }
-
-  function generateRandomCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
-
- useEffect(() => {
-  const peopleRef = ref(database, 'people');
-  const unsubscribe = onValue(peopleRef, async (snapshot) => {
-    if (snapshot.exists()) {
-      const peopleObj = snapshot.val();
-      const peopleList = Object.values(peopleObj);
-      await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
-      setAsyncPeopleData(peopleList);
-    } else {
-      await AsyncStorage.setItem('peopleData', JSON.stringify([]));
-      setAsyncPeopleData([]);
+  //////////////////////////// Registro
+  const handleRegister = async () => {
+    try {
+      setLoginError(null);
+      await register(email, password, userRole);
+      Alert.alert('Éxito', 'Usuario creado. Revisa tu correo para verificar.');
+      setIsRegisterMode(false);
+    } catch (e) {
+      setLoginError(e.message);
     }
-  });
-  return () => unsubscribe();
-}, []);
+  };
 
+  //////////////////////////// Login
+  const handleLogin = async () => {
+    console.log('🔐 handleLogin iniciado');
+    console.log('📧 Email ingresado:', email);
+    console.log('🔑 Contraseña ingresada:', password ? '***' : 'vacía');
+    
+    if (!email || !password) {
+      console.log('❌ Campos vacíos detectados');
+      setLoginError('Por favor ingresa tu email y contraseña');
+      return;
+    }
 
+    if (!isValidEmail(email)) {
+      console.log('❌ Email inválido detectado');
+      setLoginError('Por favor ingresa un email válido');
+      return;
+    }
+
+    if (password.length < 6) {
+      console.log('❌ Contraseña muy corta');
+      setLoginError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    try {
+      setLoginError(null);
+      console.log('🔄 Intentando login con:', email);
+      const success = await login(email, password);
+      console.log('✅ Resultado del login:', success);
+      
+      if (success) {
+        console.log('🎉 Login exitoso, limpiando campos');
+        setEmail('');
+        setPassword('');
+        setLoginError(null);
+        console.log('🧹 Campos limpiados, usuario debería acceder a la app');
+      } else {
+        console.log('❌ Login fallido, limpiando contraseña');
+        setPassword('');
+        setLoginError('Credenciales inválidas o email no verificado');
+        console.log('🔒 Usuario bloqueado, debe verificar email o usar credenciales correctas');
+      }
+    } catch (error) {
+      console.error('💥 Error en handleLogin:', error);
+      setLoginError(error.message);
+      setPassword('');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail || !isValidEmail(forgotPasswordEmail)) {
+      Alert.alert('Error', 'Por favor ingresa un email válido');
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    try {
+      const success = await sendPasswordResetEmail(forgotPasswordEmail);
+      if (success) {
+        setShowForgotPasswordModal(false);
+        setForgotPasswordEmail('');
+      }
+    } catch (error) {
+      console.error('Error en handleForgotPassword:', error);
+      Alert.alert('Error', 'No se pudo enviar el enlace de recuperación.');
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
+  //////////////////////////// Verificación
+  const handleResendVerification = async () => {
+    try {
+      await resendVerification();
+      Alert.alert('Éxito', 'Enlace de verificación reenviado. Revisa tu correo.');
+    } catch (e) {
+      Alert.alert('Error', 'Error al reenviar el correo: ' + (e?.message || String(e)));
+    }
+  };
+
+  const handleReloadUser = async () => {
+    try {
+      console.log('🔄 handleReloadUser iniciado');
+      console.log('👤 Usuario actual en contexto:', user);
+      console.log('📧 Email verificado actual:', user?.emailVerified);
+      
+      if (user) {
+        // Refrescar el usuario y obtener el resultado
+        console.log('🔄 Llamando a refreshUser...');
+        const updatedUser = await refreshUser();
+        console.log('✅ Usuario actualizado recibido:', updatedUser);
+        console.log('📧 Email verificado después de refresh:', updatedUser?.emailVerified);
+        
+        if (updatedUser && updatedUser.emailVerified) {
+          // Email verificado, forzar logout para requerir login
+          console.log('✅ Email verificado, forzando logout para requerir login');
+          await logout();
+          console.log('🚪 Logout completado');
+          // Ocultar modal de verificación y mostrar pantalla de login
+          setShowVerificationModalAfterRegister(false);
+          console.log('🔍 Modal de verificación desactivado, mostrando pantalla de login');
+          Alert.alert('¡Correo verificado exitosamente! Ahora debes hacer login con tu usuario y contraseña.');
+          // Forzar actualización del estado
+          setForceUpdate(f => f + 1);
+          // Limpiar campos de login
+          setEmail('');
+          setPassword('');
+          setLoginError(null);
+          console.log('🧹 Campos de login limpiados');
+        } else {
+          // Email aún no verificado
+          console.log('❌ Email aún no verificado:', updatedUser?.emailVerified);
+          Alert.alert('Verificación', 'El email aún no está verificado. Revisa tu correo y vuelve a intentar.');
+        }
+      } else {
+        console.log('❌ No hay usuario en el contexto');
+      }
+    } catch (e) {
+      console.error('💥 Error en handleReloadUser:', e);
+      Alert.alert('Error al actualizar el estado: ' + (e?.message || String(e)));
+    }
+  };
+
+  // useEffect para detectar automáticamente cuando mostrar el modal de verificación
+  useEffect(() => {
+    if (user && !user.emailVerified && userRole) {
+      console.log('🔍 useEffect detectó: Usuario autenticado pero no verificado');
+      console.log('👤 Usuario:', user.email);
+      console.log('📧 Email verificado:', user.emailVerified);
+      console.log('🎭 Rol seleccionado:', userRole);
+    }
+  }, [user, userRole]);
+
+  // useEffect para debuggear el estado del modal de verificación
+  useEffect(() => {
+    console.log('🔍 Estado del modal de verificación después del registro:', showVerificationModalAfterRegister);
+  }, [showVerificationModalAfterRegister]);
+
+  // useEffect para mostrar automáticamente el modal de área después del login exitoso
+  useEffect(() => {
+    if (userRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible) {
+      console.log('🚀 Usuario completamente autenticado, mostrando modal de área automáticamente');
+      console.log('  - userRole:', userRole);
+      console.log('  - user verificado:', user.emailVerified);
+      console.log('  - showEmployeeList:', showEmployeeList);
+      console.log('  - modalAreaVisible:', modalAreaVisible);
+      
+      // Pequeño delay para asegurar que la UI esté lista
+      setTimeout(() => {
+        setModalAreaVisible(true);
+      }, 500);
+    }
+  }, [userRole, user, showEmployeeList, modalAreaVisible]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const empleadosRef = ref(database, `admins/${user.uid}/empleados`);
+    const unsubscribe = onValue(empleadosRef, (snapshot) => {
+      setEmpleados(snapshot.val() || {});
+    });
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const peopleRef = ref(database, `admins/${user.uid}/people`);
+    const unsubscribe = onValue(peopleRef, async (snapshot) => {
+      if (snapshot.exists()) {
+        const peopleObj = snapshot.val();
+        const peopleList = Object.values(peopleObj);
+        await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
+        setAsyncPeopleData(peopleList);
+      } else {
+        await AsyncStorage.setItem('peopleData', JSON.stringify([]));
+        setAsyncPeopleData([]);
+      }
+    });
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  /////////////////////////////////
+  // FLUJO PRINCIPAL ORDENADO Y SIN DUPLICACIONES
+  /////////////////////////////////
+
+  // ---------- 1. LOADING ----------
+  if (loading) {
+    return (
+      <PaperProvider theme={theme}>
+        <StatusBar />
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ fontSize: 18, color: '#5124A5' }}>Cargando...</Text>
+        </View>
+      </PaperProvider>
+    );
+  }
+
+  // ---------- 2. SELECCIÓN DE ROL ----------
+  if (!userRole) {
+    return (
+      <PaperProvider theme={theme}>
+        <StatusBar />
+        <View style={styles.content}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('@/assets/images/grandma.png')}
+              style={styles.homeLogo}
+            />
+            <ThemedText type="title" style={styles.titleText}>
+              Bienvenido a tu Hogar!
+            </ThemedText>
+          </View>
+          
+          {/* Modal inicial para el rol */}
+          <CustomModal
+            visible={true}
+            onDismiss={() => { }}
+            title="Seleccione su rol:"
+            centerCard={true}
+            actions={[]}
+          >
+            <View style={{ padding: 20 }}>
+              <Text style={{ 
+                fontSize: 18, 
+                textAlign: 'center', 
+                marginBottom: 30, 
+                color: '#5124A5',
+                fontWeight: '500'
+              }}>
+                ¿Qué tipo de usuario eres?
+              </Text>
+              
+              <CustomButton
+                label="Soy Administrador"
+                onPress={() => {
+                  setUserRole('admin');
+                  setIsAdminSelected(true);
+                }}
+              />
+              <View style={{ height: 16 }} />
+              <CustomButton
+                label="Soy Empleado"
+                onPress={() => {
+                  setUserRole('empleado');
+                  setIsAdminSelected(false);
+                }}
+              />
+            </View>
+          </CustomModal>
+        </View>
+      </PaperProvider>
+    );
+  }
+
+  // ---------- 3. LOGIN (usuario no logueado o sin verificar) ----------
+  if (!user || (user && !user.emailVerified)) {
+    return (
+      <PaperProvider theme={theme}>
+        <StatusBar />
+        
+        {/* MODAL DE REGISTRO */}
+        {showRegisterModal && (
+          <CustomModal
+            visible={true}
+            onDismiss={() => setShowRegisterModal(false)}
+            title="Crear Usuario Administrador"
+            centerCard={true}
+          >
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ 
+                marginBottom: 20, 
+                fontSize: 16, 
+                textAlign: 'center',
+                color: '#666'
+              }}>
+                Ingresa tu email y contraseña para crear tu cuenta
+              </Text>
+              
+              <TextInput
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={{ marginBottom: 16, width: 260 }}
+                theme={{ colors: { text: '#000', primary: '#007AFF' } }}
+              />
+              
+              <TextInput
+                label="Contraseña"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={{ marginBottom: 20, width: 260 }}
+                theme={{ colors: { text: '#000', primary: '#007AFF' } }}
+              />
+              
+              <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
+                <CustomButton
+                  label="CREAR USUARIO"
+                  onPress={async () => {
+                    try {
+                      console.log('🚀 Iniciando registro desde modal...');
+                      console.log('📧 Email:', email);
+                      console.log('🎭 Rol:', userRole);
+                      await register(email, password, userRole);
+                      console.log('✅ Registro exitoso, cerrando modal de registro y mostrando modal de verificación');
+                      setShowRegisterModal(false);
+                      setEmail('');
+                      setPassword('');
+                      // Mostrar modal de verificación después del registro exitoso
+                      setShowVerificationModalAfterRegister(true);
+                      console.log('🔍 Modal de verificación activado:', true);
+                    } catch (error) {
+                      console.error('💥 Error en registro desde modal:', error);
+                      // Solo limpiar campos en caso de error
+                      setEmail('');
+                      setPassword('');
+                    }
+                  }}
+                  disabled={!isValidEmail(email) || !password || password.length < 6}
+                  style={{ marginBottom: 16, width: 260 }}
+                />
+                
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowRegisterModal(false);
+                    setEmail('');
+                    setPassword('');
+                  }}
+                  style={{
+                    paddingVertical: 8
+                  }}
+                >
+                  <Text style={{ 
+                    color: '#666', 
+                    fontSize: 16,
+                    textDecorationLine: 'underline'
+                  }}>
+                    Cancelar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </CustomModal>
+        )}
+
+        {/* MODAL DE RECUPERACIÓN DE CONTRASEÑA */}
+        {showForgotPasswordModal && (
+          <CustomModal
+            visible={true}
+            onDismiss={() => setShowForgotPasswordModal(false)}
+            title="Recuperar Contraseña"
+            centerCard={true}
+          >
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ 
+                marginBottom: 20, 
+                fontSize: 16, 
+                textAlign: 'center',
+                color: '#666'
+              }}>
+                Ingresa tu email para recibir un enlace de recuperación
+              </Text>
+              
+              <TextInput
+                label="Email"
+                value={forgotPasswordEmail}
+                onChangeText={setForgotPasswordEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={{ marginBottom: 20, width: 260 }}
+                theme={{ colors: { text: '#000', primary: '#007AFF' } }}
+              />
+              
+              <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
+                <CustomButton
+                  label="ENVIAR ENLACE"
+                  onPress={handleForgotPassword}
+                  disabled={!isValidEmail(forgotPasswordEmail) || forgotPasswordLoading}
+                  style={{ marginBottom: 16, width: 260 }}
+                />
+                
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowForgotPasswordModal(false);
+                    setForgotPasswordEmail('');
+                  }}
+                  style={{
+                    paddingVertical: 8
+                  }}
+                >
+                  <Text style={{ 
+                    color: '#666', 
+                    fontSize: 16,
+                    textDecorationLine: 'underline'
+                  }}>
+                    Cancelar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </CustomModal>
+        )}
+
+        {/* MODAL DE VERIFICACIÓN DESPUÉS DEL REGISTRO EXITOSO */}
+        {showVerificationModalAfterRegister && (
+          <CustomModal
+            visible={true}
+            onDismiss={() => { }} // No permitir cerrar hasta verificar
+            title="Verifica tu correo"
+            centerCard={true}
+          >
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ 
+                marginBottom: 20, 
+                fontSize: 16, 
+                textAlign: 'center',
+                color: '#666'
+              }}>
+                Usuario creado exitosamente. Debes verificar tu correo electrónico antes de continuar.
+              </Text>
+              
+              <Text style={{ 
+                marginBottom: 20, 
+                fontSize: 14, 
+                textAlign: 'center',
+                color: '#888',
+                fontStyle: 'italic'
+              }}>
+                Revisa tu correo y haz clic en el enlace de verificación.
+              </Text>
+              
+              <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
+                <CustomButton
+                  label="Reenviar enlace de verificación"
+                  onPress={handleResendVerification}
+                  style={{ marginBottom: 16, width: 260 }}
+                />
+                
+                <CustomButton
+                  label="Ya verifiqué mi correo"
+                  onPress={handleReloadUser}
+                  style={{ marginBottom: 16, width: 260 }}
+                />
+              </View>
+            </View>
+          </CustomModal>
+        )}
+        
+        {/* PANTALLA DE LOGIN PRINCIPAL */}
+        <View style={styles.content}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('@/assets/images/grandma.png')}
+              style={styles.homeLogo}
+            />
+            <ThemedText type="title" style={styles.titleText}>
+              Bienvenido a tu Hogar!
+            </ThemedText>
+          </View>
+          
+          <Card style={styles.card}>
+            <Card.Content style={styles.cardContent}>
+              <Text variant="titleLarge" style={styles.bigWelcomeText}>
+                Iniciar Sesión
+              </Text>
+              <TextInput
+                value={email}
+                onChangeText={text => {
+                  setEmail(text);
+                  if (!emailTouched) setEmailTouched(true);
+                }}
+                label="Email"
+                style={styles.textInput}
+                theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                onBlur={() => setEmailTouched(true)}
+              />
+              {emailTouched && !isValidEmail(email) && (
+                <Text style={{ color: 'red', marginTop: 4, marginBottom: 4, fontSize: 18 }}>
+                  Ingrese un mail válido
+                </Text>
+              )}
+              <View style={{ margin: 8 }} />
+              <TextInput
+                label="Contraseña"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+                style={styles.textInput}
+                theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+              />
+              <View style={{ margin: 8 }} />
+              <CustomButton
+                onPress={handleLogin}
+                label="INGRESAR"
+                disabled={!isValidEmail(email) || !password || password.length < 6 || loading}
+              />
+              {loginError && (
+                <Text style={{ color: 'red', marginTop: 8, fontSize: 16, textAlign: 'center' }}>
+                  {loginError}
+                </Text>
+              )}
+              
+              {/* Botón Olvidé mi contraseña */}
+              <TouchableOpacity 
+                onPress={() => setShowForgotPasswordModal(true)}
+                style={{ 
+                  marginTop: 16,
+                  paddingVertical: 8
+                }}
+              >
+                <Text style={{ 
+                  color: '#5124A5', 
+                  fontSize: 16,
+                  textDecorationLine: 'underline',
+                  textAlign: 'center'
+                }}>
+                  ¿Olvidaste tu contraseña?
+                </Text>
+              </TouchableOpacity>
+              
+              {userRole === 'admin' && (
+                <TouchableOpacity onPress={() => setShowRegisterModal(true)} style={{ marginTop: 16 }}>
+                  <Text style={{ color: '#5124A5', fontWeight: 'bold', fontSize: 18 }}>
+                    ¿No tienes cuenta? Regístrate
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              {/* Botón para cambiar de rol */}
+              <TouchableOpacity 
+                onPress={() => {
+                  setUserRole(null);
+                  setIsAdminSelected(false);
+                  logout();
+                }} 
+                style={{ 
+                  marginTop: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  backgroundColor: '#FF6B6B',
+                  borderRadius: 20
+                }}
+              >
+                <Text style={{ 
+                  color: 'white', 
+                  fontSize: 16,
+                  fontWeight: '600'
+                }}>
+                  Cambiar de rol
+                </Text>
+              </TouchableOpacity>
+            </Card.Content>
+          </Card>
+        </View>
+      </PaperProvider>
+    );
+  }
+
+  // ---------- 4. APP PRINCIPAL (usuario logueado y verificado) ----------
+  console.log('🎯 RENDER PRINCIPAL: Usuario autenticado y verificado, mostrando aplicación');
+  console.log('👤 Usuario:', user?.email);
+  console.log('📧 Email verificado:', user?.emailVerified);
+  console.log('🎭 Rol seleccionado:', userRole);
+  
   return (
     <PaperProvider theme={theme}>
       <StatusBar />
 
-      {/* modal inicial para el roll */}
-      <CustomModal
-        visible={showRoleModal}
-        onDismiss={() => { }}
-        title="Seleccione:"
-        centerCard={true}
-        actions={[]}
-      >
-        <CustomButton
-          label="Soy Administrador"
-          onPress={() => {
-            setIsAdminSelected(true);
-            setShowRoleModal(false);
-          }}
-        />
-        <View style={{ height: 16 }} />
-        <CustomButton
-          label="Soy Empleado"
-          onPress={() => {
-            setIsAdminSelected(false);
-            setShowRoleModal(false);
-          }}
-          style={{ marginTop: 16 }}
-        />
-      </CustomModal>
-
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        {/* LISTA DE EMPLEADOS/PACIENTES */}
         {showEmployeeList ? (
           <CustomList
             data={asyncPeopleData.filter(
@@ -266,125 +801,58 @@ export default function MasterScreen() {
               setAddMode(true);
             }}
           />
-        ) : (
-          <View style={styles.content}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={require('@/assets/images/grandma.png')}
-                style={styles.homeLogo}
-              />
-              <ThemedText type="title" style={styles.titleText}>
-              Bienvenido a tu Hogar!
-              </ThemedText>
-            </View>
-            <Card style={styles.card}>
-              <Card.Content style={styles.cardContent}>
-                <Text variant="titleLarge" style={styles.bigWelcomeText}>Bienvenido</Text>
-                <TextInput
-                  value={username}
-                  onChangeText={text => {
-                    setUsername(text);
-                    if (!emailTouched) setEmailTouched(true);
-                  }}
-                  label="Usuario"
-                  style={styles.textInput}
-                  theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  onBlur={() => setEmailTouched(true)}
-                />
-                {emailTouched && !isValidEmail(username) && (
-                  <Text style={{ color: 'red', marginTop: 4, marginBottom: 4, fontSize: 18 }}>
-                    Ingrese un mail válido
-                  </Text>
-                )}
-                <View style={{ margin: 8 }} />
-                <TextInput
-                  label="Contraseña"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                  style={styles.textInput}
-                  theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
-                />
-                <View style={{ margin: 8 }} />
-                <CustomButton
-                  onPress={() => setModalAreaVisible(true)}
-                  label="INGRESAR"
-                  disabled={!isValidEmail(username)}
-                />
-                {isAdminSelected && (
-                  <TouchableOpacity
-                    onPress={() => setShowRegisterModal(true)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{
-                      color: '#5124A5',
-                      fontWeight: 'bold',
-                      marginTop: 16,
-                      fontSize: 18,
-                    }}
-                    >
-                      Crea Tu Usuario
-                    </Text>
-                  </TouchableOpacity>
-                )}
+        ) : null}
 
-                {/* modal registro de usuario */}
-                <CustomModal
-                  visible={showRegisterModal}
-                  onDismiss={() => setShowRegisterModal(false)}
-                  title="Crear Usuario Administrador"
-                  centerCard={true}
-                >
-                  <RegisterAdminForm
-                    onRegister={(email, password) => {
-                      setShowRegisterModal(false);
-                    }}
-                    onSendCode={(email, code) => {
-                    }}
-                  />
-                </CustomModal>
+        {/* MODAL ELECCIÓN DE ÁREA */}
+        <CustomModal
+          cardMarginTop={height * 0.3}
+          visible={modalAreaVisible}
+          onDismiss={() => setModalAreaVisible(false)}
+          title={CARD_TITLES.selectArea}
+          actions={AREA_OPTIONS.map(opt => ({
+            label: opt.label,
+            icon: opt.icon,
+            onPress: () => handleAreaSelect(opt.value),
+          }))}
+        />
 
-                {/* modal eleccion de area */}
-                <CustomModal
-                  cardMarginTop={height * 0.3}
-                  visible={modalAreaVisible}
-                  onDismiss={() => setModalAreaVisible(false)}
-                  title={CARD_TITLES.selectArea}
-                  actions={AREA_OPTIONS.map(opt => ({
-                    label: opt.label,
-                    icon: opt.icon,
-                    onPress: () => handleAreaSelect(opt.value),
-                  }))}
-                />
+        {/* MODAL ELECCIÓN DE EMPLEADOS/PACIENTES */}
+        <CustomModal
+          cardMarginTop={height * 0.2}
+          visible={modalUserTypeVisible}
+          onDismiss={() => setModalUserTypeVisible(false)}
+          topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
+          title={`Seleccionar de ${selectedArea}:`}
+          showTopbar={true}
+          onBack={() => {
+            setModalUserTypeVisible(false);
+            setModalAreaVisible(true);
+            setSelectedArea(null);
+          }}
+          actions={TIPE_OPTIONS.map(opt => ({
+            label: opt.label,
+            icon: opt.icon,
+            onPress: () => handleUserTypeSelect(opt.value),
+          }))}
+        />
 
-                {/* modal eleccion de empleados/pacientes */}
-                <CustomModal
-                  cardMarginTop={height * 0.2}
-                  visible={modalUserTypeVisible}
-                  onDismiss={() => setModalUserTypeVisible(false)}
-                  topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
-                  title={`Seleccionar de ${selectedArea}:`}
-                  showTopbar={true}
-                  onBack={() => {
-                    setModalUserTypeVisible(false);
-                    setModalAreaVisible(true);
-                    setSelectedArea(null);
-                  }}
-                  actions={TIPE_OPTIONS.map(opt => ({
-                    label: opt.label,
-                    icon: opt.icon,
-                    onPress: () => handleUserTypeSelect(opt.value),
-                  }))}
-                />
-              </Card.Content>
-            </Card>
-          </View>
-        )}
+        {/* MODAL DE REGISTRO DE USUARIO */}
+        <CustomModal
+          visible={showRegisterModal}
+          onDismiss={() => setShowRegisterModal(false)}
+          title="Crear Usuario Administrador"
+          centerCard={true}
+        >
+          <RegisterAdminForm
+            onRegister={(email, password) => {
+              setShowRegisterModal(false);
+            }}
+            onSendCode={(email, code) => {
+            }}
+          />
+        </CustomModal>
 
-        {/* modal aviso sin datos */}
+        {/* MODAL AVISO SIN DATOS */}
         <CustomModal
           visible={noDataModalVisible}
           onRequestClose={() => setNoDataModalVisible(false)}
@@ -407,16 +875,16 @@ export default function MasterScreen() {
           />
         </CustomModal>
 
-        {/* modal con detalles */}
-                  <CustomModal
-            cardMarginTop={height * 0.07}
-            visible={detailModalVisible}
-            onRequestClose={() => setDetailModalVisible(false)}
-            showTopbar={true}
-            onBack={() => setDetailModalVisible(false)}
-            topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
-            title={getModalTitle(userType, MODAL_TITLES)}
-            isDetailModal={true}
+        {/* MODAL CON DETALLES */}
+        <CustomModal
+          cardMarginTop={height * 0.07}
+          visible={detailModalVisible}
+          onRequestClose={() => setDetailModalVisible(false)}
+          showTopbar={true}
+          onBack={() => setDetailModalVisible(false)}
+          topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
+          title={getModalTitle(userType, MODAL_TITLES)}
+          isDetailModal={true}
           onGoToPlanPress={() => {
             setDetailModalVisible(false);
             if (selectedPerson?.nombre) {
@@ -433,7 +901,7 @@ export default function MasterScreen() {
           </View>
         </CustomModal>
 
-        {/* Modal para editar datos */}
+        {/* MODAL PARA EDITAR DATOS */}
         <CustomModal
           cardMarginTop={height * 0.07}
           visible={editModalVisible}
@@ -463,7 +931,7 @@ export default function MasterScreen() {
           </View>
         </CustomModal>
 
-        {/* modal de confirmación */}
+        {/* MODAL DE CONFIRMACIÓN */}
         <CustomModal
           visible={showConfirmModal}
           onDismiss={() => {
@@ -524,10 +992,14 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     padding: 16,
+    marginTop: 60,
+    flex: 1,
+    justifyContent: 'flex-start',
   },
   imageContainer: {
     alignItems: 'center',
     marginBottom: 24,
+    marginTop: 20,
   },
   homeLogo: {
     height: 150,
