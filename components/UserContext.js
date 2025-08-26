@@ -22,10 +22,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // Objeto custom para la app
   const [firebaseUser, setFirebaseUser] = useState(null); // Usuario real de Firebase
   const [loading, setLoading] = useState(true);
+  const [globalUserRole, setGlobalUserRole] = useState(null); // Rol global de la app
   const auth = getAuth(app);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      console.log('onAuthStateChanged triggered:', fbUser ? `User: ${fbUser.email}, Verified: ${fbUser.emailVerified}` : 'No user');
       setFirebaseUser(fbUser); // Guarda el usuario real
       if (fbUser) {
         setUser({
@@ -34,8 +36,15 @@ export const AuthProvider = ({ children }) => {
           emailVerified: fbUser.emailVerified,
           role: 'admin', // Puedes obtenerlo de la DB si lo necesitas
         });
+        console.log('Usuario establecido en estado:', {
+          uid: fbUser.uid,
+          email: fbUser.email,
+          emailVerified: fbUser.emailVerified,
+          role: 'admin'
+        });
       } else {
         setUser(null);
+        console.log('Usuario removido del estado');
       }
       setLoading(false);
     });
@@ -201,25 +210,70 @@ export const AuthProvider = ({ children }) => {
   // Logout
   const logout = async () => {
     await signOut(auth);
+    setGlobalUserRole(null); // Limpiar rol global al hacer logout
+  };
+
+  // Establecer rol global
+  const setUserRole = (role) => {
+    console.log('=== setUserRole llamado ===');
+    console.log('Rol anterior:', globalUserRole);
+    console.log('Nuevo rol:', role);
+    setGlobalUserRole(role);
+    console.log('globalUserRole actualizado a:', role);
+  };
+
+  // Obtener rol global
+  const getUserRole = () => {
+    return globalUserRole;
   };
 
   // Reenviar verificación
- const resendVerification = async () => {
-  const auth = getAuth(app);
-  console.log('auth.currentUser:', auth.currentUser);
-  if (auth.currentUser) {
+  const resendVerification = async () => {
     try {
-      await sendEmailVerification(auth.currentUser);
-      Alert.alert('Verificación enviada', 'Revisa tu correo.');
+      console.log('=== INICIO resendVerification ===');
+      console.log('firebaseUser:', firebaseUser);
+      console.log('firebaseUser?.email:', firebaseUser?.email);
+      console.log('firebaseUser?.emailVerified:', firebaseUser?.emailVerified);
+      console.log('auth.currentUser:', auth.currentUser);
+      
+      if (!firebaseUser) {
+        console.log('ERROR: No hay firebaseUser');
+        throw new Error('No hay usuario autenticado. Debes estar logueado para reenviar la verificación.');
+      }
+      
+      if (firebaseUser.emailVerified) {
+        console.log('ERROR: Email ya verificado');
+        throw new Error('Tu email ya está verificado. No es necesario reenviar la verificación.');
+      }
+      
+      console.log('Intentando enviar verificación a:', firebaseUser.email);
+      await sendEmailVerification(firebaseUser);
+      console.log('Email de verificación reenviado exitosamente');
+      console.log('=== FIN resendVerification (éxito) ===');
+      return true;
     } catch (e) {
-      Alert.alert('Error', e.message || String(e));
+      console.error('=== ERROR en resendVerification ===');
+      console.error('Error completo:', e);
+      console.error('Error code:', e.code);
+      console.error('Error message:', e.message);
+      
+      let errorMessage = 'Error al reenviar el email de verificación';
+      
+      if (e.code === 'auth/too-many-requests') {
+        errorMessage = 'Demasiados intentos. Espera unos minutos antes de volver a intentar.';
+      } else if (e.code === 'auth/user-not-found') {
+        errorMessage = 'Usuario no encontrado. Debes estar logueado.';
+      } else if (e.message) {
+        errorMessage = e.message;
+      }
+      
+      console.error('Error message final:', errorMessage);
+      console.log('=== FIN resendVerification (error) ===');
+      throw new Error(errorMessage);
     }
-  } else {
-    throw new Error('No hay usuario autenticado o método no disponible');
-  }
-};
+  };
 
-const refreshUser = async () => {
+  const refreshUser = async () => {
     try {
       if (firebaseUser) {
         // Recargar el usuario de Firebase para obtener el estado más reciente
@@ -305,17 +359,6 @@ const refreshUser = async () => {
     }
   };
 
-  const value = {
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    resendVerification,
-    refreshUser,
-    sendPasswordResetEmail: handlePasswordReset
-  };
-
   return (
     <AuthContext.Provider value={{
       user,
@@ -326,7 +369,10 @@ const refreshUser = async () => {
       logout,
       resendVerification,
       refreshUser,
-      sendPasswordResetEmail: handlePasswordReset
+      sendPasswordResetEmail: handlePasswordReset,
+      globalUserRole,
+      setUserRole,
+      getUserRole
     }}>
       {children}
     </AuthContext.Provider>

@@ -16,6 +16,7 @@ import EditPersonForm from '@/components/EditPersonForm';
 import PersonDetails from '@/components/PersonDetails';
 import RegisterAdminForm from '../components/RegisterAdminForm';
 import { useAuth } from '../components/UserContext';
+import HamburgerMenu from '../components/HamburgerMenu';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
 
@@ -25,7 +26,7 @@ import { database } from '../env/firebase';
 const { height } = Dimensions.get('window');
 
 export default function MasterScreen() {
-  const { user, loading, login, register, firebaseUser, resendVerification, refreshUser, logout, sendPasswordResetEmail } = useAuth();
+  const { user, loading, login, register, firebaseUser, resendVerification, refreshUser, logout, sendPasswordResetEmail, globalUserRole, setUserRole } = useAuth();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +46,7 @@ export default function MasterScreen() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [originalDni, setOriginalDni] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+
   const [isAdminSelected, setIsAdminSelected] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -59,6 +60,7 @@ export default function MasterScreen() {
   const [showLoginAfterVerification, setShowLoginAfterVerification] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [showVerificationModalAfterRegister, setShowVerificationModalAfterRegister] = useState(false);
+  const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
 
   const router = useRouter();
 
@@ -211,48 +213,35 @@ export default function MasterScreen() {
 
   //////////////////////////// Login
   const handleLogin = async () => {
-    console.log('🔐 handleLogin iniciado');
-    console.log('📧 Email ingresado:', email);
-    console.log('🔑 Contraseña ingresada:', password ? '***' : 'vacía');
-    
     if (!email || !password) {
-      console.log('❌ Campos vacíos detectados');
       setLoginError('Por favor ingresa tu email y contraseña');
       return;
     }
 
     if (!isValidEmail(email)) {
-      console.log('❌ Email inválido detectado');
       setLoginError('Por favor ingresa un email válido');
       return;
     }
 
     if (password.length < 6) {
-      console.log('❌ Contraseña muy corta');
       setLoginError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
     try {
       setLoginError(null);
-      console.log('🔄 Intentando login con:', email);
       const success = await login(email, password);
-      console.log('✅ Resultado del login:', success);
       
       if (success) {
-        console.log('🎉 Login exitoso, limpiando campos');
         setEmail('');
         setPassword('');
         setLoginError(null);
-        console.log('🧹 Campos limpiados, usuario debería acceder a la app');
       } else {
-        console.log('❌ Login fallido, limpiando contraseña');
         setPassword('');
         setLoginError('Credenciales inválidas o email no verificado');
-        console.log('🔒 Usuario bloqueado, debe verificar email o usar credenciales correctas');
       }
     } catch (error) {
-      console.error('💥 Error en handleLogin:', error);
+      console.error('Error en handleLogin:', error);
       setLoginError(error.message);
       setPassword('');
     }
@@ -282,86 +271,64 @@ export default function MasterScreen() {
   //////////////////////////// Verificación
   const handleResendVerification = async () => {
     try {
+      setResendVerificationLoading(true);
+      console.log('Iniciando reenvío de verificación...');
       await resendVerification();
-      Alert.alert('Éxito', 'Enlace de verificación reenviado. Revisa tu correo.');
+      Alert.alert(
+        'Éxito', 
+        'Enlace de verificación reenviado. Revisa tu correo electrónico y haz clic en el enlace para verificar tu cuenta.',
+        [{ text: 'OK' }]
+      );
     } catch (e) {
-      Alert.alert('Error', 'Error al reenviar el correo: ' + (e?.message || String(e)));
+      console.error('Error en handleResendVerification:', e);
+      Alert.alert(
+        'Error al reenviar verificación', 
+        e.message || 'No se pudo reenviar el enlace de verificación. Intenta nuevamente.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setResendVerificationLoading(false);
     }
   };
 
   const handleReloadUser = async () => {
     try {
-      console.log('🔄 handleReloadUser iniciado');
-      console.log('👤 Usuario actual en contexto:', user);
-      console.log('📧 Email verificado actual:', user?.emailVerified);
-      
       if (user) {
         // Refrescar el usuario y obtener el resultado
-        console.log('🔄 Llamando a refreshUser...');
         const updatedUser = await refreshUser();
-        console.log('✅ Usuario actualizado recibido:', updatedUser);
-        console.log('📧 Email verificado después de refresh:', updatedUser?.emailVerified);
         
         if (updatedUser && updatedUser.emailVerified) {
           // Email verificado, forzar logout para requerir login
-          console.log('✅ Email verificado, forzando logout para requerir login');
           await logout();
-          console.log('🚪 Logout completado');
           // Ocultar modal de verificación y mostrar pantalla de login
           setShowVerificationModalAfterRegister(false);
-          console.log('🔍 Modal de verificación desactivado, mostrando pantalla de login');
-          Alert.alert('¡Correo verificado exitosamente! Ahora debes hacer login con tu usuario y contraseña.');
+          Alert.alert('¡Verificado exitosamente! Ahora logeate con tu usuario y contraseña.');
           // Forzar actualización del estado
           setForceUpdate(f => f + 1);
           // Limpiar campos de login
           setEmail('');
           setPassword('');
           setLoginError(null);
-          console.log('🧹 Campos de login limpiados');
         } else {
           // Email aún no verificado
-          console.log('❌ Email aún no verificado:', updatedUser?.emailVerified);
           Alert.alert('Verificación', 'El email aún no está verificado. Revisa tu correo y vuelve a intentar.');
         }
-      } else {
-        console.log('❌ No hay usuario en el contexto');
       }
     } catch (e) {
-      console.error('💥 Error en handleReloadUser:', e);
+      console.error('Error en handleReloadUser:', e);
       Alert.alert('Error al actualizar el estado: ' + (e?.message || String(e)));
     }
   };
 
-  // useEffect para detectar automáticamente cuando mostrar el modal de verificación
-  useEffect(() => {
-    if (user && !user.emailVerified && userRole) {
-      console.log('🔍 useEffect detectó: Usuario autenticado pero no verificado');
-      console.log('👤 Usuario:', user.email);
-      console.log('📧 Email verificado:', user.emailVerified);
-      console.log('🎭 Rol seleccionado:', userRole);
-    }
-  }, [user, userRole]);
-
-  // useEffect para debuggear el estado del modal de verificación
-  useEffect(() => {
-    console.log('🔍 Estado del modal de verificación después del registro:', showVerificationModalAfterRegister);
-  }, [showVerificationModalAfterRegister]);
-
   // useEffect para mostrar automáticamente el modal de área después del login exitoso
   useEffect(() => {
-    if (userRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible) {
-      console.log('🚀 Usuario completamente autenticado, mostrando modal de área automáticamente');
-      console.log('  - userRole:', userRole);
-      console.log('  - user verificado:', user.emailVerified);
-      console.log('  - showEmployeeList:', showEmployeeList);
-      console.log('  - modalAreaVisible:', modalAreaVisible);
-      
+    if (globalUserRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible) {
       // Pequeño delay para asegurar que la UI esté lista
       setTimeout(() => {
         setModalAreaVisible(true);
       }, 500);
     }
-  }, [userRole, user, showEmployeeList, modalAreaVisible]);
+  }, [globalUserRole, user, showEmployeeList, modalAreaVisible]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -406,7 +373,7 @@ export default function MasterScreen() {
   }
 
   // ---------- 2. SELECCIÓN DE ROL ----------
-  if (!userRole) {
+  if (!globalUserRole) {
     return (
       <PaperProvider theme={theme}>
         <StatusBar />
@@ -475,6 +442,7 @@ export default function MasterScreen() {
             onDismiss={() => setShowRegisterModal(false)}
             title="Crear Usuario Administrador"
             centerCard={true}
+            showHamburgerMenu={false}
           >
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ 
@@ -485,6 +453,30 @@ export default function MasterScreen() {
               }}>
                 Ingresa tu email y contraseña para crear tu cuenta
               </Text>
+              
+              {globalUserRole && (
+                <Text style={{ 
+                  marginBottom: 20, 
+                  fontSize: 14, 
+                  textAlign: 'center',
+                  color: '#5124A5',
+                  fontWeight: '600'
+                }}>
+                  Rol seleccionado: {globalUserRole === 'admin' ? '🛡️ ADMINISTRADOR' : '👤 EMPLEADO'}
+                </Text>
+              )}
+              
+              {!globalUserRole && (
+                <Text style={{ 
+                  marginBottom: 20, 
+                  fontSize: 14, 
+                  textAlign: 'center',
+                  color: '#FF6B6B',
+                  fontWeight: '600'
+                }}>
+                  ⚠️ Primero debes seleccionar un rol
+                </Text>
+              )}
               
               <TextInput
                 label="Email"
@@ -511,25 +503,20 @@ export default function MasterScreen() {
                   label="CREAR USUARIO"
                   onPress={async () => {
                     try {
-                      console.log('🚀 Iniciando registro desde modal...');
-                      console.log('📧 Email:', email);
-                      console.log('🎭 Rol:', userRole);
-                      await register(email, password, userRole);
-                      console.log('✅ Registro exitoso, cerrando modal de registro y mostrando modal de verificación');
+                      await register(email, password, globalUserRole);
                       setShowRegisterModal(false);
                       setEmail('');
                       setPassword('');
                       // Mostrar modal de verificación después del registro exitoso
                       setShowVerificationModalAfterRegister(true);
-                      console.log('🔍 Modal de verificación activado:', true);
                     } catch (error) {
-                      console.error('💥 Error en registro desde modal:', error);
+                      console.error('Error en registro desde modal:', error);
                       // Solo limpiar campos en caso de error
                       setEmail('');
                       setPassword('');
                     }
                   }}
-                  disabled={!isValidEmail(email) || !password || password.length < 6}
+                  disabled={!isValidEmail(email) || !password || password.length < 6 || !globalUserRole}
                   style={{ marginBottom: 16, width: 260 }}
                 />
                 
@@ -563,6 +550,7 @@ export default function MasterScreen() {
             onDismiss={() => setShowForgotPasswordModal(false)}
             title="Recuperar Contraseña"
             centerCard={true}
+            showHamburgerMenu={false}
           >
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ 
@@ -622,6 +610,7 @@ export default function MasterScreen() {
             onDismiss={() => { }} // No permitir cerrar hasta verificar
             title="Verifica tu correo"
             centerCard={true}
+            showHamburgerMenu={false}
           >
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ 
@@ -643,13 +632,28 @@ export default function MasterScreen() {
                 Revisa tu correo y haz clic en el enlace de verificación.
               </Text>
               
+              {firebaseUser && (
+                <Text style={{ 
+                  marginBottom: 20, 
+                  fontSize: 12, 
+                  textAlign: 'center',
+                  color: '#007AFF',
+                  fontWeight: '500'
+                }}>
+                  Email: {firebaseUser.email}
+                </Text>
+              )}
+              
+              
+              
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
-                  label="Reenviar enlace de verificación"
+                  label={resendVerificationLoading ? "Enviando..." : "Reenviar enlace"}
                   onPress={handleResendVerification}
+                  disabled={resendVerificationLoading}
                   style={{ marginBottom: 16, width: 260 }}
                 />
-                
+                <View style={{ height: 16 }} />
                 <CustomButton
                   label="Ya verifiqué mi correo"
                   onPress={handleReloadUser}
@@ -735,7 +739,7 @@ export default function MasterScreen() {
                 </Text>
               </TouchableOpacity>
               
-              {userRole === 'admin' && (
+                             {globalUserRole === 'admin' && (
                 <TouchableOpacity onPress={() => setShowRegisterModal(true)} style={{ marginTop: 16 }}>
                   <Text style={{ color: '#5124A5', fontWeight: 'bold', fontSize: 18 }}>
                     ¿No tienes cuenta? Regístrate
@@ -774,16 +778,15 @@ export default function MasterScreen() {
   }
 
   // ---------- 4. APP PRINCIPAL (usuario logueado y verificado) ----------
-  console.log('🎯 RENDER PRINCIPAL: Usuario autenticado y verificado, mostrando aplicación');
-  console.log('👤 Usuario:', user?.email);
-  console.log('📧 Email verificado:', user?.emailVerified);
-  console.log('🎭 Rol seleccionado:', userRole);
   
   return (
     <PaperProvider theme={theme}>
       <StatusBar />
 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        {/* MENÚ HAMBURGUESA - SIEMPRE VISIBLE EN APP PRINCIPAL */}
+        <HamburgerMenu position="top-right" />
+        
         {/* LISTA DE EMPLEADOS/PACIENTES */}
         {showEmployeeList ? (
           <CustomList
