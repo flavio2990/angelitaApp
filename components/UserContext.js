@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   getAuth,
   createUserWithEmailAndPassword, 
@@ -26,29 +27,36 @@ export const AuthProvider = ({ children }) => {
   const auth = getAuth(app);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
-      console.log('onAuthStateChanged triggered:', fbUser ? `User: ${fbUser.email}, Verified: ${fbUser.emailVerified}` : 'No user');
-      setFirebaseUser(fbUser); // Guarda el usuario real
-      if (fbUser) {
-        setUser({
-          uid: fbUser.uid,
-          email: fbUser.email,
-          emailVerified: fbUser.emailVerified,
-          role: 'admin', // Puedes obtenerlo de la DB si lo necesitas
-        });
-        console.log('Usuario establecido en estado:', {
-          uid: fbUser.uid,
-          email: fbUser.email,
-          emailVerified: fbUser.emailVerified,
-          role: 'admin'
-        });
-      } else {
-        setUser(null);
-        console.log('Usuario removido del estado');
-      }
-      setLoading(false);
-    });
-    return unsubscribe;
+    const initializeApp = async () => {
+      // Cargar rol persistido al iniciar la app
+      await loadPersistedRole();
+      
+      const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+        console.log('onAuthStateChanged triggered:', fbUser ? `User: ${fbUser.email}, Verified: ${fbUser.emailVerified}` : 'No user');
+        setFirebaseUser(fbUser); // Guarda el usuario real
+        if (fbUser) {
+          setUser({
+            uid: fbUser.uid,
+            email: fbUser.email,
+            emailVerified: fbUser.emailVerified,
+            role: 'admin', // Puedes obtenerlo de la DB si lo necesitas
+          });
+          console.log('Usuario establecido en estado:', {
+            uid: fbUser.uid,
+            email: fbUser.email,
+            emailVerified: fbUser.emailVerified,
+            role: 'admin'
+          });
+        } else {
+          setUser(null);
+          console.log('Usuario removido del estado');
+        }
+        setLoading(false);
+      });
+      return unsubscribe;
+    };
+    
+    initializeApp();
   }, []);
 
   // Registro de usuario
@@ -211,6 +219,14 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await signOut(auth);
     setGlobalUserRole(null); // Limpiar rol global al hacer logout
+    
+    // Limpiar rol persistido en AsyncStorage
+    try {
+      await AsyncStorage.removeItem('globalUserRole');
+      console.log('Rol removido de AsyncStorage');
+    } catch (error) {
+      console.error('Error removiendo rol de AsyncStorage:', error);
+    }
   };
 
   // Limpiar solo la sesión sin tocar el rol (para verificación de email)
@@ -220,12 +236,38 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Establecer rol global
-  const setUserRole = (role) => {
+  const setUserRole = async (role) => {
     console.log('=== setUserRole llamado ===');
     console.log('Rol anterior:', globalUserRole);
     console.log('Nuevo rol:', role);
+    
+    // Persistir en estado local
     setGlobalUserRole(role);
+    
+    // Persistir en AsyncStorage para mantener el rol entre sesiones
+    try {
+      await AsyncStorage.setItem('globalUserRole', role);
+      console.log('Rol persistido en AsyncStorage:', role);
+    } catch (error) {
+      console.error('Error persistiendo rol en AsyncStorage:', error);
+    }
+    
     console.log('globalUserRole actualizado a:', role);
+  };
+
+  // Recuperar rol desde AsyncStorage al iniciar la app
+  const loadPersistedRole = async () => {
+    try {
+      const persistedRole = await AsyncStorage.getItem('globalUserRole');
+      if (persistedRole) {
+        console.log('Rol recuperado desde AsyncStorage:', persistedRole);
+        setGlobalUserRole(persistedRole);
+        return persistedRole;
+      }
+    } catch (error) {
+      console.error('Error recuperando rol desde AsyncStorage:', error);
+    }
+    return null;
   };
 
   // Obtener rol global
@@ -379,7 +421,8 @@ export const AuthProvider = ({ children }) => {
       sendPasswordResetEmail: handlePasswordReset,
       globalUserRole,
       setUserRole,
-      getUserRole
+      getUserRole,
+      loadPersistedRole
     }}>
       {children}
     </AuthContext.Provider>

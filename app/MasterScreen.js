@@ -17,6 +17,7 @@ import PersonDetails from '@/components/PersonDetails';
 import RegisterAdminForm from '../components/RegisterAdminForm';
 import { useAuth } from '../components/UserContext';
 import HamburgerMenu from '../components/HamburgerMenu';
+import GlobalUserDebugger from '../components/GlobalUserDebugger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
 
@@ -787,6 +788,9 @@ export default function MasterScreen() {
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {/* MENÚ HAMBURGUESA - SIEMPRE VISIBLE EN APP PRINCIPAL */}
         <HamburgerMenu position="top-right" />
+        
+        {/* DEBUGGER TEMPORAL - PARA VERIFICAR ESTADO GLOBAL */}
+        <GlobalUserDebugger />
         
         {/* LISTA DE EMPLEADOS/PACIENTES */}
         {showEmployeeList ? (
