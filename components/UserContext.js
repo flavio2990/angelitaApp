@@ -213,6 +213,12 @@ export const AuthProvider = ({ children }) => {
     setGlobalUserRole(null); // Limpiar rol global al hacer logout
   };
 
+  // Limpiar solo la sesión sin tocar el rol (para verificación de email)
+  const clearSessionOnly = async () => {
+    await signOut(auth);
+    // NO limpiar globalUserRole aquí
+  };
+
   // Establecer rol global
   const setUserRole = (role) => {
     console.log('=== setUserRole llamado ===');
@@ -367,6 +373,7 @@ export const AuthProvider = ({ children }) => {
       register,
       login,
       logout,
+      clearSessionOnly,
       resendVerification,
       refreshUser,
       sendPasswordResetEmail: handlePasswordReset,

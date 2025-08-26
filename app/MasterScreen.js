@@ -26,7 +26,7 @@ import { database } from '../env/firebase';
 const { height } = Dimensions.get('window');
 
 export default function MasterScreen() {
-  const { user, loading, login, register, firebaseUser, resendVerification, refreshUser, logout, sendPasswordResetEmail, globalUserRole, setUserRole } = useAuth();
+  const { user, loading, login, register, firebaseUser, resendVerification, refreshUser, logout, clearSessionOnly, sendPasswordResetEmail, globalUserRole, setUserRole } = useAuth();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -298,13 +298,14 @@ export default function MasterScreen() {
         const updatedUser = await refreshUser();
         
         if (updatedUser && updatedUser.emailVerified) {
-          // Email verificado, forzar logout para requerir login
-          await logout();
-          // Ocultar modal de verificación y mostrar pantalla de login
+          // Email verificado, mantener el rol pero limpiar la sesión
+          await clearSessionOnly(); // Solo limpia la sesión, mantiene el rol
+          
+          // Ocultar modal de verificación
           setShowVerificationModalAfterRegister(false);
-          Alert.alert('¡Verificado exitosamente! Ahora logeate con tu usuario y contraseña.');
-          // Forzar actualización del estado
-          setForceUpdate(f => f + 1);
+          
+          Alert.alert('¡Verificado exitosamente!', 'Ahora logeate con tu usuario y contraseña.');
+          
           // Limpiar campos de login
           setEmail('');
           setPassword('');
