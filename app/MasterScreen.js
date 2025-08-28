@@ -17,7 +17,7 @@ import PersonDetails from '@/components/PersonDetails';
 import RegisterAdminForm from '../components/RegisterAdminForm';
 import { useAuth } from '../components/UserContext';
 import HamburgerMenu from '../components/HamburgerMenu';
-import GlobalUserDebugger from '../components/GlobalUserDebugger';
+// import GlobalUserDebugger from '../components/GlobalUserDebugger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
 
@@ -27,7 +27,7 @@ import { database } from '../env/firebase';
 const { height } = Dimensions.get('window');
 
 export default function MasterScreen() {
-  const { user, loading, login, register, firebaseUser, resendVerification, refreshUser, logout, clearSessionOnly, sendPasswordResetEmail, globalUserRole, setUserRole } = useAuth();
+  const { user, loading, login, register, firebaseUser, resendVerification, refreshUser, logout, clearSessionOnly, sendPasswordResetEmail, globalUserRole, setUserRole, clearUserRole } = useAuth();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -127,6 +127,38 @@ export default function MasterScreen() {
     }
   };
 
+  // Función para limpiar datos locales cuando se hace logout
+  const handleLogout = async () => {
+    try {
+      // Limpiar estado local de personas
+      setAsyncPeopleData([]);
+      setShowEmployeeList(false);
+      setModalAreaVisible(false);
+      setModalUserTypeVisible(false);
+      setSelectedArea(null);
+      setSelectedOption(null);
+      setUserType(null);
+      setSelectedPerson(null);
+      setDetailModalVisible(false);
+      setEditModalVisible(false);
+      setEditablePerson(null);
+      setNoDataModalVisible(false);
+      setNewPerson({});
+      setAddMode(false);
+      setShowConfirmModal(false);
+      setSaveSuccess(false);
+      setOriginalDni(null);
+      
+      // Ejecutar logout del contexto (que ya limpia AsyncStorage)
+      await logout();
+      
+    } catch (error) {
+      // Aún así, intentar limpiar el estado local
+      setAsyncPeopleData([]);
+      setShowEmployeeList(false);
+    }
+  };
+
   const handleModifyPress = () => {
     setDetailModalVisible(false);
     setEditablePerson({ ...selectedPerson });
@@ -158,10 +190,9 @@ export default function MasterScreen() {
       setNewPerson({});
       setShowEmployeeList(true);
       setAddMode(false);
-    } catch (error) {
-      console.error("Error guardando persona:", error);
-      Alert.alert("Error al guardar: " + error.message);
-    }
+          } catch (error) {
+        Alert.alert("Error al guardar: " + error.message);
+      }
   };
 
   function getTopBarTitle(type, TOP_BAR_HEADER_TITLES) {
@@ -195,9 +226,9 @@ export default function MasterScreen() {
         updatedAt: new Date().toISOString()
       });
 
-    } catch (error) {
-      console.error("Error actualizando persona:", error);
-    }
+          } catch (error) {
+        // Error silencioso
+      }
   };
 
   //////////////////////////// Registro
@@ -242,7 +273,6 @@ export default function MasterScreen() {
         setLoginError('Credenciales inválidas o email no verificado');
       }
     } catch (error) {
-      console.error('Error en handleLogin:', error);
       setLoginError(error.message);
       setPassword('');
     }
@@ -262,7 +292,6 @@ export default function MasterScreen() {
         setForgotPasswordEmail('');
       }
     } catch (error) {
-      console.error('Error en handleForgotPassword:', error);
       Alert.alert('Error', 'No se pudo enviar el enlace de recuperación.');
     } finally {
       setForgotPasswordLoading(false);
@@ -273,7 +302,6 @@ export default function MasterScreen() {
   const handleResendVerification = async () => {
     try {
       setResendVerificationLoading(true);
-      console.log('Iniciando reenvío de verificación...');
       await resendVerification();
       Alert.alert(
         'Éxito', 
@@ -281,7 +309,6 @@ export default function MasterScreen() {
         [{ text: 'OK' }]
       );
     } catch (e) {
-      console.error('Error en handleResendVerification:', e);
       Alert.alert(
         'Error al reenviar verificación', 
         e.message || 'No se pudo reenviar el enlace de verificación. Intenta nuevamente.',
@@ -317,7 +344,6 @@ export default function MasterScreen() {
         }
       }
     } catch (e) {
-      console.error('Error en handleReloadUser:', e);
       Alert.alert('Error al actualizar el estado: ' + (e?.message || String(e)));
     }
   };
@@ -375,6 +401,14 @@ export default function MasterScreen() {
   }
 
   // ---------- 2. SELECCIÓN DE ROL ----------
+  // NOTA: El modal de selección de rol aparece SOLO cuando no hay globalUserRole
+  // Esto garantiza que:
+  // - Al reiniciar la app, si no hay rol persistido, se muestra el modal
+  // - Si hay rol persistido, se va directo al flujo de login/registro
+  // - Después de un logout seguro, se vuelve a mostrar el modal
+  
+
+  
   if (!globalUserRole) {
     return (
       <PaperProvider theme={theme}>
@@ -512,7 +546,6 @@ export default function MasterScreen() {
                       // Mostrar modal de verificación después del registro exitoso
                       setShowVerificationModalAfterRegister(true);
                     } catch (error) {
-                      console.error('Error en registro desde modal:', error);
                       // Solo limpiar campos en caso de error
                       setEmail('');
                       setPassword('');
@@ -751,10 +784,19 @@ export default function MasterScreen() {
               
               {/* Botón para cambiar de rol */}
               <TouchableOpacity 
-                onPress={() => {
-                  setUserRole(null);
-                  setIsAdminSelected(false);
-                  logout();
+                onPress={async () => {
+                  try {
+                    // Limpiar rol de manera segura
+                    await clearUserRole();
+                    setIsAdminSelected(false);
+                    
+                    // Luego hacer logout
+                    await logout();
+                    
+                  } catch (error) {
+                    // Aún así, intentar logout
+                    await logout();
+                  }
                 }} 
                 style={{ 
                   marginTop: 16,
@@ -786,11 +828,11 @@ export default function MasterScreen() {
       <StatusBar />
 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        {/* MENÚ HAMBURGUESA - SIEMPRE VISIBLE EN APP PRINCIPAL */}
-        <HamburgerMenu position="top-right" />
+                  {/* MENÚ HAMBURGUESA - SIEMPRE VISIBLE EN APP PRINCIPAL */}
+          <HamburgerMenu position="top-right" onLogout={handleLogout} />
         
         {/* DEBUGGER TEMPORAL - PARA VERIFICAR ESTADO GLOBAL */}
-        <GlobalUserDebugger />
+        {/* <GlobalUserDebugger /> */}
         
         {/* LISTA DE EMPLEADOS/PACIENTES */}
         {showEmployeeList ? (

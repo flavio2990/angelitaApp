@@ -24,32 +24,28 @@ export const AuthProvider = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState(null); // Usuario real de Firebase
   const [loading, setLoading] = useState(true);
   const [globalUserRole, setGlobalUserRole] = useState(null); // Rol global de la app
+  const [shouldLoadPersistedRole, setShouldLoadPersistedRole] = useState(true); // Controla si se debe cargar rol persistido
   const auth = getAuth(app);
 
   useEffect(() => {
     const initializeApp = async () => {
-      // Cargar rol persistido al iniciar la app
-      await loadPersistedRole();
+      // Cargar rol persistido SOLO si no se ha hecho logout
+      if (shouldLoadPersistedRole) {
+        await loadPersistedRole();
+      }
       
       const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
-        console.log('onAuthStateChanged triggered:', fbUser ? `User: ${fbUser.email}, Verified: ${fbUser.emailVerified}` : 'No user');
         setFirebaseUser(fbUser); // Guarda el usuario real
         if (fbUser) {
-          setUser({
+          const newUser = {
             uid: fbUser.uid,
             email: fbUser.email,
             emailVerified: fbUser.emailVerified,
             role: 'admin', // Puedes obtenerlo de la DB si lo necesitas
-          });
-          console.log('Usuario establecido en estado:', {
-            uid: fbUser.uid,
-            email: fbUser.email,
-            emailVerified: fbUser.emailVerified,
-            role: 'admin'
-          });
+          };
+          setUser(newUser);
         } else {
           setUser(null);
-          console.log('Usuario removido del estado');
         }
         setLoading(false);
       });
@@ -62,9 +58,6 @@ export const AuthProvider = ({ children }) => {
   // Registro de usuario
   const register = async (email, password, role = 'admin') => {
     try {
-      console.log('Iniciando registro de usuario:', email, 'con rol:', role);
-      console.log('Database config:', database);
-      
       // Validar email antes de intentar crear usuario
       if (!email || !email.includes('@')) {
         throw new Error('Email inválido');
@@ -76,16 +69,12 @@ export const AuthProvider = ({ children }) => {
       }
       
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('Usuario creado en Firebase Auth:', firebaseUser.uid);
 
       // Verificar que la base de datos esté disponible
       if (!database) {
         throw new Error('Base de datos no disponible');
       }
 
-      // Persistir datos del usuario en la base de datos según el rol
-      console.log('Intentando guardar en Realtime Database...');
-      
       // Crear estructura base del usuario
       const userData = {
         uid: firebaseUser.uid,
@@ -131,32 +120,24 @@ export const AuthProvider = ({ children }) => {
         })
       };
       
-      // Guardar en la estructura principal según el rol
-      let userRef;
-      if (role === 'admin') {
-        // El admin principal se guarda en la raíz de admins
-        userRef = ref(database, `admins/${firebaseUser.uid}`);
-      } else if (role === 'empleado') {
-        // Los empleados se guardan dentro del admin principal
-        // Por ahora los guardamos en empleados, pero podrían estar dentro de un admin específico
-        userRef = ref(database, `empleados/${firebaseUser.uid}`);
-      }
-      
-      console.log('Referencia de la base de datos:', userRef.toString());
-      console.log('Datos a guardar:', userData);
+              // Guardar en la estructura principal según el rol
+        let userRef;
+        if (role === 'admin') {
+          // El admin principal se guarda en la raíz de admins
+          userRef = ref(database, `admins/${firebaseUser.uid}`);
+        } else if (role === 'empleado') {
+          // Los empleados se guardan dentro del admin principal
+          // Por ahora los guardamos en empleados, pero podrían estar dentro de un admin específico
+          userRef = ref(database, `empleados/${firebaseUser.uid}`);
+        }
       
       try {
         await set(userRef, userData);
-        console.log(`Usuario guardado exitosamente en Realtime Database como ${role}`);
       } catch (dbError) {
-        console.error('Error específico de la base de datos:', dbError);
-        console.error('Código de error DB:', dbError.code);
-        console.error('Mensaje de error DB:', dbError.message);
         throw new Error(`Error al guardar en base de datos: ${dbError.message}`);
       }
 
       await sendEmailVerification(firebaseUser);
-      console.log('Email de verificación enviado');
       
       // Solo mostrar alerta de éxito si todo salió bien
       Alert.alert('Usuario creado exitosamente', 'Te enviamos un email de verificación.');
@@ -199,33 +180,51 @@ export const AuthProvider = ({ children }) => {
       
       // Verificar que el email esté verificado
       if (!user.emailVerified) {
-        console.log('Email no verificado, cerrando sesión');
         Alert.alert('Verifica tu correo', 'Debes verificar tu email antes de continuar.');
         await signOut(auth);
         return false; // No permitir acceso
       }
       
-      console.log('Login exitoso, email verificado');
       // Si el email está verificado, permitir acceso
       return true; // Permitir acceso
     } catch (e) {
-      console.error('Error en login:', e);
       Alert.alert('Error', e.message || String(e));
       return false; // No permitir acceso
     }
   };
 
-  // Logout
+  // ===== LOGOUT COMPLETO =====
+  // Este logout garantiza que:
+  // 1. No quedan roles cacheados en el contexto
+  // 2. Se limpia AsyncStorage COMPLETAMENTE (todos los datos del usuario)
+  // 3. Se resetea el AuthContext completamente
+  // 4. Se muestra el modal de selección solo cuando corresponde
+  // 5. Se evita que un usuario use data de otro por error
+  // 6. Limpia datos de personas, configuraciones y cualquier otro dato local
   const logout = async () => {
-    await signOut(auth);
-    setGlobalUserRole(null); // Limpiar rol global al hacer logout
-    
-    // Limpiar rol persistido en AsyncStorage
     try {
-      await AsyncStorage.removeItem('globalUserRole');
-      console.log('Rol removido de AsyncStorage');
+      // 1. Deshabilitar carga automática de rol persistido
+      setShouldLoadPersistedRole(false);
+      
+      // 2. SignOut de Firebase
+      await signOut(auth);
+      
+      // 3. Limpiar estado local del contexto INMEDIATAMENTE
+      setUser(null);
+      setFirebaseUser(null);
+      setGlobalUserRole(null);
+      setLoading(false);
+      
+      // 4. Limpiar TODO AsyncStorage - TODOS los datos del usuario
+      await AsyncStorage.clear();
+      
     } catch (error) {
-      console.error('Error removiendo rol de AsyncStorage:', error);
+      // Aún así, intentar limpiar el estado local
+      setUser(null);
+      setFirebaseUser(null);
+      setGlobalUserRole(null);
+      setLoading(false);
+      setShouldLoadPersistedRole(false);
     }
   };
 
@@ -235,11 +234,17 @@ export const AuthProvider = ({ children }) => {
     // NO limpiar globalUserRole aquí
   };
 
+
+
   // Establecer rol global
   const setUserRole = async (role) => {
-    console.log('=== setUserRole llamado ===');
-    console.log('Rol anterior:', globalUserRole);
-    console.log('Nuevo rol:', role);
+    // Validar que el rol no sea null o undefined
+    if (!role) {
+      return;
+    }
+    
+    // Re-habilitar carga automática de rol persistido
+    setShouldLoadPersistedRole(true);
     
     // Persistir en estado local
     setGlobalUserRole(role);
@@ -247,25 +252,22 @@ export const AuthProvider = ({ children }) => {
     // Persistir en AsyncStorage para mantener el rol entre sesiones
     try {
       await AsyncStorage.setItem('globalUserRole', role);
-      console.log('Rol persistido en AsyncStorage:', role);
     } catch (error) {
-      console.error('Error persistiendo rol en AsyncStorage:', error);
+      // Error silencioso
     }
-    
-    console.log('globalUserRole actualizado a:', role);
   };
 
   // Recuperar rol desde AsyncStorage al iniciar la app
   const loadPersistedRole = async () => {
     try {
       const persistedRole = await AsyncStorage.getItem('globalUserRole');
+      
       if (persistedRole) {
-        console.log('Rol recuperado desde AsyncStorage:', persistedRole);
         setGlobalUserRole(persistedRole);
         return persistedRole;
       }
     } catch (error) {
-      console.error('Error recuperando rol desde AsyncStorage:', error);
+      // Error silencioso
     }
     return null;
   };
@@ -275,36 +277,39 @@ export const AuthProvider = ({ children }) => {
     return globalUserRole;
   };
 
+  // Limpiar rol global de manera segura
+  const clearUserRole = async () => {
+    try {
+      // Limpiar estado local
+      setGlobalUserRole(null);
+      
+      // Remover de AsyncStorage
+      await AsyncStorage.removeItem('globalUserRole');
+      
+      // Deshabilitar carga automática
+      setShouldLoadPersistedRole(false);
+      
+    } catch (error) {
+      // Error silencioso
+    }
+  };
+
+
+
   // Reenviar verificación
   const resendVerification = async () => {
     try {
-      console.log('=== INICIO resendVerification ===');
-      console.log('firebaseUser:', firebaseUser);
-      console.log('firebaseUser?.email:', firebaseUser?.email);
-      console.log('firebaseUser?.emailVerified:', firebaseUser?.emailVerified);
-      console.log('auth.currentUser:', auth.currentUser);
-      
       if (!firebaseUser) {
-        console.log('ERROR: No hay firebaseUser');
         throw new Error('No hay usuario autenticado. Debes estar logueado para reenviar la verificación.');
       }
       
       if (firebaseUser.emailVerified) {
-        console.log('ERROR: Email ya verificado');
         throw new Error('Tu email ya está verificado. No es necesario reenviar la verificación.');
       }
       
-      console.log('Intentando enviar verificación a:', firebaseUser.email);
       await sendEmailVerification(firebaseUser);
-      console.log('Email de verificación reenviado exitosamente');
-      console.log('=== FIN resendVerification (éxito) ===');
       return true;
     } catch (e) {
-      console.error('=== ERROR en resendVerification ===');
-      console.error('Error completo:', e);
-      console.error('Error code:', e.code);
-      console.error('Error message:', e.message);
-      
       let errorMessage = 'Error al reenviar el email de verificación';
       
       if (e.code === 'auth/too-many-requests') {
@@ -315,8 +320,6 @@ export const AuthProvider = ({ children }) => {
         errorMessage = e.message;
       }
       
-      console.error('Error message final:', errorMessage);
-      console.log('=== FIN resendVerification (error) ===');
       throw new Error(errorMessage);
     }
   };
@@ -344,7 +347,7 @@ export const AuthProvider = ({ children }) => {
             }
           }
         } catch (dbError) {
-          console.log('No se pudo obtener el rol desde la DB, usando default:', dbError.message);
+          // Error silencioso, usar rol por defecto
         }
         
         // Actualizar el estado del usuario con la información más reciente
@@ -356,11 +359,9 @@ export const AuthProvider = ({ children }) => {
         };
         
         setUser(updatedUser);
-        console.log('Usuario actualizado:', updatedUser);
         return updatedUser;
       }
     } catch (error) {
-      console.error('Error al obtener rol del usuario:', error);
       // Fallback al rol por defecto
       if (firebaseUser) {
         const fallbackUser = {
@@ -385,7 +386,6 @@ export const AuthProvider = ({ children }) => {
       );
       return true;
     } catch (error) {
-      console.error('Error al enviar correo de recuperación:', error);
       let errorMessage = 'Error al enviar el correo de recuperación.';
       
       switch (error.code) {
@@ -421,8 +421,10 @@ export const AuthProvider = ({ children }) => {
       sendPasswordResetEmail: handlePasswordReset,
       globalUserRole,
       setUserRole,
+      clearUserRole,
       getUserRole,
-      loadPersistedRole
+      loadPersistedRole,
+      shouldLoadPersistedRole
     }}>
       {children}
     </AuthContext.Provider>

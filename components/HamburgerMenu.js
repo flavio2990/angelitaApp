@@ -6,7 +6,8 @@ import { useAuth } from './UserContext';
 export default function HamburgerMenu({ 
   position = 'top-right', // 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
   style,
-  showInModal = true // Controla si se muestra en modales
+  showInModal = true, // Controla si se muestra en modales
+  onLogout // Función personalizada de logout que limpia datos locales
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const { globalUserRole, logout } = useAuth();
@@ -68,7 +69,12 @@ export default function HamburgerMenu({
   };
 
   const handleLogout = () => {
-    logout();
+    // Usar función personalizada de logout si está disponible, sino usar la del contexto
+    if (onLogout) {
+      onLogout();
+    } else {
+      logout();
+    }
     setIsOpen(false);
   };
 
@@ -103,7 +109,7 @@ export default function HamburgerMenu({
           {/* Separador antes del logout */}
           <View style={[styles.separator, { backgroundColor: roleInfo.borderColor }]} />
 
-          {/* Botón de logout */}
+          {/* Botón de logout - Limpia TODO */}
           <TouchableOpacity 
             style={styles.menuItem} 
             onPress={handleLogout}
