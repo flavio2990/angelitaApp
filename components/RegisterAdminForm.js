@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import { Text } from 'react-native';
 import { TextInput } from 'react-native-paper';
-
 import CustomButton from './CustomButton';
-import { auth, database } from './../env/firebase';
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { ref, set } from "firebase/database";
+import { useAuth } from './UserContext';
 
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -16,26 +13,12 @@ export default function RegisterAdminForm({ onRegister }) {
     const [registerPassword, setRegisterPassword] = useState('');
     const [registerEmailTouched, setRegisterEmailTouched] = useState(false);
     const [registerPasswordTouched, setRegisterPasswordTouched] = useState(false);
+    const { register } = useAuth();
 
     const handleRegister = async () => {
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, registerEmail, registerPassword);
-            const user = userCredential.user;
-            const uid = user.uid;
-
-            await set(ref(database, 'users/' + uid), {
-                email: registerEmail,
-                role: "admin",
-                createdAt: new Date().toISOString(),
-                uid: uid
-            });
-
-            await sendEmailVerification(user);
-
-            alert("Te enviamos un mail de verificación. Por favor, revisa tu correo y haz clic en el enlace para activar tu cuenta.");
-
+            await register(registerEmail, registerPassword);
             if (onRegister) onRegister(registerEmail, registerPassword);
-
         } catch (error) {
             alert("Error al registrar usuario: " + error.message);
         }

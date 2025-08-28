@@ -6,8 +6,7 @@ import TopBarHeader from './TopBarHeader';
 
 
 export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPress, onAddPress }) {
-  console.log("CustomList renderizado con", data?.length, "elementos");
-  console.log("Datos en CustomList:", data);
+
 
   const renderItem = ({ item }) => (
     <TouchableRipple onPress={() => onItemPress(item)} rippleColor="rgba(0, 0, 0, .1)">

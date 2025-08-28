@@ -2,6 +2,7 @@ import { Modal as PaperModal, Portal, Text, Button, Card, IconButton } from 'rea
 import { View, StyleSheet, Dimensions, StatusBar, Platform, ScrollView } from 'react-native';
 
 import TopBarHeader from '@/components/TopBarHeader';
+import HamburgerMenu from './HamburgerMenu';
 
 const { width, height } = Dimensions.get('window');
 
@@ -23,6 +24,7 @@ const CustomModal = ({
   centerTopbarTitle = false,
   cardMarginTop = 0,
   centerCard = false,
+  showHamburgerMenu = true, // Controla si se muestra el menú hamburguesa
 }) => {
   return (
     <Portal>
@@ -42,6 +44,9 @@ const CustomModal = ({
             centerTitle={centerTopbarTitle}
           />
         )}
+        
+        {/* MENÚ HAMBURGUESA - SOLO CUANDO HAY ROL ESTABLECIDO */}
+        {showHamburgerMenu && <HamburgerMenu position="top-right" />}
         <Card style={[styles.theCard, cardMarginTop !== undefined ? { marginTop: cardMarginTop } : null]}>
           <View style={styles.titleWrapper}>
             <Text style={styles.title}>{title}</Text>

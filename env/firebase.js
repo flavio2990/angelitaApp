@@ -9,8 +9,8 @@ const firebaseConfig = {
   projectId: "recidenciasapp",
   storageBucket: "recidenciasapp.appspot.com",
   messagingSenderId: "844528127037",
-  appId: "1:844528127037:android:159900d40f776f1d1dee54",
-  databaseURL: "https://hogaresapp-default-rtdb.firebaseio.com/"
+  appId: "1:844528127037:android:acef8ca8aa37bc7c1dee54", // ← Necesitamos este valor
+  databaseURL: "https://recidenciasapp-default-rtdb.firebaseio.com"
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -21,5 +21,5 @@ const auth = initializeAuth(app, {
 
 const database = getDatabase(app);
 
-export { auth, database };
-export const FIREBASE_DB_URL = "https://hogaresapp-default-rtdb.firebaseio.com/";
+export { auth, database, app };
+export const FIREBASE_DB_URL = "https://recidenciasapp-default-rtdb.firebaseio.com";
