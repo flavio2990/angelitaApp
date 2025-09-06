@@ -7,7 +7,8 @@ export default function HamburgerMenu({
   position = 'top-right', // 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
   style,
   showInModal = true, // Controla si se muestra en modales
-  onLogout // Función personalizada de logout que limpia datos locales
+  onLogout, // Función personalizada de logout que limpia datos locales
+  hasTopBar = false // Indica si hay un TopBarHeader presente
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const { globalUserRole, logout } = useAuth();
@@ -51,16 +52,19 @@ export default function HamburgerMenu({
 
   // Función para obtener la posición del menú
   const getPositionStyle = () => {
+    // Ajustar posición basándose en si hay TopBarHeader o no
+    const topPosition = hasTopBar ? 30 : 30; // Más arriba cuando no hay TopBarHeader
+    
     switch (position) {
       case 'top-left':
-        return { top: 60, left: 20 };
+        return { top: topPosition, left: 20 };
       case 'bottom-right':
         return { bottom: 20, right: 20 };
       case 'bottom-left':
         return { bottom: 20, left: 20 };
       case 'top-right':
       default:
-        return { top: 60, right: 20 };
+        return { top: topPosition, right: 10 };
     }
   };
 

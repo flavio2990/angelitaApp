@@ -95,13 +95,11 @@ export const AuthProvider = ({ children }) => {
           areas: {
             UTI: {
               nombre: 'Unidad de Terapia Intensiva',
-              empleados: {},
-              pacientes: {}
+              personas: {}
             },
             UCG: {
               nombre: 'Unidad de Cuidados Generales',
-              empleados: {},
-              pacientes: {}
+              personas: {}
             }
           }
         }),

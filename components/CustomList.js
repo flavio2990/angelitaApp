@@ -5,7 +5,7 @@ import { Card, TouchableRipple, FAB } from 'react-native-paper';
 import TopBarHeader from './TopBarHeader';
 
 
-export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPress, onAddPress }) {
+export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPress, onAddPress, canEdit = false }) {
 
 
   const renderItem = ({ item }) => (
@@ -33,11 +33,13 @@ export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPre
         contentContainerStyle={styles.listContent}
         extraData={data?.length}
         removeClippedSubviews={false} />
-      <FAB
-        icon="account-plus"
-        style={styles.fabStyle}
-        onPress={onAddPress}
-        color="white" />
+      {canEdit && (
+        <FAB
+          icon="account-plus"
+          style={styles.fabStyle}
+          onPress={onAddPress}
+          color="white" />
+      )}
     </>
   );
 };

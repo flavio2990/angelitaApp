@@ -25,6 +25,7 @@ const CustomModal = ({
   cardMarginTop = 0,
   centerCard = false,
   showHamburgerMenu = true, // Controla si se muestra el menú hamburguesa
+  canEdit = false, // Controla si se pueden mostrar botones de edición
 }) => {
   return (
     <Portal>
@@ -46,7 +47,7 @@ const CustomModal = ({
         )}
         
         {/* MENÚ HAMBURGUESA - SOLO CUANDO HAY ROL ESTABLECIDO */}
-        {showHamburgerMenu && <HamburgerMenu position="top-right" />}
+        {showHamburgerMenu && <HamburgerMenu position="top-right" hasTopBar={showTopbar} />}
         <Card style={[styles.theCard, cardMarginTop !== undefined ? { marginTop: cardMarginTop } : null]}>
           <View style={styles.titleWrapper}>
             <Text style={styles.title}>{title}</Text>
@@ -78,15 +79,17 @@ const CustomModal = ({
         </Card>
         {isDetailModal && (
           <View style={{ alignItems: 'center' }}>
-            <Button
-              mode="contained"
-              onPress={onModifyPress}
-              style={styles.detailButton}
-              labelStyle={styles.detailButtonLabel}
-              buttonColor="#5124A5"
-            >
-              Modificar
-            </Button>
+            {canEdit && (
+              <Button
+                mode="contained"
+                onPress={onModifyPress}
+                style={styles.detailButton}
+                labelStyle={styles.detailButtonLabel}
+                buttonColor="#5124A5"
+              >
+                Modificar
+              </Button>
+            )}
             <Button
               mode="contained"
               onPress={onGoToPlanPress}
@@ -98,7 +101,7 @@ const CustomModal = ({
             </Button>
           </View>
         )}
-        {isEditModal && (
+        {isEditModal && canEdit && (
           <View style={{ alignItems: 'center' }}>
             <Button
               mode="contained"

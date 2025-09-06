@@ -12,13 +12,7 @@ const TopBarHeader = ({
   if (!showTopBar) return null;
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[
-        styles.safeAreaStyle,
-        style,
-      ]}
-    >
+    <View style={[styles.safeAreaStyle, style]}>
       <View style={styles.topBar}>
         <View style={styles.left}>
           {onBack && (
@@ -27,7 +21,7 @@ const TopBarHeader = ({
               onPress={onBack}
               style={styles.backButton}
               iconColor="white"
-              size={28}
+              size={24}
             />
           )}
         </View>
@@ -45,7 +39,7 @@ const TopBarHeader = ({
         </View>
         <View style={styles.right} />
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -54,13 +48,14 @@ export default TopBarHeader;
 const styles = StyleSheet.create({
   safeAreaStyle: {
     backgroundColor: '#5124A5',
+    paddingTop: 0,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    minHeight: 56,
+    minHeight: 50,
     backgroundColor: '#5124A5',
   },
   left: {
@@ -82,7 +77,7 @@ const styles = StyleSheet.create({
   },
   topbarTextTitle: {
     color: 'white',
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
     justifyContent: 'center',

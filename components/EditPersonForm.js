@@ -14,6 +14,13 @@ const insets = useSafeAreaInsets();
     person?.tipo &&
     person.tipo !== 'Administrador';
 
+  // Si estamos agregando y hay un selectedArea, establecerlo automáticamente
+  React.useEffect(() => {
+    if (isAdding && selectedArea && !person?.area) {
+      onChange({ ...person, area: selectedArea });
+    }
+  }, [isAdding, selectedArea, person, onChange]);
+
   return (
     <KeyboardAvoidingView
     behavior={Platform.OS === "ios" ? "padding" : "height"}

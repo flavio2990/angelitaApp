@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "angelitaApp",
+    "name": "Hades Labs",
     "slug": "angelitaApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "jsEngine": "hermes",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/HadesLabs.jpg",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
