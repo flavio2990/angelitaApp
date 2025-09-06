@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 're
 import { TextInput } from 'react-native-paper';
 import { Dropdown } from 'react-native-paper-dropdown';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FORM_TEXTS, PERSON_TYPE_TEXTS, AREA_TEXTS } from '../constants/Strings';
 
 export default function EditPersonForm({ person, onChange, isAdding, selectedArea, userType }) {
   const [showUserTypeDropDown, setShowUserTypeDropDown] = React.useState(false);
@@ -36,7 +37,7 @@ const insets = useSafeAreaInsets();
         {isAdding && (
           <View style={styles.dropDownContainer}>
             <Dropdown
-              label="Designar como:"
+              label={`${FORM_TEXTS.typeLabel}:`}
               placeholder={person?.tipo || 'Seleccionado'}
               mode="outlined"
                 visible={showUserTypeDropDown}
@@ -52,9 +53,9 @@ const insets = useSafeAreaInsets();
                   setShowUserTypeDropDown(false);
               }}
               options={[
-                { label: 'Paciente', value: 'Paciente' },
-                { label: 'Enfermero', value: 'Enfermería' },
-                { label: 'Administrador', value: 'Administrador' },
+                { label: PERSON_TYPE_TEXTS.patient, value: PERSON_TYPE_TEXTS.patient },
+                { label: PERSON_TYPE_TEXTS.nursing, value: PERSON_TYPE_TEXTS.nursing },
+                { label: PERSON_TYPE_TEXTS.administrator, value: PERSON_TYPE_TEXTS.administrator },
               ]}
               theme={{
                 colors: {
@@ -70,7 +71,7 @@ const insets = useSafeAreaInsets();
         {showArea && (
           <View style={styles.dropDownContainer}>
             <Dropdown
-              label="Área"
+              label={FORM_TEXTS.areaLabel}
               placeholder={person?.area || 'Seleccionar área'}
               mode="outlined"
                 visible={showAreaDropDown}
@@ -97,7 +98,7 @@ const insets = useSafeAreaInsets();
           </View>
         )}
         <TextInput
-          label="Nombre"
+          label={FORM_TEXTS.nameLabel}
           value={person?.nombre || ''}
           onChangeText={(text) => onChange({ ...person, nombre: text })}
           style={styles.styleInput}
@@ -105,7 +106,7 @@ const insets = useSafeAreaInsets();
             dense={false}
         />
         <TextInput
-          label="Edad"
+          label={FORM_TEXTS.ageLabel}
           value={person?.edad || ''}
           onChangeText={(text) => onChange({ ...person, edad: text })}
           style={styles.styleInput}
@@ -114,7 +115,7 @@ const insets = useSafeAreaInsets();
             dense={false}
         />
         <TextInput
-          label="DNI"
+          label={FORM_TEXTS.dniLabel}
           value={person?.dni || ''}
           onChangeText={(text) => onChange({ ...person, dni: text })}
           style={styles.styleInput}
@@ -122,7 +123,7 @@ const insets = useSafeAreaInsets();
             dense={false}
         />
         <TextInput
-          label="Nacimiento"
+          label={FORM_TEXTS.birthLabel}
           value={person?.nacimiento || ''}
           onChangeText={(text) => onChange({ ...person, nacimiento: text })}
           style={styles.styleInput}
@@ -130,7 +131,7 @@ const insets = useSafeAreaInsets();
             dense={false}
         />
         <TextInput
-          label="Ingresó"
+          label={FORM_TEXTS.admissionLabel}
           value={person?.ingreso || ''}
           onChangeText={(text) => onChange({ ...person, ingreso: text })}
           style={styles.styleInput}
@@ -138,7 +139,7 @@ const insets = useSafeAreaInsets();
             dense={false}
         />
         <TextInput
-          label="Obra Social"
+          label={FORM_TEXTS.socialCoverageLabel}
           value={person?.coberturaSocial || ''}
           onChangeText={(text) => onChange({ ...person, coberturaSocial: text })}
           style={styles.styleInput}
@@ -146,7 +147,7 @@ const insets = useSafeAreaInsets();
             dense={false}
         />
         <TextInput
-          label="Nacionalidad"
+          label={FORM_TEXTS.nationalityLabel}
           value={person?.nacionalidad || ''}
           onChangeText={(text) => onChange({ ...person, nacionalidad: text })}
           style={styles.styleInput}
@@ -154,7 +155,7 @@ const insets = useSafeAreaInsets();
             dense={false}
         />
         <TextInput
-          label="Estado Civil"
+          label={FORM_TEXTS.maritalStatusLabel}
           value={person?.estadoCivil || ''}
           onChangeText={(text) => onChange({ ...person, estadoCivil: text })}
           style={styles.styleInput}
@@ -162,7 +163,7 @@ const insets = useSafeAreaInsets();
             dense={false}
         />
         <TextInput
-          label="Peso"
+          label={FORM_TEXTS.weightLabel}
           value={person?.peso || ''}
           onChangeText={(text) => onChange({ ...person, peso: text })}
           style={styles.styleInput}

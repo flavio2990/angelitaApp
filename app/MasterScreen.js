@@ -19,7 +19,18 @@ import { useAuth } from '../components/UserContext';
 import HamburgerMenu from '../components/HamburgerMenu';
 // import GlobalUserDebugger from '../components/GlobalUserDebugger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
+import { 
+  CARD_TITLES, 
+  AREA_OPTIONS, 
+  TIPE_OPTIONS, 
+  MODAL_TITLES, 
+  TOP_BAR_HEADER_TITLES,
+  AUTH_TEXTS,
+  FORM_TEXTS,
+  ROLE_TEXTS,
+  STATUS_MESSAGES,
+  NAVIGATION_TEXTS
+} from '../constants/Strings';
 
 import { ref, onValue, set } from 'firebase/database';
 import { database } from '../env/firebase';
@@ -428,7 +439,7 @@ export default function MasterScreen() {
           <CustomModal
             visible={true}
             onDismiss={() => { }}
-            title="Seleccione su rol:"
+            title={AUTH_TEXTS.selectRole}
             centerCard={true}
             actions={[]}
           >
@@ -444,7 +455,7 @@ export default function MasterScreen() {
               </Text>
               
               <CustomButton
-                label="Soy Administrador"
+                label={AUTH_TEXTS.adminRole}
                 onPress={() => {
                   setUserRole('admin');
                   setIsAdminSelected(true);
@@ -452,7 +463,7 @@ export default function MasterScreen() {
               />
               <View style={{ height: 16 }} />
               <CustomButton
-                label="Soy Empleado"
+                label={AUTH_TEXTS.employeeRole}
                 onPress={() => {
                   setUserRole('empleado');
                   setIsAdminSelected(false);
@@ -476,7 +487,7 @@ export default function MasterScreen() {
           <CustomModal
             visible={true}
             onDismiss={() => setShowRegisterModal(false)}
-            title="Crear Usuario Administrador"
+            title={AUTH_TEXTS.registerTitle}
             centerCard={true}
             showHamburgerMenu={false}
           >
@@ -510,12 +521,12 @@ export default function MasterScreen() {
                   color: '#FF6B6B',
                   fontWeight: '600'
                 }}>
-                  ⚠️ Primero debes seleccionar un rol
+                  {AUTH_TEXTS.selectRoleFirst}
                 </Text>
               )}
               
               <TextInput
-                label="Email"
+                label={AUTH_TEXTS.emailLabel}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -526,7 +537,7 @@ export default function MasterScreen() {
               />
               
               <TextInput
-                label="Contraseña"
+                label={AUTH_TEXTS.passwordLabel}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -536,7 +547,7 @@ export default function MasterScreen() {
               
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
-                  label="CREAR USUARIO"
+                  label={AUTH_TEXTS.createUserButton}
                   onPress={async () => {
                     try {
                       await register(email, password, globalUserRole);
@@ -570,7 +581,7 @@ export default function MasterScreen() {
                     fontSize: 16,
                     textDecorationLine: 'underline'
                   }}>
-                    Cancelar
+                    {AUTH_TEXTS.cancelButton}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -583,7 +594,7 @@ export default function MasterScreen() {
           <CustomModal
             visible={true}
             onDismiss={() => setShowForgotPasswordModal(false)}
-            title="Recuperar Contraseña"
+            title={AUTH_TEXTS.forgotPasswordTitle}
             centerCard={true}
             showHamburgerMenu={false}
           >
@@ -594,11 +605,11 @@ export default function MasterScreen() {
                 textAlign: 'center',
                 color: '#666'
               }}>
-                Ingresa tu email para recibir un enlace de recuperación
+                {AUTH_TEXTS.forgotPasswordMessage}
               </Text>
               
               <TextInput
-                label="Email"
+                label={AUTH_TEXTS.emailLabel}
                 value={forgotPasswordEmail}
                 onChangeText={setForgotPasswordEmail}
                 keyboardType="email-address"
@@ -610,7 +621,7 @@ export default function MasterScreen() {
               
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
-                  label="ENVIAR ENLACE"
+                  label={AUTH_TEXTS.sendResetButton}
                   onPress={handleForgotPassword}
                   disabled={!isValidEmail(forgotPasswordEmail) || forgotPasswordLoading}
                   style={{ marginBottom: 16, width: 260 }}
@@ -643,7 +654,7 @@ export default function MasterScreen() {
           <CustomModal
             visible={true}
             onDismiss={() => { }} // No permitir cerrar hasta verificar
-            title="Verifica tu correo"
+            title={AUTH_TEXTS.verificationTitle}
             centerCard={true}
             showHamburgerMenu={false}
           >
@@ -654,7 +665,7 @@ export default function MasterScreen() {
                 textAlign: 'center',
                 color: '#666'
               }}>
-                Usuario creado exitosamente. Debes verificar tu correo electrónico antes de continuar.
+                {AUTH_TEXTS.verificationMessage}
               </Text>
               
               <Text style={{ 
@@ -683,14 +694,14 @@ export default function MasterScreen() {
               
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
-                  label={resendVerificationLoading ? "Enviando..." : "Reenviar enlace"}
+                  label={resendVerificationLoading ? STATUS_MESSAGES.saving : AUTH_TEXTS.verificationButton}
                   onPress={handleResendVerification}
                   disabled={resendVerificationLoading}
                   style={{ marginBottom: 16, width: 260 }}
                 />
                 <View style={{ height: 16 }} />
                 <CustomButton
-                  label="Ya verifiqué mi correo"
+                  label={AUTH_TEXTS.backToLogin}
                   onPress={handleReloadUser}
                   style={{ marginBottom: 16, width: 260 }}
                 />
@@ -714,7 +725,7 @@ export default function MasterScreen() {
           <Card style={styles.card}>
             <Card.Content style={styles.cardContent}>
               <Text variant="titleLarge" style={styles.bigWelcomeText}>
-                Iniciar Sesión
+                {AUTH_TEXTS.loginTitle}
               </Text>
               <TextInput
                 value={email}
@@ -722,7 +733,7 @@ export default function MasterScreen() {
                   setEmail(text);
                   if (!emailTouched) setEmailTouched(true);
                 }}
-                label="Email"
+                label={AUTH_TEXTS.emailLabel}
                 style={styles.textInput}
                 theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
                 keyboardType="email-address"
@@ -737,7 +748,7 @@ export default function MasterScreen() {
               )}
               <View style={{ margin: 8 }} />
               <TextInput
-                label="Contraseña"
+                label={AUTH_TEXTS.passwordLabel}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
@@ -747,7 +758,7 @@ export default function MasterScreen() {
               <View style={{ margin: 8 }} />
               <CustomButton
                 onPress={handleLogin}
-                label="INGRESAR"
+                label={AUTH_TEXTS.loginButton}
                 disabled={!isValidEmail(email) || !password || password.length < 6 || loading}
               />
               {loginError && (
@@ -770,14 +781,14 @@ export default function MasterScreen() {
                   textDecorationLine: 'underline',
                   textAlign: 'center'
                 }}>
-                  ¿Olvidaste tu contraseña?
+                  {AUTH_TEXTS.forgotPassword}
                 </Text>
               </TouchableOpacity>
               
                              {globalUserRole === 'admin' && (
                 <TouchableOpacity onPress={() => setShowRegisterModal(true)} style={{ marginTop: 16 }}>
                   <Text style={{ color: '#5124A5', fontWeight: 'bold', fontSize: 18 }}>
-                    ¿No tienes cuenta? Regístrate
+                    {AUTH_TEXTS.noAccount} {AUTH_TEXTS.createAccount}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -811,7 +822,7 @@ export default function MasterScreen() {
                   fontSize: 16,
                   fontWeight: '600'
                 }}>
-                  Cambiar de rol
+                  {AUTH_TEXTS.changeRole}
                 </Text>
               </TouchableOpacity>
             </Card.Content>
@@ -890,7 +901,7 @@ export default function MasterScreen() {
         <CustomModal
           visible={showRegisterModal}
           onDismiss={() => setShowRegisterModal(false)}
-          title="Crear Usuario Administrador"
+          title={AUTH_TEXTS.registerTitle}
           centerCard={true}
         >
           <RegisterAdminForm
@@ -957,12 +968,12 @@ export default function MasterScreen() {
           visible={editModalVisible}
           onRequestClose={() => setEditModalVisible(false)}
           showTopbar={true}
-          topbarTitle="Editar Datos"
+          topbarTitle={FORM_TEXTS.editButton}
           onBack={() => {
             setEditModalVisible(false);
             setDetailModalVisible(true);
           }}
-          title="Modificar Información:"
+          title={`${FORM_TEXTS.editButton} Información:`}
           isEditModal={true}
           onSavePress={() => {
             setEditModalVisible(false);
@@ -988,7 +999,7 @@ export default function MasterScreen() {
             setShowConfirmModal(false);
             setSaveSuccess(false);
           }}
-          title={saveSuccess ? "¡GUARDADO!" : "¿Guardar todo?"}
+          title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
           centerCard={true}
           actions={
             saveSuccess

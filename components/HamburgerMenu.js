@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { useAuth } from './UserContext';
+import { ROLE_TEXTS, AUTH_TEXTS } from '../constants/Strings';
 
 export default function HamburgerMenu({ 
   position = 'top-right', // 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
@@ -23,23 +24,23 @@ export default function HamburgerMenu({
     switch (role) {
       case 'admin':
         return {
-          icon: '🛡️',
-          text: 'ADMINISTRADOR',
+          icon: ROLE_TEXTS.adminIcon,
+          text: ROLE_TEXTS.admin,
           color: '#5124A5',
           bgColor: '#E8E4F7',
           borderColor: '#8B5CF6'
         };
       case 'empleado':
         return {
-          icon: '👤',
-          text: 'EMPLEADO',
+          icon: ROLE_TEXTS.employeeIcon,
+          text: ROLE_TEXTS.employee,
           color: '#007AFF',
           bgColor: '#E3F2FD',
           borderColor: '#3B82F6'
         };
       default:
         return {
-          icon: '👤',
+          icon: ROLE_TEXTS.employeeIcon,
           text: role.toUpperCase(),
           color: '#666',
           bgColor: '#F5F5F5',
@@ -120,7 +121,7 @@ export default function HamburgerMenu({
             activeOpacity={0.7}
           >
             <Text style={[styles.menuItemText, { color: '#DC3545' }]}>
-              🚪 Cerrar Sesión
+              {AUTH_TEXTS.logoutButton}
             </Text>
           </TouchableOpacity>
         </View>

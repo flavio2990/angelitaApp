@@ -1,31 +1,143 @@
+// ===== TÍTULOS DE TARJETAS =====
 export const CARD_TITLES = {
-    selectArea: "Seleccione Área",
-    selectTipe: "Seleccione: ",
-  };
-  
-  export const AREA_OPTIONS = [
-    { label: "U T I", icon: "hospital", value: "UTI" },
-    { label: "U C G", icon: "stethoscope", value: "UCG" },
-  ];
-  
-  export const TIPE_OPTIONS = [
+  selectArea: "Seleccione Área",
+  selectTipe: "Seleccione: ",
+};
+
+// ===== OPCIONES DE ÁREAS =====
+export const AREA_OPTIONS = [
+  { label: "U T I", icon: "hospital", value: "UTI" },
+  { label: "U C G", icon: "stethoscope", value: "UCG" },
+];
+
+// ===== OPCIONES DE TIPOS =====
+export const TIPE_OPTIONS = [
   { label: "Empleados", icon: "account", value: "Enfermería" },
   { label: "Pacientes", icon: "account-group", value: "Paciente" },
 ];
 
-  export const TOP_BAR_HEADER_TITLES = {
-    topBarTitleChoice: "Empleados/ Pacientes",
-    topBarTitlePatient: "Seleccione Paciente:",
-    topBarTitleEmploy: "Seleccione Empleado:",
-    topBarModalTitlePatient: "Datos del Paciente",
-    topBarModalTitleEmploy: "Datos del Empleado",
-    topBarNoData: "UPS! Aún no hay datos",
-    topBarNewData: "Agregar nuevo",
-  };
-  export const MODAL_TITLES = {
-    modalTitleEmployPatients: "Empleados/ Pacientes",
-    modalTitlePatient: "Datos del Paciente:",
-    modalTitleEmploy: "Datos del Empleado:",
-    modalNoData: "Ingresalos aquí:",
-  };
+// ===== TÍTULOS DE TOP BAR =====
+export const TOP_BAR_HEADER_TITLES = {
+  topBarTitleChoice: "Empleados/ Pacientes",
+  topBarTitlePatient: "Seleccione Paciente:",
+  topBarTitleEmploy: "Seleccione Empleado:",
+  topBarModalTitlePatient: "Datos del Paciente",
+  topBarModalTitleEmploy: "Datos del Empleado",
+  topBarNoData: "UPS! Aún no hay datos",
+  topBarNewData: "Agregar nuevo",
+};
+
+// ===== TÍTULOS DE MODALES =====
+export const MODAL_TITLES = {
+  modalTitleEmployPatients: "Empleados/ Pacientes",
+  modalTitlePatient: "Datos del Paciente:",
+  modalTitleEmploy: "Datos del Empleado:",
+  modalNoData: "Ingresalos aquí:",
+};
+
+// ===== TEXTO DE AUTENTICACIÓN =====
+export const AUTH_TEXTS = {
+  // Selección de rol
+  selectRole: "Seleccione su rol:",
+  adminRole: "SOY ADMINISTRADOR",
+  employeeRole: "SOY EMPLEADO",
+  changeRole: "Cambiar de rol",
+  
+  // Login
+  loginTitle: "Iniciar Sesión",
+  emailLabel: "Email",
+  passwordLabel: "Contraseña",
+  loginButton: "INICIAR SESIÓN",
+  forgotPassword: "¿Olvidaste tu contraseña?",
+  noAccount: "¿No tienes cuenta?",
+  createAccount: "Crear cuenta",
+  
+  // Registro
+  registerTitle: "Crear Usuario",
+  createUserButton: "CREAR USUARIO",
+  cancelButton: "Cancelar",
+  selectRoleFirst: "⚠️ Primero debes seleccionar un rol",
+  
+  // Verificación de email
+  verificationTitle: "Verificar Email",
+  verificationMessage: "Se ha enviado un enlace de verificación a tu email. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para verificar tu cuenta.",
+  verificationButton: "Reenviar verificación",
+  backToLogin: "Volver al login",
+  
+  // Recuperación de contraseña
+  forgotPasswordTitle: "Recuperar Contraseña",
+  forgotPasswordMessage: "Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.",
+  sendResetButton: "Enviar enlace",
+  
+  // Logout
+  logoutButton: "🚪 Cerrar Sesión",
+};
+
+// ===== TEXTO DE FORMULARIOS =====
+export const FORM_TEXTS = {
+  // Campos de persona
+  nameLabel: "Nombre",
+  ageLabel: "Edad",
+  dniLabel: "DNI",
+  typeLabel: "Tipo",
+  areaLabel: "Área",
+  
+  // Botones de formulario
+  saveButton: "Guardar",
+  editButton: "Modificar",
+  deleteButton: "Eliminar",
+  addNewButton: "Agregar nuevo",
+  
+  // Validaciones
+  requiredField: "Este campo es requerido",
+  invalidEmail: "Email inválido",
+  passwordTooShort: "La contraseña debe tener al menos 6 caracteres",
+  
+  // Campos adicionales de persona
+  birthLabel: "Nacimiento",
+  admissionLabel: "Ingresó",
+  socialCoverageLabel: "Obra Social",
+  nationalityLabel: "Nacionalidad",
+  maritalStatusLabel: "Estado Civil",
+  weightLabel: "Peso",
+};
+
+// ===== TEXTO DE ROLES =====
+export const ROLE_TEXTS = {
+  admin: "ADMINISTRADOR",
+  employee: "EMPLEADO",
+  adminIcon: "🛡️",
+  employeeIcon: "👤",
+};
+
+// ===== TEXTO DE ÁREAS =====
+export const AREA_TEXTS = {
+  uti: "Unidad de Terapia Intensiva",
+  ucg: "Unidad de Cuidados Generales",
+};
+
+// ===== TEXTO DE TIPOS DE PERSONA =====
+export const PERSON_TYPE_TEXTS = {
+  patient: "Paciente",
+  nursing: "Enfermería",
+  administrator: "Administrador",
+};
+
+// ===== MENSAJES DE ESTADO =====
+export const STATUS_MESSAGES = {
+  loading: "Cargando...",
+  noData: "No hay datos disponibles",
+  error: "Ha ocurrido un error",
+  success: "Operación exitosa",
+  saving: "Guardando...",
+  deleting: "Eliminando...",
+};
+
+// ===== TEXTO DE NAVEGACIÓN =====
+export const NAVIGATION_TEXTS = {
+  back: "Atrás",
+  next: "Siguiente",
+  done: "Finalizar",
+  close: "Cerrar",
+};
   
