@@ -15,8 +15,9 @@
     },
     "android": {
       "package": "com.angelitaapp",
-       "googleServicesFile": "./google-services.json"
-      },
+      "googleServicesFile": "./google-services.json",
+      "softwareKeyboardLayoutMode": "resize"
+    },
     "web": {
       "bundler": "metro",
       "output": "static",

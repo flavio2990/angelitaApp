@@ -84,53 +84,72 @@ export default function HamburgerMenu({
   };
 
   return (
-    <View style={[styles.container, getPositionStyle(), style]}>
-      {/* Botón del menú hamburguesa */}
-      <TouchableOpacity 
-        style={[styles.hamburgerButton, { backgroundColor: roleInfo.bgColor }]} 
-        onPress={handleToggleMenu}
-        activeOpacity={0.8}
-      >
-        <View style={styles.hamburgerIcon}>
-          <View style={[styles.hamburgerLine, { backgroundColor: roleInfo.color }]} />
-          <View style={[styles.hamburgerLine, { backgroundColor: roleInfo.color }]} />
-          <View style={[styles.hamburgerLine, { backgroundColor: roleInfo.color }]} />
-        </View>
-      </TouchableOpacity>
-
-      {/* Menú desplegable */}
+    <>
+      {/* Overlay invisible para cerrar el menú al hacer clic fuera */}
       {isOpen && (
-        <View style={[styles.menuContainer, { backgroundColor: roleInfo.bgColor, borderColor: roleInfo.borderColor }]}>
-          {/* Header del menú con información del rol */}
-          <View style={styles.menuHeader}>
-            <Text style={[styles.roleIcon, { color: roleInfo.color }]}>
-              {roleInfo.icon}
-            </Text>
-            <Text style={[styles.roleText, { color: roleInfo.color }]}>
-              {roleInfo.text}
-            </Text>
-          </View>
-
-          {/* Separador antes del logout */}
-          <View style={[styles.separator, { backgroundColor: roleInfo.borderColor }]} />
-
-          {/* Botón de logout - Limpia TODO */}
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={handleLogout}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.menuItemText, { color: '#DC3545' }]}>
-              {AUTH_TEXTS.logoutButton}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.overlay} 
+          onPress={() => setIsOpen(false)}
+          activeOpacity={1}
+        />
       )}
-    </View>
+      
+      <View style={[styles.container, getPositionStyle(), style]}>
+        {/* Botón del menú hamburguesa */}
+        <TouchableOpacity 
+          style={[styles.hamburgerButton, { backgroundColor: roleInfo.bgColor }]} 
+          onPress={handleToggleMenu}
+          activeOpacity={0.8}
+        >
+          <View style={styles.hamburgerIcon}>
+            <View style={[styles.hamburgerLine, { backgroundColor: roleInfo.color }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: roleInfo.color }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: roleInfo.color }]} />
+          </View>
+        </TouchableOpacity>
+
+        {/* Menú desplegable */}
+        {isOpen && (
+          <View style={[styles.menuContainer, { backgroundColor: roleInfo.bgColor, borderColor: roleInfo.borderColor }]}>
+            {/* Header del menú con información del rol */}
+            <View style={styles.menuHeader}>
+              <Text style={[styles.roleIcon, { color: roleInfo.color }]}>
+                {roleInfo.icon}
+              </Text>
+              <Text style={[styles.roleText, { color: roleInfo.color }]}>
+                {roleInfo.text}
+              </Text>
+            </View>
+
+            {/* Separador antes del logout */}
+            <View style={[styles.separator, { backgroundColor: roleInfo.borderColor }]} />
+
+            {/* Botón de logout - Limpia TODO */}
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={handleLogout}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.menuItemText, { color: '#DC3545' }]}>
+                {AUTH_TEXTS.logoutButton}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9998,
+  },
   container: {
     position: 'absolute',
     zIndex: 9999,

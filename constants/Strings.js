@@ -76,7 +76,7 @@ export const AUTH_TEXTS = {
 // ===== TEXTO DE FORMULARIOS =====
 export const FORM_TEXTS = {
   // Campos de persona
-  nameLabel: "Nombre",
+  nameLabel: "Nombres y Apellidos",
   ageLabel: "Edad",
   dniLabel: "DNI",
   typeLabel: "Tipo",

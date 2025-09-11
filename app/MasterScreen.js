@@ -32,7 +32,7 @@ import {
   NAVIGATION_TEXTS
 } from '../constants/Strings';
 
-import { ref, onValue, set } from 'firebase/database';
+import { ref, onValue, set, update } from 'firebase/database';
 import { database } from '../env/firebase';
 
 const { height } = Dimensions.get('window');
@@ -44,6 +44,7 @@ export default function MasterScreen() {
   const [password, setPassword] = useState("");
   const [modalAreaVisible, setModalAreaVisible] = useState(false);
   const [modalUserTypeVisible, setModalUserTypeVisible] = useState(false);
+  const [isInitialFlow, setIsInitialFlow] = useState(true);
   const [selectedArea, setSelectedArea] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const [showEmployeeList, setShowEmployeeList] = useState(false);
@@ -58,6 +59,7 @@ export default function MasterScreen() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [originalDni, setOriginalDni] = useState(null);
+  const [isCreatingNewPerson, setIsCreatingNewPerson] = useState(false);
 
   const [isAdminSelected, setIsAdminSelected] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
@@ -154,11 +156,13 @@ export default function MasterScreen() {
       setEditModalVisible(false);
       setEditablePerson(null);
       setNoDataModalVisible(false);
+      setIsInitialFlow(true); // Resetear para el próximo login
       setNewPerson({});
       setAddMode(false);
       setShowConfirmModal(false);
       setSaveSuccess(false);
       setOriginalDni(null);
+      setIsCreatingNewPerson(false);
       
       // Ejecutar logout del contexto (que ya limpia AsyncStorage)
       await logout();
@@ -184,26 +188,31 @@ export default function MasterScreen() {
     }
     try {
       const personId = Date.now().toString();
-      const personWithId = { ...newPerson, id: personId };
+      const personWithId = { 
+        ...newPerson, 
+        id: personId,
+        createdAt: new Date().toISOString()
+      };
 
+      // Guardar en Firebase usando la estructura correcta: areas/{area}/personas/{id}
+      const personRef = ref(database, `admins/${user.uid}/areas/${newPerson.area}/personas/${personId}`);
+      await set(personRef, personWithId);
+
+      // Actualizar AsyncStorage
       const stored = await AsyncStorage.getItem('peopleData');
       let peopleList = stored ? JSON.parse(stored) : [];
       const updatedList = [...peopleList, personWithId];
       await AsyncStorage.setItem('peopleData', JSON.stringify(updatedList));
-
-      await set(ref(database, `admins/${user.uid}/people/${personId}`), {
-        ...personWithId,
-        createdAt: new Date().toISOString()
-      });
 
       setAsyncPeopleData(updatedList);
       setNoDataModalVisible(false);
       setNewPerson({});
       setShowEmployeeList(true);
       setAddMode(false);
-          } catch (error) {
-        Alert.alert("Error al guardar: " + error.message);
-      }
+    } catch (error) {
+      console.error("Error al guardar nueva persona:", error);
+      Alert.alert("Error al guardar: " + error.message);
+    }
   };
 
   function getTopBarTitle(type, TOP_BAR_HEADER_TITLES) {
@@ -224,22 +233,33 @@ export default function MasterScreen() {
 
   const handleSaveEditPerson = async () => {
     try {
+      if (!user || !user.uid) {
+        Alert.alert("Error", "Debes iniciar sesión como administrador para guardar datos.");
+        return;
+      }
+
+      // Actualizar AsyncStorage
       const stored = await AsyncStorage.getItem('peopleData');
       let peopleList = stored ? JSON.parse(stored) : [];
       const index = peopleList.findIndex(p => p.dni === originalDni);
       if (index !== -1) {
         peopleList[index] = editablePerson;
         await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
+        setAsyncPeopleData(peopleList);
       }
 
-      await set(ref(database, `admins/${user.uid}/people/${editablePerson.id}`), {
+      // Actualizar Firebase usando la estructura correcta: areas/{area}/personas/{id}
+      const personRef = ref(database, `admins/${user.uid}/areas/${editablePerson.area}/personas/${editablePerson.id}`);
+      await update(personRef, {
         ...editablePerson,
         updatedAt: new Date().toISOString()
       });
 
-          } catch (error) {
-        // Error silencioso
-      }
+      console.log("Datos guardados exitosamente en Firebase y AsyncStorage");
+    } catch (error) {
+      console.error("Error al guardar:", error);
+      Alert.alert("Error", "No se pudieron guardar los datos. Intenta nuevamente.");
+    }
   };
 
   //////////////////////////// Registro
@@ -361,13 +381,14 @@ export default function MasterScreen() {
 
   // useEffect para mostrar automáticamente el modal de área después del login exitoso
   useEffect(() => {
-    if (globalUserRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible) {
+    if (globalUserRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible && !modalUserTypeVisible && !noDataModalVisible && !detailModalVisible && !editModalVisible && isInitialFlow) {
       // Pequeño delay para asegurar que la UI esté lista
       setTimeout(() => {
         setModalAreaVisible(true);
+        setIsInitialFlow(false); // Marcar que ya no es el flujo inicial
       }, 500);
     }
-  }, [globalUserRole, user, showEmployeeList, modalAreaVisible]);
+  }, [globalUserRole, user, showEmployeeList, modalAreaVisible, modalUserTypeVisible, noDataModalVisible, detailModalVisible, editModalVisible, isInitialFlow]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -380,13 +401,23 @@ export default function MasterScreen() {
 
   useEffect(() => {
     if (!user?.uid) return;
-    const peopleRef = ref(database, `admins/${user.uid}/people`);
-    const unsubscribe = onValue(peopleRef, async (snapshot) => {
+    const areasRef = ref(database, `admins/${user.uid}/areas`);
+    const unsubscribe = onValue(areasRef, async (snapshot) => {
       if (snapshot.exists()) {
-        const peopleObj = snapshot.val();
-        const peopleList = Object.values(peopleObj);
-        await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
-        setAsyncPeopleData(peopleList);
+        const areasObj = snapshot.val();
+        let allPeople = [];
+        
+        // Recorrer todas las áreas y extraer las personas
+        Object.keys(areasObj).forEach(areaKey => {
+          const area = areasObj[areaKey];
+          if (area.personas) {
+            const areaPeople = Object.values(area.personas);
+            allPeople = [...allPeople, ...areaPeople];
+          }
+        });
+        
+        await AsyncStorage.setItem('peopleData', JSON.stringify(allPeople));
+        setAsyncPeopleData(allPeople);
       } else {
         await AsyncStorage.setItem('peopleData', JSON.stringify([]));
         setAsyncPeopleData([]);
@@ -839,11 +870,8 @@ export default function MasterScreen() {
       <StatusBar />
 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                  {/* MENÚ HAMBURGUESA - SIEMPRE VISIBLE EN APP PRINCIPAL */}
           <HamburgerMenu position="top-right" onLogout={handleLogout} />
         
-        {/* DEBUGGER TEMPORAL - PARA VERIFICAR ESTADO GLOBAL */}
-        {/* <GlobalUserDebugger /> */}
         
         {/* LISTA DE EMPLEADOS/PACIENTES */}
         {showEmployeeList ? (
@@ -856,6 +884,7 @@ export default function MasterScreen() {
             onPress={handleBackPress}
             onItemPress={handleItemPress}
             topBarTitleEmploy={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
+            canEdit={globalUserRole === 'admin'}
             onAddPress={() => {
               setNewPerson({});
               setNoDataModalVisible(true);
@@ -921,7 +950,12 @@ export default function MasterScreen() {
           topbarTitle={addMode ? TOP_BAR_HEADER_TITLES.topBarNewData : TOP_BAR_HEADER_TITLES.topBarNoData}
           title={MODAL_TITLES.modalNoData}
           isEditModal={true}
-          onSavePress={handleSaveNewPerson}
+          canEdit={true}
+          onSavePress={() => {
+            setNoDataModalVisible(false);
+            setIsCreatingNewPerson(true);
+            setTimeout(() => setShowConfirmModal(true), 300);
+          }}
           onBack={() => {
             setNoDataModalVisible(false);
             setModalUserTypeVisible(true);
@@ -933,6 +967,7 @@ export default function MasterScreen() {
             person={newPerson}
             onChange={setNewPerson}
             isAdding={true}
+            selectedArea={selectedArea}
           />
         </CustomModal>
 
@@ -946,6 +981,7 @@ export default function MasterScreen() {
           topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
           title={getModalTitle(userType, MODAL_TITLES)}
           isDetailModal={true}
+          canEdit={globalUserRole === 'admin'}
           onGoToPlanPress={() => {
             setDetailModalVisible(false);
             if (selectedPerson?.nombre) {
@@ -975,8 +1011,10 @@ export default function MasterScreen() {
           }}
           title={`${FORM_TEXTS.editButton} Información:`}
           isEditModal={true}
+          canEdit={true}
           onSavePress={() => {
             setEditModalVisible(false);
+            setIsCreatingNewPerson(false);
             setTimeout(() => setShowConfirmModal(true), 300);
           }}
         >
@@ -988,6 +1026,7 @@ export default function MasterScreen() {
               person={editablePerson}
               onChange={setEditablePerson}
               onSave={handleSaveEditPerson}
+              selectedArea={selectedArea}
             />
           </View>
         </CustomModal>
@@ -998,48 +1037,58 @@ export default function MasterScreen() {
           onDismiss={() => {
             setShowConfirmModal(false);
             setSaveSuccess(false);
+            setIsCreatingNewPerson(false);
           }}
           title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
           centerCard={true}
-          actions={
-            saveSuccess
-              ? [
-                {
-                  label: "OK",
-                  mode: "contained",
-                  buttonColor: "white",
-                  textColor: "#5124A5",
-                  onPress: () => {
-                    setShowConfirmModal(false);
-                    setSaveSuccess(false);
-                    setEditModalVisible(false);
-                    setDetailModalVisible(false);
-                    setSelectedPerson(null);
-                    setOriginalDni(null);
+          showHamburgerMenu={false}
+        >
+          <View style={{ alignItems: 'center', padding: 20 }}>
+            {saveSuccess ? (
+              <CustomButton
+                label="OK"
+                onPress={() => {
+                  setShowConfirmModal(false);
+                  setSaveSuccess(false);
+                  setIsCreatingNewPerson(false);
+                  setEditModalVisible(false);
+                  setDetailModalVisible(false);
+                  setSelectedPerson(null);
+                  setOriginalDni(null);
+                  setNewPerson({});
+                  setAddMode(false);
+                  // Si era una nueva persona, volver a la lista
+                  if (isCreatingNewPerson) {
+                    setShowEmployeeList(true);
                   }
-                }
-              ]
-              : [
-                {
-                  label: "Sí",
-                  mode: "contained",
-                  buttonColor: "white",
-                  textColor: "#5124A5",
-                  onPress: async () => {
-                    await handleSaveEditPerson();
+                }}
+              />
+            ) : (
+              <View style={{ width: '100%', alignItems: 'center' }}>
+                <CustomButton
+                  label="Sí"
+                  onPress={async () => {
+                    if (isCreatingNewPerson) {
+                      await handleSaveNewPerson();
+                    } else {
+                      await handleSaveEditPerson();
+                    }
                     setSaveSuccess(true);
-                  }
-                },
-                {
-                  label: "No",
-                  mode: "outlined",
-                  buttonColor: "white",
-                  textColor: "#5124A5",
-                  onPress: () => setShowConfirmModal(false)
-                }
-              ]
-          }
-        />
+                  }}
+                  style={{ marginBottom: 16 }}
+                />
+                <CustomButton
+                  label="No"
+                  onPress={() => {
+                    setShowConfirmModal(false);
+                    setIsCreatingNewPerson(false);
+                  }}
+                  buttonColor="#FF6B6B"
+                />
+              </View>
+            )}
+          </View>
+        </CustomModal>
       </SafeAreaView>
     </PaperProvider>
   );

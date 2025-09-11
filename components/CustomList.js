@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 24
+    paddingTop: 34
   },
   cardStyle: {
     marginBottom: 10,
