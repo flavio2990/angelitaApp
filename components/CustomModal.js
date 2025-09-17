@@ -40,6 +40,11 @@ const CustomModal = ({
   centerCard = false,
   showHamburgerMenu = true, 
   canEdit = false,
+  onLogout,
+  onGoHome,
+  showGoHomeOption = true,
+  scrollable = true,
+  outsideActions = [],
 }) => {
   return (
     <Portal>
@@ -51,7 +56,7 @@ const CustomModal = ({
           centerCard && { justifyContent: 'center', alignItems: 'center' }
         ]}
       >
-        {showTopbar && !centerCard && (
+        {showTopbar && (
           <TopBarHeader
             showTopBar={true}
             topBarTitle={topbarTitle}
@@ -61,14 +66,20 @@ const CustomModal = ({
         )}
         
         {/* MENÚ HAMBURGUESA */}
-        {showHamburgerMenu && !centerCard && (
-          <HamburgerMenu position="top-right" hasTopBar={showTopbar} />
+        {showHamburgerMenu && (
+          <HamburgerMenu 
+            position="top-right" 
+            hasTopBar={showTopbar}
+            onLogout={onLogout}
+            onGoHome={onGoHome}
+            showGoHomeOption={showGoHomeOption}
+          />
         )}
         
         <KeyboardAvoidingView 
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={showTopbar ? 120 : 80}
+          keyboardVerticalOffset={centerCard ? 0 : (showTopbar ? 120 : 80)}
         >
           <View style={[styles.modalContent, centerCard && styles.centerModalContent]}>
             <Card style={[
@@ -76,35 +87,57 @@ const CustomModal = ({
               cardMarginTop !== undefined && !centerCard 
                 ? { marginTop: cardMarginTop } 
                 : null,
-              centerCard && styles.centerCard
+              centerCard && styles.centerCard,
+              centerCard && showTopbar && { marginTop: -50 } // Compensar altura del TopBarHeader
             ]}>
               <View style={styles.titleWrapper}>
                 <Text style={styles.title}>{title}</Text>
               </View>
               <Card.Content style={styles.cardContent}>
-                <ScrollView
-                  style={{ width: '100%' }}
-                  contentContainerStyle={styles.scrollContent}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={true}
-                >
-                  {content}
-                  {children}
-                  {actions.map((action, index) => (
-                    <Button
-                      key={index}
-                      mode={action.mode || "outlined"}
-                      onPress={action.onPress}
-                      style={[styles.button, action.style]}
-                      labelStyle={styles.buttonLabel}
-                      icon={action.icon}
-                      textColor={action.textColor || "#5124A5"}
-                      buttonColor={action.buttonColor || "white"}
-                    >
-                      {action.label}
-                    </Button>
-                  ))}
-                </ScrollView>
+                {scrollable ? (
+                  <ScrollView
+                    style={{ width: '100%' }}
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={true}
+                  >
+                    {content}
+                    {children}
+                    {actions.map((action, index) => (
+                      <Button
+                        key={index}
+                        mode={action.mode || "outlined"}
+                        onPress={action.onPress}
+                        style={[styles.button, action.style]}
+                        labelStyle={styles.buttonLabel}
+                        icon={action.icon}
+                        textColor={action.textColor || "#5124A5"}
+                        buttonColor={action.buttonColor || "white"}
+                      >
+                        {action.label}
+                      </Button>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <View style={{ width: '100%' }}>
+                    {content}
+                    {children}
+                    {actions.map((action, index) => (
+                      <Button
+                        key={index}
+                        mode={action.mode || "outlined"}
+                        onPress={action.onPress}
+                        style={[styles.button, action.style]}
+                        labelStyle={styles.buttonLabel}
+                        icon={action.icon}
+                        textColor={action.textColor || "#5124A5"}
+                        buttonColor={action.buttonColor || "white"}
+                      >
+                        {action.label}
+                      </Button>
+                    ))}
+                  </View>
+                )}
               </Card.Content>
             </Card>
 
@@ -149,6 +182,24 @@ const CustomModal = ({
             )}
           </View>
         </KeyboardAvoidingView>
+        
+        {outsideActions.length > 0 && (
+          <View style={styles.outsideActionsContainer}>
+            {outsideActions.map((action, index) => (
+              <Button
+                key={index}
+                mode={action.mode || "text"}
+                onPress={action.onPress}
+                style={[styles.outsideActionButton, action.style]}
+                labelStyle={[styles.outsideActionLabel, action.labelStyle]}
+                textColor={action.textColor || "#666"}
+                buttonColor={action.buttonColor || "transparent"}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </View>
+        )}
       </PaperModal>
     </Portal>
   );
@@ -173,6 +224,8 @@ const styles = StyleSheet.create({
   centerModalContent: {
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 0,
   },
   titleWrapper: { 
     backgroundColor: '#5124A5',
@@ -201,9 +254,10 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginVertical: 0,
     maxHeight: height * 0.4,
-    width: '100%',
+    width: width - 20, // Ancho completo menos un pequeño margen
     borderRadius: 50,
-    marginHorizontal: 0,
+    marginHorizontal: 10,
+    alignSelf: 'center',
   },
   cardContent: {
     justifyContent: 'center',
@@ -244,6 +298,23 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     backgroundColor: 'transparent',
+  },
+  outsideActionsContainer: {
+    position: 'absolute',
+    bottom: 170,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  outsideActionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
+  outsideActionLabel: {
+    fontSize: 16,
+    fontWeight: 'normal',
+    textDecorationLine: 'none',
   }
 });
 

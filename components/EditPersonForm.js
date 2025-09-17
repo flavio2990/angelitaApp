@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import { Dropdown } from 'react-native-paper-dropdown';
@@ -16,34 +17,25 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
   const insets = useSafeAreaInsets();
   const scrollViewRef = React.useRef(null);
 
-  // Función para formatear fecha con separación por slash
   const formatDateInput = (text) => {
-    // Remover TODOS los caracteres que no sean números
     let cleaned = text.replace(/[^\d]/g, '');
     
-    // Aplicar formato DD/MM/YYYY
     if (cleaned.length >= 1 && cleaned.length <= 2) {
-      // Solo día: "1" -> "1", "12" -> "12"
       return cleaned;
     } else if (cleaned.length >= 3 && cleaned.length <= 4) {
-      // Día + mes: "121" -> "12/1", "1231" -> "12/31"
       return cleaned.substring(0, 2) + '/' + cleaned.substring(2);
     } else if (cleaned.length >= 5) {
-      // Día + mes + año: "12312000" -> "12/31/2000"
       return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4) + '/' + cleaned.substring(4, 8);
     }
     
     return cleaned;
   };
 
-  // Función para validar y formatear números
   const formatNumericInput = (text) => {
-    // Solo permitir números
     return text.replace(/[^\d]/g, '');
   };
 
   const showArea =
-    isAdding &&
     person?.tipo &&
     person.tipo !== 'Administrador';
 
@@ -53,12 +45,10 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
     }
   }, [isAdding, selectedArea, person, onChange]);
 
-  // Efecto para hacer scroll automático cuando aparece el teclado
   React.useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
       () => {
-        // Hacer scroll al final después de un pequeño delay para que el teclado esté completamente visible
         setTimeout(() => {
           scrollViewRef.current?.scrollToEnd({ animated: true });
         }, 100);
@@ -71,14 +61,15 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
   }, []);
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        ref={scrollViewRef}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 46 }}
-        style={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={true}
-      >
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <ScrollView
+          ref={scrollViewRef}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 46 }}
+          style={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={true}
+        >
           {isAdding && (
             <View style={styles.dropDownContainer}>
               <Dropdown
@@ -229,7 +220,8 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
             dense={false}
           />
         </ScrollView>
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -239,7 +231,7 @@ const styles = StyleSheet.create({
   },
   styleInput: {
     width: 340,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   dropDownContainer: {
     marginBottom: 12,

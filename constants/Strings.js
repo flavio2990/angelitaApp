@@ -139,5 +139,18 @@ export const NAVIGATION_TEXTS = {
   next: "Siguiente",
   done: "Finalizar",
   close: "Cerrar",
+  goHome: "🏠 Volver a inicio",
+};
+
+// ===== TEXTO DE VALIDACIÓN =====
+export const VALIDATION_TEXTS = {
+  requiredFields: "Campos obligatorios",
+  fillAllFields: "Debes completar todos los campos antes de guardar",
+  missingFields: "Campos faltantes:",
+  ok: "OK",
+  // Validación de recuperar contraseña
+  invalidEmail: "Email inválido",
+  enterValidEmail: "Por favor ingresa un email válido",
+  emailRequired: "El email es obligatorio",
 };
   

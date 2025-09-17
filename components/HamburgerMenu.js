@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { useAuth } from './UserContext';
-import { ROLE_TEXTS, AUTH_TEXTS } from '../constants/Strings';
+import { ROLE_TEXTS, AUTH_TEXTS, NAVIGATION_TEXTS } from '../constants/Strings';
 
 export default function HamburgerMenu({ 
   position = 'top-right', // 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
   style,
   showInModal = true, // Controla si se muestra en modales
   onLogout, // Función personalizada de logout que limpia datos locales
-  hasTopBar = false // Indica si hay un TopBarHeader presente
+  onGoHome, // Función para volver a la vista principal (selección de área)
+  hasTopBar = false, // Indica si hay un TopBarHeader presente
+  showGoHomeOption = true // Controla si se muestra la opción "Volver a inicio"
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const { globalUserRole, logout } = useAuth();
@@ -83,6 +85,13 @@ export default function HamburgerMenu({
     setIsOpen(false);
   };
 
+  const handleGoHome = () => {
+    if (onGoHome) {
+      onGoHome();
+    }
+    setIsOpen(false);
+  };
+
   return (
     <>
       {/* Overlay invisible para cerrar el menú al hacer clic fuera */}
@@ -121,8 +130,21 @@ export default function HamburgerMenu({
               </Text>
             </View>
 
-            {/* Separador antes del logout */}
+            {/* Separador antes de las opciones */}
             <View style={[styles.separator, { backgroundColor: roleInfo.borderColor }]} />
+
+            {/* Botón para volver a inicio */}
+            {onGoHome && showGoHomeOption && (
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={handleGoHome}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.menuItemText, { color: roleInfo.color }]}>
+                  {NAVIGATION_TEXTS.goHome}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* Botón de logout - Limpia TODO */}
             <TouchableOpacity 
