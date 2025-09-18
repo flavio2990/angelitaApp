@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { useAuth } from './UserContext';
 import { ROLE_TEXTS, AUTH_TEXTS, NAVIGATION_TEXTS } from '../constants/Strings';
@@ -14,6 +14,7 @@ export default function HamburgerMenu({
   showGoHomeOption = true // Controla si se muestra la opción "Volver a inicio"
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { globalUserRole, logout } = useAuth();
 
   // Si no hay rol definido o no se debe mostrar en modal, no mostrar nada
@@ -75,14 +76,25 @@ export default function HamburgerMenu({
     setIsOpen(!isOpen);
   };
 
-  const handleLogout = () => {
-    // Usar función personalizada de logout si está disponible, sino usar la del contexto
-    if (onLogout) {
-      onLogout();
-    } else {
-      logout();
-    }
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
     setIsOpen(false);
+    
+    try {
+      // Simular tiempo de procesamiento para asegurar que los datos se guarden en la base de datos
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Usar función personalizada de logout si está disponible, sino usar la del contexto
+      if (onLogout) {
+        onLogout();
+      } else {
+        logout();
+      }
+    } catch (error) {
+      console.error('Error durante el logout:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleGoHome = () => {
@@ -94,8 +106,18 @@ export default function HamburgerMenu({
 
   return (
     <>
+      {/* Overlay de loading durante logout */}
+      {isLoggingOut && (
+        <View style={styles.logoutOverlay}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#5124A5" />
+            <Text style={styles.loadingText}>Cerrando sesión...</Text>
+          </View>
+        </View>
+      )}
+      
       {/* Overlay invisible para cerrar el menú al hacer clic fuera */}
-      {isOpen && (
+      {isOpen && !isLoggingOut && (
         <TouchableOpacity 
           style={styles.overlay} 
           onPress={() => setIsOpen(false)}
@@ -148,13 +170,23 @@ export default function HamburgerMenu({
 
             {/* Botón de logout - Limpia TODO */}
             <TouchableOpacity 
-              style={styles.menuItem} 
+              style={[styles.menuItem, isLoggingOut && styles.disabledMenuItem]} 
               onPress={handleLogout}
-              activeOpacity={0.7}
+              activeOpacity={isLoggingOut ? 1 : 0.7}
+              disabled={isLoggingOut}
             >
-              <Text style={[styles.menuItemText, { color: '#DC3545' }]}>
-                {AUTH_TEXTS.logoutButton}
-              </Text>
+              {isLoggingOut ? (
+                <View style={styles.logoutLoadingContainer}>
+                  <ActivityIndicator size="small" color="#DC3545" />
+                  <Text style={[styles.menuItemText, { color: '#DC3545', marginLeft: 8 }]}>
+                    Cerrando...
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[styles.menuItemText, { color: '#DC3545' }]}>
+                  {AUTH_TEXTS.logoutButton}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -254,5 +286,48 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  
+  // Estilos para el loading de logout
+  logoutOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 10000,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  loadingContainer: {
+    backgroundColor: 'white',
+    padding: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#5124A5',
+    textAlign: 'center',
+  },
+  
+  disabledMenuItem: {
+    opacity: 0.6,
+  },
+  
+  logoutLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
