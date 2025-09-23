@@ -60,9 +60,9 @@ export const AUTH_TEXTS = {
   
   // Verificación de email
   verificationTitle: "Verificar Email",
-  verificationMessage: "Se ha enviado un enlace de verificación a tu email. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para verificar tu cuenta.",
+  verificationMessage: "Por favor, revisa tu correo y haz clic en el enlace para verificar tu cuenta.",
   verificationButton: "Reenviar verificación",
-  backToLogin: "Volver al login",
+  backToLogin: "Ya verifiqué mi correo",
   
   // Recuperación de contraseña
   forgotPasswordTitle: "Recuperar Contraseña",

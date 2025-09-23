@@ -14,8 +14,8 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.angelitaapp",
-      "googleServicesFile": "./google-services.json",
+      "package": "app.hogares",
+      "googleServicesFile": "./android/app/google-services.json",
       "softwareKeyboardLayoutMode": "resize"
     },
     "web": {

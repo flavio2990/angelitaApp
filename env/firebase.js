@@ -9,7 +9,7 @@ const firebaseConfig = {
   projectId: "recidenciasapp",
   storageBucket: "recidenciasapp.appspot.com",
   messagingSenderId: "844528127037",
-  appId: "1:844528127037:android:acef8ca8aa37bc7c1dee54", // ← Necesitamos este valor
+  appId: "1:844528127037:android:a65d1d457915fc181dee54", // ← App ID para app.hogares
   databaseURL: "https://recidenciasapp-default-rtdb.firebaseio.com"
 };
 

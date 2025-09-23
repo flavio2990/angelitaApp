@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Modal as PaperModal, 
   Portal, 
@@ -12,7 +12,8 @@ import {
   Dimensions, 
   Platform, 
   ScrollView, 
-  KeyboardAvoidingView 
+  KeyboardAvoidingView,
+  Keyboard 
 } from 'react-native';
 
 import TopBarHeader from '@/components/TopBarHeader';
@@ -46,6 +47,27 @@ const CustomModal = ({
   scrollable = true,
   outsideActions = [],
 }) => {
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidHideListener?.remove();
+      keyboardDidShowListener?.remove();
+    };
+  }, []);
   return (
     <Portal>
       <PaperModal
@@ -76,115 +98,11 @@ const CustomModal = ({
           />
         )}
         
-        <KeyboardAvoidingView 
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={centerCard ? 0 : (showTopbar ? 120 : 80)}
-        >
-          <View style={[styles.modalContent, centerCard && styles.centerModalContent]}>
-            <Card style={[
-              styles.theCard, 
-              cardMarginTop !== undefined && !centerCard 
-                ? { marginTop: cardMarginTop } 
-                : null,
-              centerCard && styles.centerCard,
-              centerCard && showTopbar && { marginTop: -50 } // Compensar altura del TopBarHeader
-            ]}>
-              <View style={styles.titleWrapper}>
-                <Text style={styles.title}>{title}</Text>
-              </View>
-              <Card.Content style={styles.cardContent}>
-                {scrollable ? (
-                  <ScrollView
-                    style={{ width: '100%' }}
-                    contentContainerStyle={styles.scrollContent}
-                    keyboardShouldPersistTaps="handled"
-                    showsVerticalScrollIndicator={true}
-                  >
-                    {content}
-                    {children}
-                    {actions.map((action, index) => (
-                      <Button
-                        key={index}
-                        mode={action.mode || "outlined"}
-                        onPress={action.onPress}
-                        style={[styles.button, action.style]}
-                        labelStyle={styles.buttonLabel}
-                        icon={action.icon}
-                        textColor={action.textColor || "#5124A5"}
-                        buttonColor={action.buttonColor || "white"}
-                      >
-                        {action.label}
-                      </Button>
-                    ))}
-                  </ScrollView>
-                ) : (
-                  <View style={{ width: '100%' }}>
-                    {content}
-                    {children}
-                    {actions.map((action, index) => (
-                      <Button
-                        key={index}
-                        mode={action.mode || "outlined"}
-                        onPress={action.onPress}
-                        style={[styles.button, action.style]}
-                        labelStyle={styles.buttonLabel}
-                        icon={action.icon}
-                        textColor={action.textColor || "#5124A5"}
-                        buttonColor={action.buttonColor || "white"}
-                      >
-                        {action.label}
-                      </Button>
-                    ))}
-                  </View>
-                )}
-              </Card.Content>
-            </Card>
-
-            {(isDetailModal || isEditModal) && (
-              <View style={styles.buttonContainer}>
-                {isDetailModal && (
-                  <>
-                    {canEdit && (
-                      <Button
-                        mode="contained"
-                        onPress={onModifyPress}
-                        style={styles.detailButton}
-                        labelStyle={styles.detailButtonLabel}
-                        buttonColor="#5124A5"
-                      >
-                        Modificar
-                      </Button>
-                    )}
-                    <Button
-                      mode="contained"
-                      onPress={onGoToPlanPress}
-                      style={styles.detailButton}
-                      labelStyle={styles.detailButtonLabel}
-                      buttonColor="#5124A5"
-                    >
-                      Ir a planilla
-                    </Button>
-                  </>
-                )}
-                {isEditModal && canEdit && (
-                  <Button
-                    mode="contained"
-                    onPress={onSavePress}
-                    style={styles.detailButton}
-                    labelStyle={styles.detailButtonLabel}
-                    buttonColor="#5124A5"
-                  >
-                    Guardar
-                  </Button>
-                )}
-              </View>
-            )}
-          </View>
-        </KeyboardAvoidingView>
-        
         {outsideActions.length > 0 && (
-          <View style={styles.outsideActionsContainer}>
+          <View style={[
+            styles.outsideActionsContainer,
+            { bottom: isKeyboardVisible ? 20 : 150 }
+          ]}>
             {outsideActions.map((action, index) => (
               <Button
                 key={index}
@@ -199,6 +117,171 @@ const CustomModal = ({
               </Button>
             ))}
           </View>
+        )}
+
+        {centerCard ? (
+          <View style={styles.flex}>
+            <View style={[styles.modalContent, styles.centerModalContent]}>
+              <Card style={[
+                styles.theCard, 
+                styles.centerCard,
+                showTopbar && { marginTop: -50 } // Compensar altura del TopBarHeader
+              ]}>
+                <View style={styles.titleWrapper}>
+                  <Text style={styles.title}>{title}</Text>
+                </View>
+                <Card.Content style={styles.cardContent}>
+                  {scrollable ? (
+                    <ScrollView
+                      style={{ width: '100%' }}
+                      contentContainerStyle={styles.scrollContent}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={true}
+                    >
+                      {content}
+                      {children}
+                      {actions.map((action, index) => (
+                        <Button
+                          key={index}
+                          mode={action.mode || "outlined"}
+                          onPress={action.onPress}
+                          style={[styles.button, action.style]}
+                          labelStyle={styles.buttonLabel}
+                          icon={action.icon}
+                          textColor={action.textColor || "#5124A5"}
+                          buttonColor={action.buttonColor || "white"}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <View style={{ width: '100%' }}>
+                      {content}
+                      {children}
+                      {actions.map((action, index) => (
+                        <Button
+                          key={index}
+                          mode={action.mode || "outlined"}
+                          onPress={action.onPress}
+                          style={[styles.button, action.style]}
+                          labelStyle={styles.buttonLabel}
+                          icon={action.icon}
+                          textColor={action.textColor || "#5124A5"}
+                          buttonColor={action.buttonColor || "white"}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </View>
+                  )}
+                </Card.Content>
+              </Card>
+            </View>
+          </View>
+        ) : (
+          <KeyboardAvoidingView 
+            style={styles.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={showTopbar ? 120 : 80}
+          >
+            <View style={styles.modalContent}>
+              <Card style={[
+                styles.theCard, 
+                cardMarginTop !== undefined && { marginTop: cardMarginTop }
+              ]}>
+                <View style={styles.titleWrapper}>
+                  <Text style={styles.title}>{title}</Text>
+                </View>
+                <Card.Content style={styles.cardContent}>
+                  {scrollable ? (
+                    <ScrollView
+                      style={{ width: '100%' }}
+                      contentContainerStyle={styles.scrollContent}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={true}
+                    >
+                      {content}
+                      {children}
+                      {actions.map((action, index) => (
+                        <Button
+                          key={index}
+                          mode={action.mode || "outlined"}
+                          onPress={action.onPress}
+                          style={[styles.button, action.style]}
+                          labelStyle={styles.buttonLabel}
+                          icon={action.icon}
+                          textColor={action.textColor || "#5124A5"}
+                          buttonColor={action.buttonColor || "white"}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <View style={{ width: '100%' }}>
+                      {content}
+                      {children}
+                      {actions.map((action, index) => (
+                        <Button
+                          key={index}
+                          mode={action.mode || "outlined"}
+                          onPress={action.onPress}
+                          style={[styles.button, action.style]}
+                          labelStyle={styles.buttonLabel}
+                          icon={action.icon}
+                          textColor={action.textColor || "#5124A5"}
+                          buttonColor={action.buttonColor || "white"}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </View>
+                  )}
+                </Card.Content>
+              </Card>
+
+              {(isDetailModal || isEditModal) && (
+                <View style={styles.buttonContainer}>
+                  {isDetailModal && (
+                    <>
+                      {canEdit && (
+                        <Button
+                          mode="contained"
+                          onPress={onModifyPress}
+                          style={styles.detailButton}
+                          labelStyle={styles.detailButtonLabel}
+                          buttonColor="#5124A5"
+                        >
+                          Modificar
+                        </Button>
+                      )}
+                      <Button
+                        mode="contained"
+                        onPress={onGoToPlanPress}
+                        style={styles.detailButton}
+                        labelStyle={styles.detailButtonLabel}
+                        buttonColor="#5124A5"
+                      >
+                        Ir a planilla
+                      </Button>
+                    </>
+                  )}
+                  {isEditModal && canEdit && (
+                    <Button
+                      mode="contained"
+                      onPress={onSavePress}
+                      style={styles.detailButton}
+                      labelStyle={styles.detailButtonLabel}
+                      buttonColor="#5124A5"
+                    >
+                      Guardar
+                    </Button>
+                  )}
+                </View>
+              )}
+            </View>
+          </KeyboardAvoidingView>
         )}
       </PaperModal>
     </Portal>
@@ -301,10 +384,10 @@ const styles = StyleSheet.create({
   },
   outsideActionsContainer: {
     position: 'absolute',
-    bottom: 170,
     left: 0,
     right: 0,
     alignItems: 'center',
+    zIndex: 1000,
   },
   outsideActionButton: {
     paddingVertical: 8,

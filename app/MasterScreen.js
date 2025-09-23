@@ -772,36 +772,12 @@ export default function MasterScreen() {
                 {AUTH_TEXTS.verificationMessage}
               </Text>
               
-              <Text style={{ 
-                marginBottom: 20, 
-                fontSize: 14, 
-                textAlign: 'center',
-                color: '#888',
-                fontStyle: 'italic'
-              }}>
-                Revisa tu correo y haz clic en el enlace de verificación.
-              </Text>
-              
-              {firebaseUser && (
-                <Text style={{ 
-                  marginBottom: 20, 
-                  fontSize: 12, 
-                  textAlign: 'center',
-                  color: '#007AFF',
-                  fontWeight: '500'
-                }}>
-                  Email: {firebaseUser.email}
-                </Text>
-              )}
-              
-              
-              
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
                   label={resendVerificationLoading ? STATUS_MESSAGES.saving : AUTH_TEXTS.verificationButton}
                   onPress={handleResendVerification}
                   disabled={resendVerificationLoading}
-                  style={{ marginBottom: 16, width: 260 }}
+                  style={{ marginBottom: 8, width: 260 }}
                 />
                 <View style={{ height: 16 }} />
                 <CustomButton
