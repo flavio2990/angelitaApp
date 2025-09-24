@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { useAuth } from './UserContext';
@@ -8,10 +8,10 @@ export default function HamburgerMenu({
   position = 'top-right', // 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
   style,
   showInModal = true, // Controla si se muestra en modales
-  onLogout, // Función personalizada de logout que limpia datos locales
-  onGoHome, // Función para volver a la vista principal (selección de área)
+  onLogout, // FunciÃ³n personalizada de logout que limpia datos locales
+  onGoHome, // FunciÃ³n para volver a la vista principal (selecciÃ³n de Ã¡rea)
   hasTopBar = false, // Indica si hay un TopBarHeader presente
-  showGoHomeOption = true // Controla si se muestra la opción "Volver a inicio"
+  showGoHomeOption = true // Controla si se muestra la opciÃ³n "Volver a inicio"
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -22,7 +22,7 @@ export default function HamburgerMenu({
     return null;
   }
 
-  // Función para obtener la información del rol
+  // FunciÃ³n para obtener la informaciÃ³n del rol
   const getRoleInfo = (role) => {
     switch (role) {
       case 'admin':
@@ -54,10 +54,10 @@ export default function HamburgerMenu({
 
   const roleInfo = getRoleInfo(globalUserRole);
 
-  // Función para obtener la posición del menú
+  // FunciÃ³n para obtener la posiciÃ³n del menÃº
   const getPositionStyle = () => {
-    // Ajustar posición basándose en si hay TopBarHeader o no
-    const topPosition = hasTopBar ? 30 : 30; // Más arriba cuando no hay TopBarHeader
+    // Ajustar posiciÃ³n basÃ¡ndose en si hay TopBarHeader o no
+    const topPosition = hasTopBar ? 30 : 30; // MÃ¡s arriba cuando no hay TopBarHeader
     
     switch (position) {
       case 'top-left':
@@ -84,7 +84,7 @@ export default function HamburgerMenu({
       // Simular tiempo de procesamiento para asegurar que los datos se guarden en la base de datos
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Usar función personalizada de logout si está disponible, sino usar la del contexto
+      // Usar funciÃ³n personalizada de logout si estÃ¡ disponible, sino usar la del contexto
       if (onLogout) {
         onLogout();
       } else {
@@ -111,12 +111,12 @@ export default function HamburgerMenu({
         <View style={styles.logoutOverlay}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#5124A5" />
-            <Text style={styles.loadingText}>Cerrando sesión...</Text>
+            <Text style={styles.loadingText}>Cerrando sesiÃ³n...</Text>
           </View>
         </View>
       )}
       
-      {/* Overlay invisible para cerrar el menú al hacer clic fuera */}
+      {/* Overlay invisible para cerrar el menÃº al hacer clic fuera */}
       {isOpen && !isLoggingOut && (
         <TouchableOpacity 
           style={styles.overlay} 
@@ -126,7 +126,7 @@ export default function HamburgerMenu({
       )}
       
       <View style={[styles.container, getPositionStyle(), style]}>
-        {/* Botón del menú hamburguesa */}
+        {/* BotÃ³n del menÃº hamburguesa */}
         <TouchableOpacity 
           style={[styles.hamburgerButton, { backgroundColor: roleInfo.bgColor }]} 
           onPress={handleToggleMenu}
@@ -139,10 +139,10 @@ export default function HamburgerMenu({
           </View>
         </TouchableOpacity>
 
-        {/* Menú desplegable */}
+        {/* MenÃº desplegable */}
         {isOpen && (
           <View style={[styles.menuContainer, { backgroundColor: roleInfo.bgColor, borderColor: roleInfo.borderColor }]}>
-            {/* Header del menú con información del rol */}
+            {/* Header del menÃº con informaciÃ³n del rol */}
             <View style={styles.menuHeader}>
               <Text style={[styles.roleIcon, { color: roleInfo.color }]}>
                 {roleInfo.icon}
@@ -155,7 +155,7 @@ export default function HamburgerMenu({
             {/* Separador antes de las opciones */}
             <View style={[styles.separator, { backgroundColor: roleInfo.borderColor }]} />
 
-            {/* Botón para volver a inicio */}
+            {/* BotÃ³n para volver a inicio */}
             {onGoHome && showGoHomeOption && (
               <TouchableOpacity 
                 style={styles.menuItem} 
@@ -168,7 +168,7 @@ export default function HamburgerMenu({
               </TouchableOpacity>
             )}
 
-            {/* Botón de logout - Limpia TODO */}
+            {/* BotÃ³n de logout - Limpia TODO */}
             <TouchableOpacity 
               style={[styles.menuItem, isLoggingOut && styles.disabledMenuItem]} 
               onPress={handleLogout}
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   
-  // Botón del menú hamburguesa
+  // BotÃ³n del menÃº hamburguesa
   hamburgerButton: {
     width: 50,
     height: 50,
@@ -237,10 +237,10 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   
-  // Menú desplegable
+  // MenÃº desplegable
   menuContainer: {
     position: 'absolute',
-    top: 60, // Debajo del botón hamburguesa
+    top: 60, // Debajo del botÃ³n hamburguesa
     right: 0,
     width: 200,
     borderRadius: 12,

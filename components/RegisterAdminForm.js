@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Text } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import CustomButton from './CustomButton';
@@ -41,11 +41,11 @@ export default function RegisterAdminForm({ onRegister }) {
             />
             {registerEmailTouched && !isValidEmail(registerEmail) && (
                 <Text style={{ color: 'red', fontSize: 14, marginBottom: 8 }}>
-                    Ingrese un mail válido
+                    Ingrese un mail vÃ¡lido
                 </Text>
             )}
             <TextInput
-                label="Crea Una Contraseña"
+                label="Crea Una ContraseÃ±a"
                 value={registerPassword}
                 onChangeText={text => {
                     setRegisterPassword(text);
@@ -57,7 +57,7 @@ export default function RegisterAdminForm({ onRegister }) {
             />
             {registerPasswordTouched && registerPassword.length > 0 && registerPassword.length < 6 && (
                 <Text style={{ color: 'red', fontSize: 14, marginBottom: 8 }}>
-                    La contraseña debe tener al menos 6 caracteres
+                    La contraseÃ±a debe tener al menos 6 caracteres
                 </Text>
             )}
             <CustomButton

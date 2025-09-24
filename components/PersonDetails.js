@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+﻿import { View, Text, StyleSheet } from 'react-native';
 import { FORM_TEXTS } from '../constants/Strings';
 
 export default function PersonDetails({ person, userType }) {

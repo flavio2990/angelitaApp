@@ -1,10 +1,10 @@
-// ===== TÍTULOS DE TARJETAS =====
+﻿// ===== TÃTULOS DE TARJETAS =====
 export const CARD_TITLES = {
-  selectArea: "Seleccione Área",
+  selectArea: "Seleccione Ãrea",
   selectTipe: "Seleccione: ",
 };
 
-// ===== OPCIONES DE ÁREAS =====
+// ===== OPCIONES DE ÃREAS =====
 export const AREA_OPTIONS = [
   { label: "U T I", icon: "hospital", value: "UTI" },
   { label: "U C G", icon: "stethoscope", value: "UCG" },
@@ -12,65 +12,65 @@ export const AREA_OPTIONS = [
 
 // ===== OPCIONES DE TIPOS =====
 export const TIPE_OPTIONS = [
-  { label: "Empleados", icon: "account", value: "Enfermería" },
+  { label: "Empleados", icon: "account", value: "EnfermerÃ­a" },
   { label: "Pacientes", icon: "account-group", value: "Paciente" },
 ];
 
-// ===== TÍTULOS DE TOP BAR =====
+// ===== TÃTULOS DE TOP BAR =====
 export const TOP_BAR_HEADER_TITLES = {
   topBarTitleChoice: "Empleados/ Pacientes",
   topBarTitlePatient: "Seleccione Paciente:",
   topBarTitleEmploy: "Seleccione Empleado:",
   topBarModalTitlePatient: "Datos del Paciente",
   topBarModalTitleEmploy: "Datos del Empleado",
-  topBarNoData: "UPS! Aún no hay datos",
+  topBarNoData: "UPS! AÃºn no hay datos",
   topBarNewData: "Agregar nuevo",
 };
 
-// ===== TÍTULOS DE MODALES =====
+// ===== TÃTULOS DE MODALES =====
 export const MODAL_TITLES = {
   modalTitleEmployPatients: "Empleados/ Pacientes",
   modalTitlePatient: "Datos del Paciente:",
   modalTitleEmploy: "Datos del Empleado:",
-  modalNoData: "Ingresalos aquí:",
+  modalNoData: "Ingresalos aquÃ­:",
 };
 
-// ===== TEXTO DE AUTENTICACIÓN =====
+// ===== TEXTO DE AUTENTICACIÃ“N =====
 export const AUTH_TEXTS = {
-  // Selección de rol
+  // SelecciÃ³n de rol
   selectRole: "Seleccione su rol:",
   adminRole: "SOY ADMINISTRADOR",
   employeeRole: "SOY EMPLEADO",
   changeRole: "Cambiar de rol",
   
   // Login
-  loginTitle: "Iniciar Sesión",
+  loginTitle: "Iniciar SesiÃ³n",
   emailLabel: "Email",
-  passwordLabel: "Contraseña",
-  loginButton: "INICIAR SESIÓN",
-  forgotPassword: "¿Olvidaste tu contraseña?",
-  noAccount: "¿No tienes cuenta?",
+  passwordLabel: "ContraseÃ±a",
+  loginButton: "INICIAR SESIÃ“N",
+  forgotPassword: "Â¿Olvidaste tu contraseÃ±a?",
+  noAccount: "Â¿No tienes cuenta?",
   createAccount: "Crear cuenta",
   
   // Registro
   registerTitle: "Crear Usuario",
   createUserButton: "CREAR USUARIO",
   cancelButton: "Cancelar",
-  selectRoleFirst: "⚠️ Primero debes seleccionar un rol",
+  selectRoleFirst: "âš ï¸ Primero debes seleccionar un rol",
   
-  // Verificación de email
+  // VerificaciÃ³n de email
   verificationTitle: "Verificar Email",
   verificationMessage: "Por favor, revisa tu correo y haz clic en el enlace para verificar tu cuenta.",
-  verificationButton: "Reenviar verificación",
-  backToLogin: "Ya verifiqué mi correo",
+  verificationButton: "Reenviar verificaciÃ³n",
+  backToLogin: "Ya verifiquÃ© mi correo",
   
-  // Recuperación de contraseña
-  forgotPasswordTitle: "Recuperar Contraseña",
-  forgotPasswordMessage: "Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.",
+  // RecuperaciÃ³n de contraseÃ±a
+  forgotPasswordTitle: "Recuperar ContraseÃ±a",
+  forgotPasswordMessage: "Ingresa tu email y te enviaremos un enlace para restablecer tu contraseÃ±a.",
   sendResetButton: "Enviar enlace",
   
   // Logout
-  logoutButton: "🚪 Cerrar Sesión",
+  logoutButton: "ðŸšª Cerrar SesiÃ³n",
 };
 
 // ===== TEXTO DE FORMULARIOS =====
@@ -80,7 +80,7 @@ export const FORM_TEXTS = {
   ageLabel: "Edad",
   dniLabel: "DNI",
   typeLabel: "Tipo",
-  areaLabel: "Área",
+  areaLabel: "Ãrea",
   
   // Botones de formulario
   saveButton: "Guardar",
@@ -90,12 +90,12 @@ export const FORM_TEXTS = {
   
   // Validaciones
   requiredField: "Este campo es requerido",
-  invalidEmail: "Email inválido",
-  passwordTooShort: "La contraseña debe tener al menos 6 caracteres",
+  invalidEmail: "Email invÃ¡lido",
+  passwordTooShort: "La contraseÃ±a debe tener al menos 6 caracteres",
   
   // Campos adicionales de persona
   birthLabel: "Nacimiento",
-  admissionLabel: "Ingresó",
+  admissionLabel: "IngresÃ³",
   socialCoverageLabel: "Obra Social",
   nationalityLabel: "Nacionalidad",
   maritalStatusLabel: "Estado Civil",
@@ -106,11 +106,11 @@ export const FORM_TEXTS = {
 export const ROLE_TEXTS = {
   admin: "ADMINISTRADOR",
   employee: "EMPLEADO",
-  adminIcon: "🛡️",
-  employeeIcon: "👤",
+  adminIcon: "ðŸ›¡ï¸",
+  employeeIcon: "ðŸ‘¤",
 };
 
-// ===== TEXTO DE ÁREAS =====
+// ===== TEXTO DE ÃREAS =====
 export const AREA_TEXTS = {
   uti: "Unidad de Terapia Intensiva",
   ucg: "Unidad de Cuidados Generales",
@@ -119,7 +119,7 @@ export const AREA_TEXTS = {
 // ===== TEXTO DE TIPOS DE PERSONA =====
 export const PERSON_TYPE_TEXTS = {
   patient: "Paciente",
-  nursing: "Enfermería",
+  nursing: "EnfermerÃ­a",
   administrator: "Administrador",
 };
 
@@ -128,29 +128,29 @@ export const STATUS_MESSAGES = {
   loading: "Cargando...",
   noData: "No hay datos disponibles",
   error: "Ha ocurrido un error",
-  success: "Operación exitosa",
+  success: "OperaciÃ³n exitosa",
   saving: "Guardando...",
   deleting: "Eliminando...",
 };
 
-// ===== TEXTO DE NAVEGACIÓN =====
+// ===== TEXTO DE NAVEGACIÃ“N =====
 export const NAVIGATION_TEXTS = {
-  back: "Atrás",
+  back: "AtrÃ¡s",
   next: "Siguiente",
   done: "Finalizar",
   close: "Cerrar",
-  goHome: "🏠 Volver a inicio",
+  goHome: "ðŸ  Volver a inicio",
 };
 
-// ===== TEXTO DE VALIDACIÓN =====
+// ===== TEXTO DE VALIDACIÃ“N =====
 export const VALIDATION_TEXTS = {
   requiredFields: "Campos obligatorios",
   fillAllFields: "Debes completar todos los campos antes de guardar",
   missingFields: "Campos faltantes:",
   ok: "OK",
-  // Validación de recuperar contraseña
-  invalidEmail: "Email inválido",
-  enterValidEmail: "Por favor ingresa un email válido",
+  // ValidaciÃ³n de recuperar contraseÃ±a
+  invalidEmail: "Email invÃ¡lido",
+  enterValidEmail: "Por favor ingresa un email vÃ¡lido",
   emailRequired: "El email es obligatorio",
 };
   

@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+﻿import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -9,7 +9,7 @@ const firebaseConfig = {
   projectId: "recidenciasapp",
   storageBucket: "recidenciasapp.appspot.com",
   messagingSenderId: "844528127037",
-  appId: "1:844528127037:android:a65d1d457915fc181dee54", // ← App ID para app.hogares
+  appId: "1:844528127037:android:a65d1d457915fc181dee54", // â† App ID para app.hogares
   databaseURL: "https://recidenciasapp-default-rtdb.firebaseio.com"
 };
 

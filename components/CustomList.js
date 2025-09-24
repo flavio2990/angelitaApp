@@ -1,4 +1,4 @@
-import { FlatList, Text, StyleSheet, View } from 'react-native';
+﻿import { FlatList, Text, StyleSheet, View } from 'react-native';
 
 import { Card, TouchableRipple, FAB } from 'react-native-paper';
 

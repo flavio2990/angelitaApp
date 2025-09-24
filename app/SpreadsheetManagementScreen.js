@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -32,13 +32,13 @@ export default function SpreadsheetManagementScreen() {
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/MED.png')}
-          label="Medicación"
+          label="MedicaciÃ³n"
           color="#4a9cbb"
           onPress={() => {}}
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/ALIM.png')}
-          label="Alimentación"
+          label="AlimentaciÃ³n"
           color="#f1a137"
           onPress={() => {}}
         />

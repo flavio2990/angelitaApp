@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { 
   Modal as PaperModal, 
   Portal, 
@@ -87,7 +87,7 @@ const CustomModal = ({
           />
         )}
         
-        {/* MENÚ HAMBURGUESA */}
+        {/* MENÃš HAMBURGUESA */}
         {showHamburgerMenu && (
           <HamburgerMenu 
             position="top-right" 
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginVertical: 0,
     maxHeight: height * 0.4,
-    width: width - 20, // Ancho completo menos un pequeño margen
+    width: width - 20, // Ancho completo menos un pequeÃ±o margen
     borderRadius: 50,
     marginHorizontal: 10,
     alignSelf: 'center',

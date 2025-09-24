@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   View,
   StyleSheet,
@@ -108,7 +108,7 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
             <View style={styles.dropDownContainer}>
               <Dropdown
                 label={FORM_TEXTS.areaLabel}
-                placeholder={person?.area || 'Seleccionar área'}
+                placeholder={person?.area || 'Seleccionar Ã¡rea'}
                 mode="outlined"
                 visible={showAreaDropDown}
                 showDropDown={() => setShowAreaDropDown(true)}

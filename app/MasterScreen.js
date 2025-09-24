@@ -1,4 +1,4 @@
-
+﻿
 import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'expo-router';
@@ -141,7 +141,7 @@ export default function MasterScreen() {
     }
   };
 
-  // Función para limpiar datos locales cuando se hace logout
+  // FunciÃ³n para limpiar datos locales cuando se hace logout
   const handleLogout = async () => {
     try {
       // Limpiar estado local de personas
@@ -157,7 +157,7 @@ export default function MasterScreen() {
       setEditModalVisible(false);
       setEditablePerson(null);
       setNoDataModalVisible(false);
-      setIsInitialFlow(true); // Resetear para el próximo login
+      setIsInitialFlow(true); // Resetear para el prÃ³ximo login
       setNewPerson({});
       setAddMode(false);
       setShowConfirmModal(false);
@@ -169,22 +169,22 @@ export default function MasterScreen() {
       await logout();
       
     } catch (error) {
-      // Aún así, intentar limpiar el estado local
+      // AÃºn asÃ­, intentar limpiar el estado local
       setAsyncPeopleData([]);
       setShowEmployeeList(false);
     }
   };
 
-  // Función para volver a la vista principal (selección de área)
+  // FunciÃ³n para volver a la vista principal (selecciÃ³n de Ã¡rea)
   const handleGoHome = () => {
-    // Verificar si se está editando o agregando datos
+    // Verificar si se estÃ¡ editando o agregando datos
     const isEditing = editModalVisible || noDataModalVisible;
     
     if (isEditing) {
-      // Mostrar confirmación si se está editando o agregando
+      // Mostrar confirmaciÃ³n si se estÃ¡ editando o agregando
       Alert.alert(
-        "¿Estás seguro?",
-        "¿Estás seguro de salir sin antes guardar?",
+        "Â¿EstÃ¡s seguro?",
+        "Â¿EstÃ¡s seguro de salir sin antes guardar?",
         [
           {
             text: "Cancelar",
@@ -198,12 +198,12 @@ export default function MasterScreen() {
         ]
       );
     } else {
-      // Si no se está editando, ir directamente
+      // Si no se estÃ¡ editando, ir directamente
       goHomeConfirmed();
     }
   };
 
-  // Función que ejecuta la navegación a inicio (después de confirmación)
+  // FunciÃ³n que ejecuta la navegaciÃ³n a inicio (despuÃ©s de confirmaciÃ³n)
   const goHomeConfirmed = () => {
     // Cerrar todos los modales y listas
     setShowEmployeeList(false);
@@ -224,7 +224,7 @@ export default function MasterScreen() {
     setSaveSuccess(false);
     setIsCreatingNewPerson(false);
     
-    // Abrir modal de selección de área
+    // Abrir modal de selecciÃ³n de Ã¡rea
     setModalAreaVisible(true);
     setIsInitialFlow(false);
   };
@@ -236,11 +236,11 @@ export default function MasterScreen() {
     setOriginalDni(selectedPerson.dni);
   };
 
-  // Función para validar campos obligatorios
+  // FunciÃ³n para validar campos obligatorios
   const validateRequiredFields = (person) => {
     const requiredFields = [
       { key: 'tipo', label: 'Tipo' },
-      { key: 'area', label: 'Área' },
+      { key: 'area', label: 'Ãrea' },
       { key: 'nombre', label: 'Nombre' },
       { key: 'edad', label: 'Edad' },
       { key: 'dni', label: 'DNI' },
@@ -261,7 +261,7 @@ export default function MasterScreen() {
 
   const handleSaveNewPerson = async () => {
     if (!user || !user.uid) {
-      Alert.alert("Debes iniciar sesión como administrador para guardar datos.");
+      Alert.alert("Debes iniciar sesiÃ³n como administrador para guardar datos.");
       return false;
     }
 
@@ -300,7 +300,7 @@ export default function MasterScreen() {
     if (!type) return TOP_BAR_HEADER_TITLES.topBarModalTitleEmploy;
     const t = type.toLowerCase();
     if (t === 'paciente') return TOP_BAR_HEADER_TITLES.topBarModalTitlePatient;
-    if (t === 'enfermería') return TOP_BAR_HEADER_TITLES.topBarModalTitleEmploy;
+    if (t === 'enfermerÃ­a') return TOP_BAR_HEADER_TITLES.topBarModalTitleEmploy;
     return TOP_BAR_HEADER_TITLES.topBarModalTitleEmploy;
   }
 
@@ -308,14 +308,14 @@ export default function MasterScreen() {
     if (!type) return MODAL_TITLES.modalTitleEmploy;
     const t = type.toLowerCase();
     if (t === 'paciente') return MODAL_TITLES.modalTitlePatient;
-    if (t === 'enfermería') return MODAL_TITLES.modalTitleEmploy;
+    if (t === 'enfermerÃ­a') return MODAL_TITLES.modalTitleEmploy;
     return MODAL_TITLES.modalTitleEmploy;
   }
 
   const handleSaveEditPerson = async () => {
     try {
       if (!user || !user.uid) {
-        Alert.alert("Error", "Debes iniciar sesión como administrador para guardar datos.");
+        Alert.alert("Error", "Debes iniciar sesiÃ³n como administrador para guardar datos.");
         return false;
       }
 
@@ -329,23 +329,23 @@ export default function MasterScreen() {
         setAsyncPeopleData(peopleList);
       }
 
-      // Verificar si se cambió el área
+      // Verificar si se cambiÃ³ el Ã¡rea
       const originalArea = selectedPerson?.area;
       const newArea = editablePerson.area;
       
       if (originalArea !== newArea) {
-        // Si cambió el área, eliminar de la área anterior y crear en la nueva
+        // Si cambiÃ³ el Ã¡rea, eliminar de la Ã¡rea anterior y crear en la nueva
         const oldPersonRef = ref(database, `admins/${user.uid}/areas/${originalArea}/personas/${editablePerson.id}`);
-        await set(oldPersonRef, null); // Eliminar de área anterior
+        await set(oldPersonRef, null); // Eliminar de Ã¡rea anterior
         
-        // Crear en nueva área
+        // Crear en nueva Ã¡rea
         const newPersonRef = ref(database, `admins/${user.uid}/areas/${newArea}/personas/${editablePerson.id}`);
         await set(newPersonRef, {
           ...editablePerson,
           updatedAt: new Date().toISOString()
         });
       } else {
-        // Si no cambió el área, solo actualizar
+        // Si no cambiÃ³ el Ã¡rea, solo actualizar
         const personRef = ref(database, `admins/${user.uid}/areas/${editablePerson.area}/personas/${editablePerson.id}`);
         await update(personRef, {
           ...editablePerson,
@@ -367,7 +367,7 @@ export default function MasterScreen() {
     try {
       setLoginError(null);
       await register(email, password, userRole);
-      Alert.alert('Éxito', 'Usuario creado. Revisa tu correo para verificar.');
+      Alert.alert('Ã‰xito', 'Usuario creado. Revisa tu correo para verificar.');
       setIsRegisterMode(false);
     } catch (e) {
       setLoginError(e.message);
@@ -377,17 +377,17 @@ export default function MasterScreen() {
   //////////////////////////// Login
   const handleLogin = async () => {
     if (!email || !password) {
-      setLoginError('Por favor ingresa tu email y contraseña');
+      setLoginError('Por favor ingresa tu email y contraseÃ±a');
       return;
     }
 
     if (!isValidEmail(email)) {
-      setLoginError('Por favor ingresa un email válido');
+      setLoginError('Por favor ingresa un email vÃ¡lido');
       return;
     }
 
     if (password.length < 6) {
-      setLoginError('La contraseña debe tener al menos 6 caracteres');
+      setLoginError('La contraseÃ±a debe tener al menos 6 caracteres');
       return;
     }
 
@@ -401,7 +401,7 @@ export default function MasterScreen() {
         setLoginError(null);
       } else {
         setPassword('');
-        setLoginError('Credenciales inválidas o email no verificado');
+        setLoginError('Credenciales invÃ¡lidas o email no verificado');
       }
     } catch (error) {
       setLoginError(error.message);
@@ -411,7 +411,7 @@ export default function MasterScreen() {
 
   const handleForgotPassword = async () => {
     if (!forgotPasswordEmail || !isValidEmail(forgotPasswordEmail)) {
-      Alert.alert('Error', 'Por favor ingresa un email válido');
+      Alert.alert('Error', 'Por favor ingresa un email vÃ¡lido');
       return;
     }
 
@@ -423,26 +423,26 @@ export default function MasterScreen() {
         setForgotPasswordEmail('');
       }
     } catch (error) {
-      Alert.alert('Error', 'No se pudo enviar el enlace de recuperación.');
+      Alert.alert('Error', 'No se pudo enviar el enlace de recuperaciÃ³n.');
     } finally {
       setForgotPasswordLoading(false);
     }
   };
 
-  //////////////////////////// Verificación
+  //////////////////////////// VerificaciÃ³n
   const handleResendVerification = async () => {
     try {
       setResendVerificationLoading(true);
       await resendVerification();
       Alert.alert(
-        'Éxito', 
-        'Enlace de verificación reenviado. Revisa tu correo electrónico y haz clic en el enlace para verificar tu cuenta.',
+        'Ã‰xito', 
+        'Enlace de verificaciÃ³n reenviado. Revisa tu correo electrÃ³nico y haz clic en el enlace para verificar tu cuenta.',
         [{ text: 'OK' }]
       );
     } catch (e) {
       Alert.alert(
-        'Error al reenviar verificación', 
-        e.message || 'No se pudo reenviar el enlace de verificación. Intenta nuevamente.',
+        'Error al reenviar verificaciÃ³n', 
+        e.message || 'No se pudo reenviar el enlace de verificaciÃ³n. Intenta nuevamente.',
         [{ text: 'OK' }]
       );
     } finally {
@@ -457,21 +457,21 @@ export default function MasterScreen() {
         const updatedUser = await refreshUser();
         
         if (updatedUser && updatedUser.emailVerified) {
-          // Email verificado, mantener el rol pero limpiar la sesión
-          await clearSessionOnly(); // Solo limpia la sesión, mantiene el rol
+          // Email verificado, mantener el rol pero limpiar la sesiÃ³n
+          await clearSessionOnly(); // Solo limpia la sesiÃ³n, mantiene el rol
           
-          // Ocultar modal de verificación
+          // Ocultar modal de verificaciÃ³n
           setShowVerificationModalAfterRegister(false);
           
-          Alert.alert('¡Verificado exitosamente!', 'Ahora logeate con tu usuario y contraseña.');
+          Alert.alert('Â¡Verificado exitosamente!', 'Ahora logeate con tu usuario y contraseÃ±a.');
           
           // Limpiar campos de login
           setEmail('');
           setPassword('');
           setLoginError(null);
         } else {
-          // Email aún no verificado
-          Alert.alert('Verificación', 'El email aún no está verificado. Revisa tu correo y vuelve a intentar.');
+          // Email aÃºn no verificado
+          Alert.alert('VerificaciÃ³n', 'El email aÃºn no estÃ¡ verificado. Revisa tu correo y vuelve a intentar.');
         }
       }
     } catch (e) {
@@ -479,10 +479,10 @@ export default function MasterScreen() {
     }
   };
 
-  // useEffect para mostrar automáticamente el modal de área después del login exitoso
+  // useEffect para mostrar automÃ¡ticamente el modal de Ã¡rea despuÃ©s del login exitoso
   useEffect(() => {
     if (globalUserRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible && !modalUserTypeVisible && !noDataModalVisible && !detailModalVisible && !editModalVisible && isInitialFlow) {
-      // Pequeño delay para asegurar que la UI esté lista
+      // PequeÃ±o delay para asegurar que la UI estÃ© lista
       setTimeout(() => {
         setModalAreaVisible(true);
         setIsInitialFlow(false); // Marcar que ya no es el flujo inicial
@@ -507,7 +507,7 @@ export default function MasterScreen() {
         const areasObj = snapshot.val();
         let allPeople = [];
         
-        // Recorrer todas las áreas y extraer las personas
+        // Recorrer todas las Ã¡reas y extraer las personas
         Object.keys(areasObj).forEach(areaKey => {
           const area = areasObj[areaKey];
           if (area.personas) {
@@ -573,7 +573,7 @@ export default function MasterScreen() {
                 color: '#5124A5',
                 fontWeight: '500'
               }}>
-                ¿Qué tipo de usuario eres?
+                Â¿QuÃ© tipo de usuario eres?
               </Text>
               
               <CustomButton
@@ -680,7 +680,7 @@ export default function MasterScreen() {
                       setShowRegisterModal(false);
                       setEmail('');
                       setPassword('');
-                      // Mostrar modal de verificación después del registro exitoso
+                      // Mostrar modal de verificaciÃ³n despuÃ©s del registro exitoso
                       setShowVerificationModalAfterRegister(true);
                     } catch (error) {
                       // Solo limpiar campos en caso de error
@@ -696,7 +696,7 @@ export default function MasterScreen() {
           </CustomModal>
         )}
 
-        {/* MODAL DE RECUPERACIÓN DE CONTRASEÑA */}
+        {/* MODAL DE RECUPERACIÃ“N DE CONTRASEÃ‘A */}
         {showForgotPasswordModal && (
           <CustomModal
             visible={true}
@@ -753,7 +753,7 @@ export default function MasterScreen() {
           </CustomModal>
         )}
 
-        {/* MODAL DE VERIFICACIÓN DESPUÉS DEL REGISTRO EXITOSO */}
+        {/* MODAL DE VERIFICACIÃ“N DESPUÃ‰S DEL REGISTRO EXITOSO */}
         {showVerificationModalAfterRegister && (
           <CustomModal
             visible={true}
@@ -823,7 +823,7 @@ export default function MasterScreen() {
               />
               {emailTouched && !isValidEmail(email) && (
                 <Text style={{ color: 'red', marginTop: 4, marginBottom: 4, fontSize: 18 }}>
-                  Ingrese un mail válido
+                  Ingrese un mail vÃ¡lido
                 </Text>
               )}
               <View style={{ margin: 8 }} />
@@ -847,7 +847,7 @@ export default function MasterScreen() {
                 </Text>
               )}
               
-              {/* Botón Olvidé mi contraseña */}
+              {/* BotÃ³n OlvidÃ© mi contraseÃ±a */}
               <TouchableOpacity 
                 onPress={() => setShowForgotPasswordModal(true)}
                 style={{ 
@@ -873,7 +873,7 @@ export default function MasterScreen() {
                 </TouchableOpacity>
               )}
               
-              {/* Botón para cambiar de rol */}
+              {/* BotÃ³n para cambiar de rol */}
               <TouchableOpacity 
                 onPress={async () => {
                   try {
@@ -885,7 +885,7 @@ export default function MasterScreen() {
                     await logout();
                     
                   } catch (error) {
-                    // Aún así, intentar logout
+                    // AÃºn asÃ­, intentar logout
                     await logout();
                   }
                 }} 
@@ -942,7 +942,7 @@ export default function MasterScreen() {
           />
         ) : null}
 
-        {/* MODAL SELECCIÓN DE ÁREA */}
+        {/* MODAL SELECCIÃ“N DE ÃREA */}
         <CustomModal
           visible={modalAreaVisible}
           onDismiss={() => setModalAreaVisible(false)}
@@ -959,7 +959,7 @@ export default function MasterScreen() {
           }))}
         />
 
-        {/* MODAL ELECCIÓN DE EMPLEADOS/PACIENTES */}
+        {/* MODAL ELECCIÃ“N DE EMPLEADOS/PACIENTES */}
         <CustomModal
           visible={modalUserTypeVisible}
           onDismiss={() => setModalUserTypeVisible(false)}
@@ -995,7 +995,7 @@ export default function MasterScreen() {
             // Validar campos obligatorios antes de proceder
             const missingFields = validateRequiredFields(newPerson);
             if (missingFields.length > 0) {
-              const missingFieldsText = missingFields.map(field => `• ${field.label}`).join('\n');
+              const missingFieldsText = missingFields.map(field => `â€¢ ${field.label}`).join('\n');
               Alert.alert(
                 VALIDATION_TEXTS.requiredFields,
                 `${VALIDATION_TEXTS.fillAllFields}\n\n${VALIDATION_TEXTS.missingFields}\n${missingFieldsText}`,
@@ -1004,7 +1004,7 @@ export default function MasterScreen() {
               return; // No proceder si faltan campos
             }
             
-            // Si todos los campos están completos, proceder con el flujo normal
+            // Si todos los campos estÃ¡n completos, proceder con el flujo normal
             setNoDataModalVisible(false);
             setIsCreatingNewPerson(true);
             setTimeout(() => setShowConfirmModal(true), 300);
@@ -1066,7 +1066,7 @@ export default function MasterScreen() {
             setEditModalVisible(false);
             setDetailModalVisible(true);
           }}
-          title={`${FORM_TEXTS.editButton} Información:`}
+          title={`${FORM_TEXTS.editButton} InformaciÃ³n:`}
           isEditModal={true}
           canEdit={true}
           onSavePress={() => {
@@ -1090,7 +1090,7 @@ export default function MasterScreen() {
           </View>
         </CustomModal>
 
-        {/* MODAL DE CONFIRMACIÓN */}
+        {/* MODAL DE CONFIRMACIÃ“N */}
         <CustomModal
           visible={showConfirmModal}
           onDismiss={() => {
@@ -1098,7 +1098,7 @@ export default function MasterScreen() {
             setSaveSuccess(false);
             setIsCreatingNewPerson(false);
           }}
-          title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
+          title={saveSuccess ? STATUS_MESSAGES.success : `Â¿${FORM_TEXTS.saveButton} todo?`}
           centerCard={true}
           showHamburgerMenu={false}
         >
@@ -1117,7 +1117,7 @@ export default function MasterScreen() {
                   setNewPerson({});
                   setAddMode(false);
                   setShowEmployeeList(false);
-                  // Volver al modal de selección de área
+                  // Volver al modal de selecciÃ³n de Ã¡rea
                   setModalAreaVisible(true);
                   setIsInitialFlow(false);
                 }}
@@ -1125,7 +1125,7 @@ export default function MasterScreen() {
             ) : (
               <View style={{ width: '100%', alignItems: 'center' }}>
                 <CustomButton
-                  label="Sí"
+                  label="SÃ­"
                   onPress={async () => {
                     let success = false;
                     if (isCreatingNewPerson) {
@@ -1134,7 +1134,7 @@ export default function MasterScreen() {
                       success = await handleSaveEditPerson();
                     }
                     
-                    // Solo mostrar modal de éxito si la operación fue exitosa
+                    // Solo mostrar modal de Ã©xito si la operaciÃ³n fue exitosa
                     if (success) {
                       setSaveSuccess(true);
                     }

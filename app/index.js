@@ -1,3 +1,3 @@
-import MasterScreen from './MasterScreen';
+﻿import MasterScreen from './MasterScreen';
 
 export default MasterScreen;
