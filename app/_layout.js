@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+﻿import { Stack } from 'expo-router';
 import { AuthProvider } from '../components/UserContext';
 
 export default function RootLayout() {

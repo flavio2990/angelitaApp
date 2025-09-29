@@ -1,11 +1,11 @@
-import { FlatList, Text, StyleSheet, View } from 'react-native';
+﻿import { FlatList, Text, StyleSheet, View } from 'react-native';
 
 import { Card, TouchableRipple, FAB } from 'react-native-paper';
 
 import TopBarHeader from './TopBarHeader';
 
 
-export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPress, onAddPress }) {
+export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPress, onAddPress, canEdit = false }) {
 
 
   const renderItem = ({ item }) => (
@@ -29,15 +29,17 @@ export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPre
         key={`list-${data?.length || 0}`}
         data={data}
         renderItem={renderItem}
-        keyExtractor={(item) => (item.dni || item.id || Math.random()).toString()}
+        keyExtractor={(item, index) => `${item.id || item.dni || 'unknown'}-${index}`}
         contentContainerStyle={styles.listContent}
         extraData={data?.length}
         removeClippedSubviews={false} />
-      <FAB
-        icon="account-plus"
-        style={styles.fabStyle}
-        onPress={onAddPress}
-        color="white" />
+      {canEdit && (
+        <FAB
+          icon="account-plus"
+          style={styles.fabStyle}
+          onPress={onAddPress}
+          color="white" />
+      )}
     </>
   );
 };
@@ -53,7 +55,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 24
+    paddingTop: 34
   },
   cardStyle: {
     marginBottom: 10,

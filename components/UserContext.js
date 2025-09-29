@@ -1,4 +1,4 @@
-
+﻿
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -95,13 +95,11 @@ export const AuthProvider = ({ children }) => {
           areas: {
             UTI: {
               nombre: 'Unidad de Terapia Intensiva',
-              empleados: {},
-              pacientes: {}
+              personas: {}
             },
             UCG: {
               nombre: 'Unidad de Cuidados Generales',
-              empleados: {},
-              pacientes: {}
+              personas: {}
             }
           }
         }),
@@ -192,15 +190,7 @@ export const AuthProvider = ({ children }) => {
       return false; // No permitir acceso
     }
   };
-
-  // ===== LOGOUT COMPLETO =====
-  // Este logout garantiza que:
-  // 1. No quedan roles cacheados en el contexto
-  // 2. Se limpia AsyncStorage COMPLETAMENTE (todos los datos del usuario)
-  // 3. Se resetea el AuthContext completamente
-  // 4. Se muestra el modal de selección solo cuando corresponde
-  // 5. Se evita que un usuario use data de otro por error
-  // 6. Limpia datos de personas, configuraciones y cualquier otro dato local
+  
   const logout = async () => {
     try {
       // 1. Deshabilitar carga automática de rol persistido

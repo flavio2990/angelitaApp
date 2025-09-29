@@ -1,4 +1,4 @@
-
+﻿
 import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'expo-router';
@@ -19,9 +19,21 @@ import { useAuth } from '../components/UserContext';
 import HamburgerMenu from '../components/HamburgerMenu';
 // import GlobalUserDebugger from '../components/GlobalUserDebugger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CARD_TITLES, AREA_OPTIONS, TIPE_OPTIONS, MODAL_TITLES, TOP_BAR_HEADER_TITLES } from '../constants/Strings';
+import { 
+  CARD_TITLES, 
+  AREA_OPTIONS, 
+  TIPE_OPTIONS, 
+  MODAL_TITLES, 
+  TOP_BAR_HEADER_TITLES,
+  AUTH_TEXTS,
+  FORM_TEXTS,
+  ROLE_TEXTS,
+  STATUS_MESSAGES,
+  NAVIGATION_TEXTS,
+  VALIDATION_TEXTS
+} from '../constants/Strings';
 
-import { ref, onValue, set } from 'firebase/database';
+import { ref, onValue, set, update } from 'firebase/database';
 import { database } from '../env/firebase';
 
 const { height } = Dimensions.get('window');
@@ -33,6 +45,7 @@ export default function MasterScreen() {
   const [password, setPassword] = useState("");
   const [modalAreaVisible, setModalAreaVisible] = useState(false);
   const [modalUserTypeVisible, setModalUserTypeVisible] = useState(false);
+  const [isInitialFlow, setIsInitialFlow] = useState(true);
   const [selectedArea, setSelectedArea] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const [showEmployeeList, setShowEmployeeList] = useState(false);
@@ -47,6 +60,7 @@ export default function MasterScreen() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [originalDni, setOriginalDni] = useState(null);
+  const [isCreatingNewPerson, setIsCreatingNewPerson] = useState(false);
 
   const [isAdminSelected, setIsAdminSelected] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
@@ -57,8 +71,8 @@ export default function MasterScreen() {
   const [empleados, setEmpleados] = useState({});
   const [loginError, setLoginError] = useState(null);
   const [asyncPeopleData, setAsyncPeopleData] = useState([]);
-  const [forceUpdate, setForceUpdate] = useState(0);
-  const [showLoginAfterVerification, setShowLoginAfterVerification] = useState(false);
+  // const [forceUpdate, setForceUpdate] = useState(0);
+  // const [showLoginAfterVerification, setShowLoginAfterVerification] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [showVerificationModalAfterRegister, setShowVerificationModalAfterRegister] = useState(false);
   const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
@@ -143,11 +157,13 @@ export default function MasterScreen() {
       setEditModalVisible(false);
       setEditablePerson(null);
       setNoDataModalVisible(false);
+      setIsInitialFlow(true); // Resetear para el próximo login
       setNewPerson({});
       setAddMode(false);
       setShowConfirmModal(false);
       setSaveSuccess(false);
       setOriginalDni(null);
+      setIsCreatingNewPerson(false);
       
       // Ejecutar logout del contexto (que ya limpia AsyncStorage)
       await logout();
@@ -159,6 +175,60 @@ export default function MasterScreen() {
     }
   };
 
+  // Función para volver a la vista principal (selección de área)
+  const handleGoHome = () => {
+    // Verificar si se está editando o agregando datos
+    const isEditing = editModalVisible || noDataModalVisible;
+    
+    if (isEditing) {
+      // Mostrar confirmación si se está editando o agregando
+      Alert.alert(
+        "¿Estás seguro?",
+        "¿Estás seguro de salir sin antes guardar?",
+        [
+          {
+            text: "Cancelar",
+            style: "cancel"
+          },
+          {
+            text: "Salir sin guardar",
+            style: "destructive",
+            onPress: () => goHomeConfirmed()
+          }
+        ]
+      );
+    } else {
+      // Si no se está editando, ir directamente
+      goHomeConfirmed();
+    }
+  };
+
+  // Función que ejecuta la navegación a inicio (después de confirmación)
+  const goHomeConfirmed = () => {
+    // Cerrar todos los modales y listas
+    setShowEmployeeList(false);
+    setDetailModalVisible(false);
+    setEditModalVisible(false);
+    setModalUserTypeVisible(false);
+    setNoDataModalVisible(false);
+    setShowConfirmModal(false);
+    
+    // Limpiar estados
+    setSelectedPerson(null);
+    setEditablePerson(null);
+    setSelectedArea(null);
+    setSelectedOption(null);
+    setUserType(null);
+    setNewPerson({});
+    setAddMode(false);
+    setSaveSuccess(false);
+    setIsCreatingNewPerson(false);
+    
+    // Abrir modal de selección de área
+    setModalAreaVisible(true);
+    setIsInitialFlow(false);
+  };
+
   const handleModifyPress = () => {
     setDetailModalVisible(false);
     setEditablePerson({ ...selectedPerson });
@@ -166,33 +236,71 @@ export default function MasterScreen() {
     setOriginalDni(selectedPerson.dni);
   };
 
+  // Función para validar campos obligatorios
+  const validateRequiredFields = (person) => {
+    // Determinar si es empleado
+    const isEmployee = person?.tipo && 
+      (person.tipo.toLowerCase() === 'enfermería' || person.tipo.toLowerCase() === 'administrador');
+
+    // Campos base requeridos para todos
+    const baseRequiredFields = [
+      { key: 'tipo', label: 'Tipo' },
+      { key: 'area', label: 'Ãrea' },
+      { key: 'nombre', label: 'Nombre' },
+      { key: 'edad', label: 'Edad' },
+      { key: 'dni', label: 'DNI' },
+      { key: 'nacimiento', label: 'Nacimiento' },
+      { key: 'ingreso', label: 'Ingreso' },
+      { key: 'nacionalidad', label: 'Nacionalidad' },
+    ];
+
+    // Campos adicionales solo para pacientes
+    const patientOnlyFields = [
+      { key: 'coberturaSocial', label: 'Cobertura Social' },
+      { key: 'estadoCivil', label: 'Estado Civil' },
+      { key: 'peso', label: 'Peso' },
+    ];
+
+    // Combinar campos según el tipo de usuario
+    const requiredFields = isEmployee ? baseRequiredFields : [...baseRequiredFields, ...patientOnlyFields];
+
+    const missingFields = requiredFields.filter(field => 
+      !person[field.key] || person[field.key].toString().trim() === ''
+    );
+
+    return missingFields;
+  };
+
   const handleSaveNewPerson = async () => {
     if (!user || !user.uid) {
       Alert.alert("Debes iniciar sesión como administrador para guardar datos.");
-      return;
+      return false;
     }
+
     try {
       const personId = Date.now().toString();
-      const personWithId = { ...newPerson, id: personId };
-
-      const stored = await AsyncStorage.getItem('peopleData');
-      let peopleList = stored ? JSON.parse(stored) : [];
-      const updatedList = [...peopleList, personWithId];
-      await AsyncStorage.setItem('peopleData', JSON.stringify(updatedList));
-
-      await set(ref(database, `admins/${user.uid}/people/${personId}`), {
-        ...personWithId,
+      const personWithId = { 
+        ...newPerson, 
+        id: personId,
         createdAt: new Date().toISOString()
-      });
+      };
 
-      setAsyncPeopleData(updatedList);
+      // Guardar en Firebase usando la estructura correcta: areas/{area}/personas/{id}
+      const personRef = ref(database, `admins/${user.uid}/areas/${newPerson.area}/personas/${personId}`);
+      await set(personRef, personWithId);
+
+      // No actualizar AsyncStorage manualmente - el useEffect se encargará de sincronizar
+      // El useEffect detectará el cambio en Firebase y actualizará asyncPeopleData automáticamente
       setNoDataModalVisible(false);
       setNewPerson({});
       setShowEmployeeList(true);
       setAddMode(false);
-          } catch (error) {
-        Alert.alert("Error al guardar: " + error.message);
-      }
+      return true;
+    } catch (error) {
+      console.error("Error al guardar nueva persona:", error);
+      Alert.alert("Error al guardar: " + error.message);
+      return false;
+    }
   };
 
   function getTopBarTitle(type, TOP_BAR_HEADER_TITLES) {
@@ -213,22 +321,45 @@ export default function MasterScreen() {
 
   const handleSaveEditPerson = async () => {
     try {
-      const stored = await AsyncStorage.getItem('peopleData');
-      let peopleList = stored ? JSON.parse(stored) : [];
-      const index = peopleList.findIndex(p => p.dni === originalDni);
-      if (index !== -1) {
-        peopleList[index] = editablePerson;
-        await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
+      if (!user || !user.uid) {
+        Alert.alert("Error", "Debes iniciar sesión como administrador para guardar datos.");
+        return false;
       }
 
-      await set(ref(database, `admins/${user.uid}/people/${editablePerson.id}`), {
-        ...editablePerson,
-        updatedAt: new Date().toISOString()
-      });
+      // No actualizar AsyncStorage manualmente - el useEffect se encargará de sincronizar
+      // El useEffect detectará el cambio en Firebase y actualizará asyncPeopleData automáticamente
 
-          } catch (error) {
-        // Error silencioso
+      // Verificar si se cambió el área
+      const originalArea = selectedPerson?.area;
+      const newArea = editablePerson.area;
+      
+      if (originalArea !== newArea) {
+        // Si cambió el área, eliminar del área anterior y crear en la nueva
+        const oldPersonRef = ref(database, `admins/${user.uid}/areas/${originalArea}/personas/${editablePerson.id}`);
+        await set(oldPersonRef, null); // Eliminar de área anterior
+        
+        // Crear en nueva área
+        const newPersonRef = ref(database, `admins/${user.uid}/areas/${newArea}/personas/${editablePerson.id}`);
+        await set(newPersonRef, {
+          ...editablePerson,
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        // Si no cambió el área, solo actualizar
+        const personRef = ref(database, `admins/${user.uid}/areas/${editablePerson.area}/personas/${editablePerson.id}`);
+        await update(personRef, {
+          ...editablePerson,
+          updatedAt: new Date().toISOString()
+        });
       }
+
+      console.log("Datos guardados exitosamente en Firebase y AsyncStorage");
+      return true;
+    } catch (error) {
+      console.error("Error al guardar:", error);
+      Alert.alert("Error", "No se pudieron guardar los datos. Intenta nuevamente.");
+      return false;
+    }
   };
 
   //////////////////////////// Registro
@@ -350,13 +481,14 @@ export default function MasterScreen() {
 
   // useEffect para mostrar automáticamente el modal de área después del login exitoso
   useEffect(() => {
-    if (globalUserRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible) {
+    if (globalUserRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible && !modalUserTypeVisible && !noDataModalVisible && !detailModalVisible && !editModalVisible && isInitialFlow) {
       // Pequeño delay para asegurar que la UI esté lista
       setTimeout(() => {
         setModalAreaVisible(true);
+        setIsInitialFlow(false); // Marcar que ya no es el flujo inicial
       }, 500);
     }
-  }, [globalUserRole, user, showEmployeeList, modalAreaVisible]);
+  }, [globalUserRole, user, showEmployeeList, modalAreaVisible, modalUserTypeVisible, noDataModalVisible, detailModalVisible, editModalVisible, isInitialFlow]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -369,13 +501,23 @@ export default function MasterScreen() {
 
   useEffect(() => {
     if (!user?.uid) return;
-    const peopleRef = ref(database, `admins/${user.uid}/people`);
-    const unsubscribe = onValue(peopleRef, async (snapshot) => {
+    const areasRef = ref(database, `admins/${user.uid}/areas`);
+    const unsubscribe = onValue(areasRef, async (snapshot) => {
       if (snapshot.exists()) {
-        const peopleObj = snapshot.val();
-        const peopleList = Object.values(peopleObj);
-        await AsyncStorage.setItem('peopleData', JSON.stringify(peopleList));
-        setAsyncPeopleData(peopleList);
+        const areasObj = snapshot.val();
+        let allPeople = [];
+        
+        // Recorrer todas las áreas y extraer las personas
+        Object.keys(areasObj).forEach(areaKey => {
+          const area = areasObj[areaKey];
+          if (area.personas) {
+            const areaPeople = Object.values(area.personas);
+            allPeople = [...allPeople, ...areaPeople];
+          }
+        });
+        
+        await AsyncStorage.setItem('peopleData', JSON.stringify(allPeople));
+        setAsyncPeopleData(allPeople);
       } else {
         await AsyncStorage.setItem('peopleData', JSON.stringify([]));
         setAsyncPeopleData([]);
@@ -399,16 +541,7 @@ export default function MasterScreen() {
       </PaperProvider>
     );
   }
-
-  // ---------- 2. SELECCIÓN DE ROL ----------
-  // NOTA: El modal de selección de rol aparece SOLO cuando no hay globalUserRole
-  // Esto garantiza que:
-  // - Al reiniciar la app, si no hay rol persistido, se muestra el modal
-  // - Si hay rol persistido, se va directo al flujo de login/registro
-  // - Después de un logout seguro, se vuelve a mostrar el modal
-  
-
-  
+ 
   if (!globalUserRole) {
     return (
       <PaperProvider theme={theme}>
@@ -428,7 +561,7 @@ export default function MasterScreen() {
           <CustomModal
             visible={true}
             onDismiss={() => { }}
-            title="Seleccione su rol:"
+            title={AUTH_TEXTS.selectRole}
             centerCard={true}
             actions={[]}
           >
@@ -444,7 +577,7 @@ export default function MasterScreen() {
               </Text>
               
               <CustomButton
-                label="Soy Administrador"
+                label={AUTH_TEXTS.adminRole}
                 onPress={() => {
                   setUserRole('admin');
                   setIsAdminSelected(true);
@@ -452,7 +585,7 @@ export default function MasterScreen() {
               />
               <View style={{ height: 16 }} />
               <CustomButton
-                label="Soy Empleado"
+                label={AUTH_TEXTS.employeeRole}
                 onPress={() => {
                   setUserRole('empleado');
                   setIsAdminSelected(false);
@@ -476,46 +609,50 @@ export default function MasterScreen() {
           <CustomModal
             visible={true}
             onDismiss={() => setShowRegisterModal(false)}
-            title="Crear Usuario Administrador"
+            title={AUTH_TEXTS.registerTitle}
             centerCard={true}
             showHamburgerMenu={false}
+            scrollable={false}
+            outsideActions={[
+              {
+                label: AUTH_TEXTS.cancelButton,
+                onPress: () => {
+                  setShowRegisterModal(false);
+                  setEmail('');
+                  setPassword('');
+                },
+                mode: "text",
+                textColor: '#333',
+                labelStyle: {
+                  fontWeight: 'normal'
+                }
+              }
+            ]}
           >
-            <View style={{ padding: 20, alignItems: 'center' }}>
+            <View style={{ padding: 16, alignItems: 'center' }}>
               <Text style={{ 
-                marginBottom: 20, 
+                marginBottom: 10, 
                 fontSize: 16, 
                 textAlign: 'center',
                 color: '#666'
               }}>
-                Ingresa tu email y contraseña para crear tu cuenta
+                Ingresa estos datos para crear una cuenta
               </Text>
-              
-              {globalUserRole && (
-                <Text style={{ 
-                  marginBottom: 20, 
-                  fontSize: 14, 
-                  textAlign: 'center',
-                  color: '#5124A5',
-                  fontWeight: '600'
-                }}>
-                  Rol seleccionado: {globalUserRole === 'admin' ? '🛡️ ADMINISTRADOR' : '👤 EMPLEADO'}
-                </Text>
-              )}
-              
+        
               {!globalUserRole && (
                 <Text style={{ 
-                  marginBottom: 20, 
+                  marginBottom: 12, 
                   fontSize: 14, 
                   textAlign: 'center',
                   color: '#FF6B6B',
                   fontWeight: '600'
                 }}>
-                  ⚠️ Primero debes seleccionar un rol
+                  {AUTH_TEXTS.selectRoleFirst}
                 </Text>
               )}
               
               <TextInput
-                label="Email"
+                label={AUTH_TEXTS.emailLabel}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -526,17 +663,17 @@ export default function MasterScreen() {
               />
               
               <TextInput
-                label="Contraseña"
+                label={AUTH_TEXTS.passwordLabel}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                style={{ marginBottom: 20, width: 260 }}
+                style={{ marginBottom: 16, width: 260 }}
                 theme={{ colors: { text: '#000', primary: '#007AFF' } }}
               />
               
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
-                  label="CREAR USUARIO"
+                  label={AUTH_TEXTS.createUserButton}
                   onPress={async () => {
                     try {
                       await register(email, password, globalUserRole);
@@ -554,25 +691,6 @@ export default function MasterScreen() {
                   disabled={!isValidEmail(email) || !password || password.length < 6 || !globalUserRole}
                   style={{ marginBottom: 16, width: 260 }}
                 />
-                
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowRegisterModal(false);
-                    setEmail('');
-                    setPassword('');
-                  }}
-                  style={{
-                    paddingVertical: 8
-                  }}
-                >
-                  <Text style={{ 
-                    color: '#666', 
-                    fontSize: 16,
-                    textDecorationLine: 'underline'
-                  }}>
-                    Cancelar
-                  </Text>
-                </TouchableOpacity>
               </View>
             </View>
           </CustomModal>
@@ -583,9 +701,24 @@ export default function MasterScreen() {
           <CustomModal
             visible={true}
             onDismiss={() => setShowForgotPasswordModal(false)}
-            title="Recuperar Contraseña"
+            title={AUTH_TEXTS.forgotPasswordTitle}
             centerCard={true}
             showHamburgerMenu={false}
+            scrollable={false}
+            outsideActions={[
+              {
+                label: "Cancelar",
+                onPress: () => {
+                  setShowForgotPasswordModal(false);
+                  setForgotPasswordEmail('');
+                },
+                mode: "text",
+                textColor: '#333',
+                labelStyle: {
+                  fontWeight: 'normal'
+                }
+              }
+            ]}
           >
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ 
@@ -594,11 +727,11 @@ export default function MasterScreen() {
                 textAlign: 'center',
                 color: '#666'
               }}>
-                Ingresa tu email para recibir un enlace de recuperación
+                {AUTH_TEXTS.forgotPasswordMessage}
               </Text>
               
               <TextInput
-                label="Email"
+                label={AUTH_TEXTS.emailLabel}
                 value={forgotPasswordEmail}
                 onChangeText={setForgotPasswordEmail}
                 keyboardType="email-address"
@@ -610,29 +743,11 @@ export default function MasterScreen() {
               
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
-                  label="ENVIAR ENLACE"
+                  label={AUTH_TEXTS.sendResetButton}
                   onPress={handleForgotPassword}
                   disabled={!isValidEmail(forgotPasswordEmail) || forgotPasswordLoading}
                   style={{ marginBottom: 16, width: 260 }}
                 />
-                
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowForgotPasswordModal(false);
-                    setForgotPasswordEmail('');
-                  }}
-                  style={{
-                    paddingVertical: 8
-                  }}
-                >
-                  <Text style={{ 
-                    color: '#666', 
-                    fontSize: 16,
-                    textDecorationLine: 'underline'
-                  }}>
-                    Cancelar
-                  </Text>
-                </TouchableOpacity>
               </View>
             </View>
           </CustomModal>
@@ -643,7 +758,7 @@ export default function MasterScreen() {
           <CustomModal
             visible={true}
             onDismiss={() => { }} // No permitir cerrar hasta verificar
-            title="Verifica tu correo"
+            title={AUTH_TEXTS.verificationTitle}
             centerCard={true}
             showHamburgerMenu={false}
           >
@@ -654,43 +769,19 @@ export default function MasterScreen() {
                 textAlign: 'center',
                 color: '#666'
               }}>
-                Usuario creado exitosamente. Debes verificar tu correo electrónico antes de continuar.
+                {AUTH_TEXTS.verificationMessage}
               </Text>
-              
-              <Text style={{ 
-                marginBottom: 20, 
-                fontSize: 14, 
-                textAlign: 'center',
-                color: '#888',
-                fontStyle: 'italic'
-              }}>
-                Revisa tu correo y haz clic en el enlace de verificación.
-              </Text>
-              
-              {firebaseUser && (
-                <Text style={{ 
-                  marginBottom: 20, 
-                  fontSize: 12, 
-                  textAlign: 'center',
-                  color: '#007AFF',
-                  fontWeight: '500'
-                }}>
-                  Email: {firebaseUser.email}
-                </Text>
-              )}
-              
-              
               
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
-                  label={resendVerificationLoading ? "Enviando..." : "Reenviar enlace"}
+                  label={resendVerificationLoading ? STATUS_MESSAGES.saving : AUTH_TEXTS.verificationButton}
                   onPress={handleResendVerification}
                   disabled={resendVerificationLoading}
-                  style={{ marginBottom: 16, width: 260 }}
+                  style={{ marginBottom: 8, width: 260 }}
                 />
                 <View style={{ height: 16 }} />
                 <CustomButton
-                  label="Ya verifiqué mi correo"
+                  label={AUTH_TEXTS.backToLogin}
                   onPress={handleReloadUser}
                   style={{ marginBottom: 16, width: 260 }}
                 />
@@ -714,7 +805,7 @@ export default function MasterScreen() {
           <Card style={styles.card}>
             <Card.Content style={styles.cardContent}>
               <Text variant="titleLarge" style={styles.bigWelcomeText}>
-                Iniciar Sesión
+                {AUTH_TEXTS.loginTitle}
               </Text>
               <TextInput
                 value={email}
@@ -722,7 +813,7 @@ export default function MasterScreen() {
                   setEmail(text);
                   if (!emailTouched) setEmailTouched(true);
                 }}
-                label="Email"
+                label={AUTH_TEXTS.emailLabel}
                 style={styles.textInput}
                 theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
                 keyboardType="email-address"
@@ -737,7 +828,7 @@ export default function MasterScreen() {
               )}
               <View style={{ margin: 8 }} />
               <TextInput
-                label="Contraseña"
+                label={AUTH_TEXTS.passwordLabel}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
@@ -747,7 +838,7 @@ export default function MasterScreen() {
               <View style={{ margin: 8 }} />
               <CustomButton
                 onPress={handleLogin}
-                label="INGRESAR"
+                label={AUTH_TEXTS.loginButton}
                 disabled={!isValidEmail(email) || !password || password.length < 6 || loading}
               />
               {loginError && (
@@ -770,14 +861,14 @@ export default function MasterScreen() {
                   textDecorationLine: 'underline',
                   textAlign: 'center'
                 }}>
-                  ¿Olvidaste tu contraseña?
+                  {AUTH_TEXTS.forgotPassword}
                 </Text>
               </TouchableOpacity>
               
                              {globalUserRole === 'admin' && (
                 <TouchableOpacity onPress={() => setShowRegisterModal(true)} style={{ marginTop: 16 }}>
                   <Text style={{ color: '#5124A5', fontWeight: 'bold', fontSize: 18 }}>
-                    ¿No tienes cuenta? Regístrate
+                    {AUTH_TEXTS.noAccount} {AUTH_TEXTS.createAccount}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -811,7 +902,7 @@ export default function MasterScreen() {
                   fontSize: 16,
                   fontWeight: '600'
                 }}>
-                  Cambiar de rol
+                  {AUTH_TEXTS.changeRole}
                 </Text>
               </TouchableOpacity>
             </Card.Content>
@@ -828,11 +919,8 @@ export default function MasterScreen() {
       <StatusBar />
 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-                  {/* MENÚ HAMBURGUESA - SIEMPRE VISIBLE EN APP PRINCIPAL */}
-          <HamburgerMenu position="top-right" onLogout={handleLogout} />
+          <HamburgerMenu position="top-right" onLogout={handleLogout} onGoHome={handleGoHome} showGoHomeOption={false} />
         
-        {/* DEBUGGER TEMPORAL - PARA VERIFICAR ESTADO GLOBAL */}
-        {/* <GlobalUserDebugger /> */}
         
         {/* LISTA DE EMPLEADOS/PACIENTES */}
         {showEmployeeList ? (
@@ -845,6 +933,7 @@ export default function MasterScreen() {
             onPress={handleBackPress}
             onItemPress={handleItemPress}
             topBarTitleEmploy={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
+            canEdit={globalUserRole === 'admin'}
             onAddPress={() => {
               setNewPerson({});
               setNoDataModalVisible(true);
@@ -853,12 +942,16 @@ export default function MasterScreen() {
           />
         ) : null}
 
-        {/* MODAL ELECCIÓN DE ÁREA */}
+        {/* MODAL SELECCIÓN DE ÃREA */}
         <CustomModal
-          cardMarginTop={height * 0.3}
           visible={modalAreaVisible}
           onDismiss={() => setModalAreaVisible(false)}
           title={CARD_TITLES.selectArea}
+          centerCard={true}
+          showHamburgerMenu={true}
+          showGoHomeOption={false}
+          onLogout={handleLogout}
+          onGoHome={handleGoHome}
           actions={AREA_OPTIONS.map(opt => ({
             label: opt.label,
             icon: opt.icon,
@@ -866,19 +959,21 @@ export default function MasterScreen() {
           }))}
         />
 
-        {/* MODAL ELECCIÓN DE EMPLEADOS/PACIENTES */}
+        {/* MODAL SELECCIÓN DE EMPLEADOS/PACIENTES */}
         <CustomModal
-          cardMarginTop={height * 0.2}
           visible={modalUserTypeVisible}
           onDismiss={() => setModalUserTypeVisible(false)}
           topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
           title={`Seleccionar de ${selectedArea}:`}
+          centerCard={true}
           showTopbar={true}
           onBack={() => {
             setModalUserTypeVisible(false);
             setModalAreaVisible(true);
             setSelectedArea(null);
           }}
+          onLogout={handleLogout}
+          onGoHome={handleGoHome}
           actions={TIPE_OPTIONS.map(opt => ({
             label: opt.label,
             icon: opt.icon,
@@ -886,21 +981,6 @@ export default function MasterScreen() {
           }))}
         />
 
-        {/* MODAL DE REGISTRO DE USUARIO */}
-        <CustomModal
-          visible={showRegisterModal}
-          onDismiss={() => setShowRegisterModal(false)}
-          title="Crear Usuario Administrador"
-          centerCard={true}
-        >
-          <RegisterAdminForm
-            onRegister={(email, password) => {
-              setShowRegisterModal(false);
-            }}
-            onSendCode={(email, code) => {
-            }}
-          />
-        </CustomModal>
 
         {/* MODAL AVISO SIN DATOS */}
         <CustomModal
@@ -910,18 +990,40 @@ export default function MasterScreen() {
           topbarTitle={addMode ? TOP_BAR_HEADER_TITLES.topBarNewData : TOP_BAR_HEADER_TITLES.topBarNoData}
           title={MODAL_TITLES.modalNoData}
           isEditModal={true}
-          onSavePress={handleSaveNewPerson}
+          canEdit={true}
+          onSavePress={() => {
+            // Validar campos obligatorios antes de proceder
+            const missingFields = validateRequiredFields(newPerson);
+            if (missingFields.length > 0) {
+              const missingFieldsText = missingFields.map(field => `• ${field.label}`).join('\n');
+              Alert.alert(
+                VALIDATION_TEXTS.requiredFields,
+                `${VALIDATION_TEXTS.fillAllFields}\n\n${VALIDATION_TEXTS.missingFields}\n${missingFieldsText}`,
+                [{ text: VALIDATION_TEXTS.ok }]
+              );
+              return; // No proceder si faltan campos
+            }
+            
+            // Si todos los campos están completos, proceder con el flujo normal
+            setNoDataModalVisible(false);
+            setIsCreatingNewPerson(true);
+            setTimeout(() => setShowConfirmModal(true), 300);
+          }}
           onBack={() => {
             setNoDataModalVisible(false);
             setModalUserTypeVisible(true);
             setAddMode(false);
           }}
+          onLogout={handleLogout}
+          onGoHome={handleGoHome}
           cardMarginTop={height * 0.07}
         >
           <EditPersonForm
             person={newPerson}
             onChange={setNewPerson}
             isAdding={true}
+            selectedArea={selectedArea}
+            userType={userType}
           />
         </CustomModal>
 
@@ -935,6 +1037,7 @@ export default function MasterScreen() {
           topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
           title={getModalTitle(userType, MODAL_TITLES)}
           isDetailModal={true}
+          canEdit={globalUserRole === 'admin'}
           onGoToPlanPress={() => {
             setDetailModalVisible(false);
             if (selectedPerson?.nombre) {
@@ -945,6 +1048,8 @@ export default function MasterScreen() {
             }
           }}
           onModifyPress={handleModifyPress}
+          onLogout={handleLogout}
+          onGoHome={handleGoHome}
         >
           <View >
             <PersonDetails person={selectedPerson} userType={userType} />
@@ -957,17 +1062,21 @@ export default function MasterScreen() {
           visible={editModalVisible}
           onRequestClose={() => setEditModalVisible(false)}
           showTopbar={true}
-          topbarTitle="Editar Datos"
+          topbarTitle={FORM_TEXTS.editButton}
           onBack={() => {
             setEditModalVisible(false);
             setDetailModalVisible(true);
           }}
-          title="Modificar Información:"
+          title={`${FORM_TEXTS.editButton} Información:`}
           isEditModal={true}
+          canEdit={true}
           onSavePress={() => {
             setEditModalVisible(false);
+            setIsCreatingNewPerson(false);
             setTimeout(() => setShowConfirmModal(true), 300);
           }}
+          onLogout={handleLogout}
+          onGoHome={handleGoHome}
         >
           <View
             contentContainerStyle={{ padding: 20, backgroundColor: 'rgba(0, 255, 0, 0.2)' }}
@@ -977,6 +1086,8 @@ export default function MasterScreen() {
               person={editablePerson}
               onChange={setEditablePerson}
               onSave={handleSaveEditPerson}
+              selectedArea={selectedArea}
+              userType={userType}
             />
           </View>
         </CustomModal>
@@ -987,48 +1098,65 @@ export default function MasterScreen() {
           onDismiss={() => {
             setShowConfirmModal(false);
             setSaveSuccess(false);
+            setIsCreatingNewPerson(false);
           }}
-          title={saveSuccess ? "¡GUARDADO!" : "¿Guardar todo?"}
+          title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
           centerCard={true}
-          actions={
-            saveSuccess
-              ? [
-                {
-                  label: "OK",
-                  mode: "contained",
-                  buttonColor: "white",
-                  textColor: "#5124A5",
-                  onPress: () => {
+          showHamburgerMenu={false}
+        >
+          <View style={{ alignItems: 'center', padding: 20 }}>
+            {saveSuccess ? (
+              <CustomButton
+                label="OK"
+                onPress={() => {
+                  setShowConfirmModal(false);
+                  setSaveSuccess(false);
+                  setIsCreatingNewPerson(false);
+                  setEditModalVisible(false);
+                  setNewPerson({});
+                  setAddMode(false);
+                  
+                  // Si estamos editando una persona existente, mostrar el modal de detalles
+                  if (editablePerson && !isCreatingNewPerson) {
+                    setSelectedPerson(editablePerson);
+                    setDetailModalVisible(true);
+                  } else {
+                    // Si estamos creando una nueva persona, volver a la lista
+                    setShowEmployeeList(true);
+                  }
+                }}
+              />
+            ) : (
+              <View style={{ width: '100%', alignItems: 'center' }}>
+                <CustomButton
+                  label="Sí"
+                  onPress={async () => {
+                    let success = false;
+                    if (isCreatingNewPerson) {
+                      success = await handleSaveNewPerson();
+                    } else {
+                      success = await handleSaveEditPerson();
+                    }
+                    
+                    // Solo mostrar modal de éxito si la operación fue exitosa
+                    if (success) {
+                      setSaveSuccess(true);
+                    }
+                  }}
+                  style={{ marginBottom: 16 }}
+                />
+                <CustomButton
+                  label="No"
+                  onPress={() => {
                     setShowConfirmModal(false);
-                    setSaveSuccess(false);
-                    setEditModalVisible(false);
-                    setDetailModalVisible(false);
-                    setSelectedPerson(null);
-                    setOriginalDni(null);
-                  }
-                }
-              ]
-              : [
-                {
-                  label: "Sí",
-                  mode: "contained",
-                  buttonColor: "white",
-                  textColor: "#5124A5",
-                  onPress: async () => {
-                    await handleSaveEditPerson();
-                    setSaveSuccess(true);
-                  }
-                },
-                {
-                  label: "No",
-                  mode: "outlined",
-                  buttonColor: "white",
-                  textColor: "#5124A5",
-                  onPress: () => setShowConfirmModal(false)
-                }
-              ]
-          }
-        />
+                    setIsCreatingNewPerson(false);
+                  }}
+                  buttonColor="#FF6B6B"
+                />
+              </View>
+            )}
+          </View>
+        </CustomModal>
       </SafeAreaView>
     </PaperProvider>
   );

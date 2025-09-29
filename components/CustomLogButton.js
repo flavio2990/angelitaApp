@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { TouchableOpacity, Image, Text, StyleSheet, View } from 'react-native';
 
 export default function CustomLogButton({ icon, label, color, onPress }) {

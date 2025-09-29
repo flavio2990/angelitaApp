@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Text } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import CustomButton from './CustomButton';
