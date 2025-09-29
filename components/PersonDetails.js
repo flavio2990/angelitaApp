@@ -2,6 +2,9 @@
 import { FORM_TEXTS } from '../constants/Strings';
 
 export default function PersonDetails({ person, userType }) {
+  // Determinar si es empleado para ocultar campos específicos
+  const isEmployee = person?.tipo && 
+    (person.tipo.toLowerCase() === 'enfermería' || person.tipo.toLowerCase() === 'administrador');
 
   return (
     <View style={styles.container}>
@@ -25,17 +28,23 @@ export default function PersonDetails({ person, userType }) {
         <Text style={styles.detailsModal}>_{FORM_TEXTS.admissionLabel}:</Text>
         <Text style={styles.dynamicText}>{person?.ingreso}</Text>
       </View>
-      <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_{FORM_TEXTS.socialCoverageLabel}:</Text>
-        <Text style={styles.dynamicText}>{person?.coberturaSocial}</Text>
-      </View>
+      {/* Campos específicos para pacientes - ocultos para empleados */}
+      {!isEmployee && (
+        <>
+          <View style={styles.detailsRow}>
+            <Text style={styles.detailsModal}>_{FORM_TEXTS.socialCoverageLabel}:</Text>
+            <Text style={styles.dynamicText}>{person?.coberturaSocial}</Text>
+          </View>
+          <View style={styles.detailsRow}>
+            <Text style={styles.detailsModal}>_{FORM_TEXTS.maritalStatusLabel}:</Text>
+            <Text style={styles.dynamicText}>{person?.estadoCivil}</Text>
+          </View>
+        </>
+      )}
+      {/* Campo de nacionalidad - visible para todos */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_{FORM_TEXTS.nationalityLabel}:</Text>
         <Text style={styles.dynamicText}>{person?.nacionalidad}</Text>
-      </View>
-      <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_{FORM_TEXTS.maritalStatusLabel}:</Text>
-        <Text style={styles.dynamicText}>{person?.estadoCivil}</Text>
       </View>
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_{FORM_TEXTS.areaLabel}:</Text>
@@ -45,7 +54,7 @@ export default function PersonDetails({ person, userType }) {
         <Text style={styles.detailsModal}>_{FORM_TEXTS.typeLabel}:</Text>
         <Text style={styles.dynamicText}>{person?.tipo}</Text>
       </View>
-      {userType === 'pacientes' && (
+      {!isEmployee && (
         <View style={styles.detailsRow}>
           <Text style={styles.detailsModal}>_{FORM_TEXTS.weightLabel}:</Text>
           <Text style={styles.dynamicText}>{person?.peso}</Text>
@@ -66,12 +75,12 @@ export default function PersonDetails({ person, userType }) {
       alignItems: 'center',
     },
     detailsModal: {
-      fontSize: 22,
+      fontSize: 18,
       fontWeight: 'bold',
       marginRight: 8,
     },
     dynamicText: {
-      fontSize: 20,
+      fontSize: 18,
       color: '#0a0a1e',
       fontWeight: 'regular',
     },

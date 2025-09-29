@@ -5,15 +5,23 @@ import {
   ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
+  Modal,
+  Platform,
 } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import { TextInput, Button } from 'react-native-paper';
 import { Dropdown } from 'react-native-paper-dropdown';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import DatePicker from 'react-native-date-picker';
 import { FORM_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
 
-export default function EditPersonForm({ person, onChange, isAdding, selectedArea}) {
+export default function EditPersonForm({ person, onChange, isAdding, selectedArea, userType }) {
   const [showUserTypeDropDown, setShowUserTypeDropDown] = React.useState(false);
   const [showAreaDropDown, setShowAreaDropDown] = React.useState(false);
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+  const [showBirthDatePicker, setShowBirthDatePicker] = React.useState(false);
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const [selectedBirthDate, setSelectedBirthDate] = React.useState(new Date());
   const insets = useSafeAreaInsets();
   const scrollViewRef = React.useRef(null);
 
@@ -35,15 +43,105 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
     return text.replace(/[^\d]/g, '');
   };
 
+  const formatDateForDisplay = (date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleDatePickerChange = (event, date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false); // Cierra el picker después de la interacción
+      if (event.type === 'set' && date) { // Si el usuario presionó OK
+        setSelectedDate(date);
+        onChange({ ...person, ingreso: formatDateForDisplay(date) });
+      }
+      // Si event.type es 'dismissed', no hacemos nada (el usuario canceló)
+    } else {
+      setSelectedDate(date || new Date());
+    }
+  };
+
+  const handleConfirmDate = () => {
+    setShowDatePicker(false);
+    onChange({ ...person, ingreso: formatDateForDisplay(selectedDate) });
+  };
+
+  const handleCancelDate = () => {
+    setShowDatePicker(false);
+  };
+
+  // Funciones para el DatePicker de nacimiento
+  const handleBirthDatePickerChange = (event, date) => {
+    if (Platform.OS === 'android') {
+      setShowBirthDatePicker(false); // Cierra el picker después de la interacción
+      if (event.type === 'set' && date) { // Si el usuario presionó OK
+        setSelectedBirthDate(date);
+        onChange({ ...person, nacimiento: formatDateForDisplay(date) });
+      }
+      // Si event.type es 'dismissed', no hacemos nada (el usuario canceló)
+    } else {
+      setSelectedBirthDate(date || new Date());
+    }
+  };
+
+  const handleConfirmBirthDate = () => {
+    setShowBirthDatePicker(false);
+    onChange({ ...person, nacimiento: formatDateForDisplay(selectedBirthDate) });
+  };
+
+  const handleCancelBirthDate = () => {
+    setShowBirthDatePicker(false);
+  };
+
   const showArea =
     person?.tipo &&
     person.tipo !== 'Administrador';
+
+  // Determinar si es empleado para ocultar campos específicos
+  const isEmployee = person?.tipo && 
+    (person.tipo.toLowerCase() === 'enfermería' || person.tipo.toLowerCase() === 'administrador');
+
+  // Filtrar opciones según el userType
+  const getTypeOptions = () => {
+    if (userType && userType.toLowerCase() === 'enfermería') {
+      // Si estamos en empleados, solo mostrar opciones de empleados
+      return [
+        { label: PERSON_TYPE_TEXTS.nursing, value: PERSON_TYPE_TEXTS.nursing },
+        { label: PERSON_TYPE_TEXTS.administrator, value: PERSON_TYPE_TEXTS.administrator },
+      ];
+    } else if (userType && userType.toLowerCase() === 'paciente') {
+      // Si estamos en pacientes, no mostrar opciones (el dropdown no se muestra)
+      return [];
+    } else {
+      // Si no hay userType específico, mostrar todas las opciones
+      return [
+        { label: PERSON_TYPE_TEXTS.patient, value: PERSON_TYPE_TEXTS.patient },
+        { label: PERSON_TYPE_TEXTS.nursing, value: PERSON_TYPE_TEXTS.nursing },
+        { label: PERSON_TYPE_TEXTS.administrator, value: PERSON_TYPE_TEXTS.administrator },
+      ];
+    }
+  };
 
   React.useEffect(() => {
     if (isAdding && selectedArea && !person?.area) {
       onChange({ ...person, area: selectedArea });
     }
   }, [isAdding, selectedArea, person, onChange]);
+
+  // Establecer automáticamente el tipo según el userType cuando se está agregando
+  React.useEffect(() => {
+    if (isAdding && userType && !person?.tipo) {
+      if (userType.toLowerCase() === 'enfermería') {
+        // Para empleados, establecer enfermería por defecto
+        onChange({ ...person, tipo: PERSON_TYPE_TEXTS.nursing });
+      } else if (userType.toLowerCase() === 'paciente') {
+        // Para pacientes, establecer paciente por defecto
+        onChange({ ...person, tipo: PERSON_TYPE_TEXTS.patient });
+      }
+    }
+  }, [isAdding, userType, person, onChange]);
 
   React.useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -61,167 +159,269 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
   }, []);
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <ScrollView
-          ref={scrollViewRef}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 46 }}
-          style={{ flexGrow: 1 }}
-          showsVerticalScrollIndicator={true}
+    <>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <ScrollView
+            ref={scrollViewRef}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 46 }}
+            style={{ flexGrow: 1 }}
+            showsVerticalScrollIndicator={true}
+          >
+            {isAdding && userType && userType.toLowerCase() !== 'paciente' && (
+              <View style={styles.dropDownContainer}>
+                <Dropdown
+                  label={`${FORM_TEXTS.typeLabel}:`}
+                  placeholder={person?.tipo || 'Seleccionado'}
+                  mode="outlined"
+                  visible={showUserTypeDropDown}
+                  showDropDown={() => setShowUserTypeDropDown(true)}
+                  onDismiss={() => setShowUserTypeDropDown(false)}
+                  value={person?.tipo || ''}
+                  onSelect={(value) => {
+                    if (value === 'Administrador') {
+                      onChange({ ...person, tipo: value, area: '' });
+                    } else {
+                      onChange({ ...person, tipo: value });
+                    }
+                    setShowUserTypeDropDown(false);
+                  }}
+                  options={getTypeOptions()}
+                  theme={{
+                    colors: {
+                      text: '#000',
+                      primary: '#5124A5',
+                      placeholder: '#A9A9A9',
+                    },
+                  }}
+                  style={styles.dropdown}
+                />
+              </View>
+            )}
+            {showArea && (
+              <View style={styles.dropDownContainer}>
+                <Dropdown
+                  label={FORM_TEXTS.areaLabel}
+                  placeholder={person?.area || 'Seleccionar área'}
+                  mode="outlined"
+                  visible={showAreaDropDown}
+                  showDropDown={() => setShowAreaDropDown(true)}
+                  onDismiss={() => setShowAreaDropDown(false)}
+                  value={person?.area || ''}
+                  onSelect={(value) => {
+                    onChange({ ...person, area: value });
+                    setShowAreaDropDown(false);
+                  }}
+                  options={[
+                    { label: 'UTI', value: 'UTI' },
+                    { label: 'UCG', value: 'UCG' },
+                  ]}
+                  theme={{
+                    colors: {
+                      text: '#000',
+                      primary: '#5124A5',
+                      placeholder: '#A9A9A9',
+                    },
+                  }}
+                  style={styles.dropdown}
+                />
+              </View>
+            )}
+            <TextInput
+              label={FORM_TEXTS.nameLabel}
+              value={person?.nombre || ''}
+              onChangeText={(text) => onChange({ ...person, nombre: text })}
+              style={styles.styleInput}
+              mode="outlined"
+              dense={false}
+            />
+            <TextInput
+              label={FORM_TEXTS.ageLabel}
+              value={person?.edad || ''}
+              onChangeText={(text) => onChange({ ...person, edad: formatNumericInput(text) })}
+              style={styles.styleInput}
+              keyboardType="numeric"
+              mode="outlined"
+              dense={false}
+            />
+            <TextInput
+              label={FORM_TEXTS.dniLabel}
+              value={person?.dni || ''}
+              onChangeText={(text) => onChange({ ...person, dni: text })}
+              style={styles.styleInput}
+              mode="outlined"
+              dense={false}
+            />
+            <TextInput
+              label={FORM_TEXTS.birthLabel}
+              value={person?.nacimiento || ''}
+              onPressIn={() => setShowBirthDatePicker(true)}
+              style={styles.styleInput}
+              mode="outlined"
+              dense={false}
+              placeholder="DD/MM/AAAA"
+              editable={false}
+              right={
+                <TextInput.Icon 
+                  icon="calendar" 
+                  onPress={() => setShowBirthDatePicker(true)}
+                />
+              }
+            />
+            <TextInput
+              label={FORM_TEXTS.admissionLabel}
+              value={person?.ingreso || ''}
+              onPressIn={() => setShowDatePicker(true)}
+              style={styles.styleInput}
+              mode="outlined"
+              dense={false}
+              placeholder="DD/MM/AAAA"
+              editable={false}
+              right={
+                <TextInput.Icon 
+                  icon="calendar" 
+                  onPress={() => setShowDatePicker(true)}
+                />
+              }
+            />
+            {/* Campos específicos para pacientes - ocultos para empleados */}
+            {!isEmployee && (
+              <>
+                <TextInput
+                  label={FORM_TEXTS.socialCoverageLabel}
+                  value={person?.coberturaSocial || ''}
+                  onChangeText={(text) => onChange({ ...person, coberturaSocial: text })}
+                  style={styles.styleInput}
+                  mode="outlined"
+                  dense={false}
+                />
+                <TextInput
+                  label={FORM_TEXTS.maritalStatusLabel}
+                  value={person?.estadoCivil || ''}
+                  onChangeText={(text) => onChange({ ...person, estadoCivil: text })}
+                  style={styles.styleInput}
+                  mode="outlined"
+                  dense={false}
+                />
+                <TextInput
+                  label={FORM_TEXTS.weightLabel}
+                  value={person?.peso || ''}
+                  onChangeText={(text) => onChange({ ...person, peso: formatNumericInput(text) })}
+                  style={styles.styleInput}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  dense={false}
+                />
+              </>
+            )}
+            {/* Campo de nacionalidad - visible para todos */}
+            <TextInput
+              label={FORM_TEXTS.nationalityLabel}
+              value={person?.nacionalidad || ''}
+              onChangeText={(text) => onChange({ ...person, nacionalidad: text })}
+              style={styles.styleInput}
+              mode="outlined"
+              dense={false}
+            />
+          </ScrollView>
+        </View>
+      </TouchableWithoutFeedback>
+
+      {/* DatePicker para Ingreso (Android) */}
+      {showDatePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display="default" // Abre el diálogo nativo de Android
+          onChange={handleDatePickerChange}
+          maximumDate={new Date()}
+          minimumDate={new Date(1900, 0, 1)}
+        />
+      )}
+
+      {/* Modal con DatePicker para Ingreso (iOS) */}
+      {showDatePicker && Platform.OS === 'ios' && (
+        <Modal
+          visible={showDatePicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowDatePicker(false)}
         >
-          {isAdding && (
-            <View style={styles.dropDownContainer}>
-              <Dropdown
-                label={`${FORM_TEXTS.typeLabel}:`}
-                placeholder={person?.tipo || 'Seleccionado'}
-                mode="outlined"
-                visible={showUserTypeDropDown}
-                showDropDown={() => setShowUserTypeDropDown(true)}
-                onDismiss={() => setShowUserTypeDropDown(false)}
-                value={person?.tipo || ''}
-                onSelect={(value) => {
-                  if (value === 'Administrador') {
-                    onChange({ ...person, tipo: value, area: '' });
-                  } else {
-                    onChange({ ...person, tipo: value });
-                  }
-                  setShowUserTypeDropDown(false);
-                }}
-                options={[
-                  { label: PERSON_TYPE_TEXTS.patient, value: PERSON_TYPE_TEXTS.patient },
-                  { label: PERSON_TYPE_TEXTS.nursing, value: PERSON_TYPE_TEXTS.nursing },
-                  { label: PERSON_TYPE_TEXTS.administrator, value: PERSON_TYPE_TEXTS.administrator },
-                ]}
-                theme={{
-                  colors: {
-                    text: '#000',
-                    primary: '#007AFF',
-                    placeholder: '#A9A9A9',
-                  },
-                }}
-                style={styles.dropdown}
-              />
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Button onPress={handleCancelDate} mode="text">
+                  Cancelar
+                </Button>
+                <Button onPress={handleConfirmDate} mode="contained">
+                  Confirmar
+                </Button>
+              </View>
+              <View style={styles.datePickerContainer}>
+                <DatePicker
+                  date={selectedDate}
+                  mode="date"
+                  onDateChange={setSelectedDate}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1900, 0, 1)}
+                  style={styles.customDatePicker}
+                  textColor="#FFFFFF"
+                  theme="dark"
+                />
+              </View>
             </View>
-          )}
-          {showArea && (
-            <View style={styles.dropDownContainer}>
-              <Dropdown
-                label={FORM_TEXTS.areaLabel}
-                placeholder={person?.area || 'Seleccionar Ã¡rea'}
-                mode="outlined"
-                visible={showAreaDropDown}
-                showDropDown={() => setShowAreaDropDown(true)}
-                onDismiss={() => setShowAreaDropDown(false)}
-                value={person?.area || ''}
-                onSelect={(value) => {
-                  onChange({ ...person, area: value });
-                  setShowAreaDropDown(false);
-                }}
-                options={[
-                  { label: 'UTI', value: 'UTI' },
-                  { label: 'UCG', value: 'UCG' },
-                ]}
-                theme={{
-                  colors: {
-                    text: '#000',
-                    primary: '#007AFF',
-                    placeholder: '#A9A9A9',
-                  },
-                }}
-                style={styles.dropdown}
-              />
+          </View>
+        </Modal>
+      )}
+
+      {/* DatePicker para Nacimiento (Android) */}
+      {showBirthDatePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={selectedBirthDate}
+          mode="date"
+          display="spinner" // Abre el diálogo nativo de Android con spinner
+          onChange={handleBirthDatePickerChange}
+          maximumDate={new Date()}
+          minimumDate={new Date(1900, 0, 1)}
+        />
+      )}
+
+      {/* Modal con DatePicker para Nacimiento (iOS) */}
+      {showBirthDatePicker && Platform.OS === 'ios' && (
+        <Modal
+          visible={showBirthDatePicker}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowBirthDatePicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Button onPress={handleCancelBirthDate} mode="text">
+                  Cancelar
+                </Button>
+                <Button onPress={handleConfirmBirthDate} mode="contained">
+                  Confirmar
+                </Button>
+              </View>
+              <View style={styles.datePickerContainer}>
+                <DatePicker
+                  date={selectedBirthDate}
+                  mode="date"
+                  onDateChange={setSelectedBirthDate}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1900, 0, 1)}
+                  style={styles.customDatePicker}
+                  textColor="#FFFFFF"
+                  theme="dark"
+                />
+              </View>
             </View>
-          )}
-          <TextInput
-            label={FORM_TEXTS.nameLabel}
-            value={person?.nombre || ''}
-            onChangeText={(text) => onChange({ ...person, nombre: text })}
-            style={styles.styleInput}
-            mode="outlined"
-            dense={false}
-          />
-          <TextInput
-            label={FORM_TEXTS.ageLabel}
-            value={person?.edad || ''}
-            onChangeText={(text) => onChange({ ...person, edad: formatNumericInput(text) })}
-            style={styles.styleInput}
-            keyboardType="numeric"
-            mode="outlined"
-            dense={false}
-          />
-          <TextInput
-            label={FORM_TEXTS.dniLabel}
-            value={person?.dni || ''}
-            onChangeText={(text) => onChange({ ...person, dni: text })}
-            style={styles.styleInput}
-            mode="outlined"
-            dense={false}
-          />
-          <TextInput
-            label={FORM_TEXTS.birthLabel}
-            value={person?.nacimiento || ''}
-            onChangeText={(text) => {
-              const formatted = formatDateInput(text);
-              onChange({ ...person, nacimiento: formatted });
-            }}
-            style={styles.styleInput}
-            keyboardType="numeric"
-            mode="outlined"
-            dense={false}
-            placeholder="DD/MM/AAAA"
-            maxLength={10}
-          />
-          <TextInput
-            label={FORM_TEXTS.admissionLabel}
-            value={person?.ingreso || ''}
-            onChangeText={(text) => {
-              const formatted = formatDateInput(text);
-              onChange({ ...person, ingreso: formatted });
-            }}
-            style={styles.styleInput}
-            keyboardType="numeric"
-            mode="outlined"
-            dense={false}
-            placeholder="DD/MM/AAAA"
-            maxLength={10}
-          />
-          <TextInput
-            label={FORM_TEXTS.socialCoverageLabel}
-            value={person?.coberturaSocial || ''}
-            onChangeText={(text) => onChange({ ...person, coberturaSocial: text })}
-            style={styles.styleInput}
-            mode="outlined"
-            dense={false}
-          />
-          <TextInput
-            label={FORM_TEXTS.nationalityLabel}
-            value={person?.nacionalidad || ''}
-            onChangeText={(text) => onChange({ ...person, nacionalidad: text })}
-            style={styles.styleInput}
-            mode="outlined"
-            dense={false}
-          />
-          <TextInput
-            label={FORM_TEXTS.maritalStatusLabel}
-            value={person?.estadoCivil || ''}
-            onChangeText={(text) => onChange({ ...person, estadoCivil: text })}
-            style={styles.styleInput}
-            mode="outlined"
-            dense={false}
-          />
-          <TextInput
-            label={FORM_TEXTS.weightLabel}
-            value={person?.peso || ''}
-            onChangeText={(text) => onChange({ ...person, peso: formatNumericInput(text) })}
-            style={styles.styleInput}
-            keyboardType="numeric"
-            mode="outlined"
-            dense={false}
-          />
-        </ScrollView>
-      </View>
-    </TouchableWithoutFeedback>
+          </View>
+        </Modal>
+      )}
+    </>
   );
 }
 
@@ -236,5 +436,40 @@ const styles = StyleSheet.create({
   dropDownContainer: {
     marginBottom: 12,
     width: '100%',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    minWidth: 300,
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  datePickerContainer: {
+    backgroundColor: '#5124A5',
+    borderRadius: 12,
+    padding: 15,
+    marginVertical: 10,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  customDatePicker: {
+    height: 200,
+    backgroundColor: 'transparent',
   },
 });

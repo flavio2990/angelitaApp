@@ -1,10 +1,10 @@
-﻿// ===== TÃTULOS DE TARJETAS =====
+﻿// ===== TÍTULOS DE TARJETAS =====
 export const CARD_TITLES = {
-  selectArea: "Seleccione Ãrea",
+  selectArea: "Seleccione Área",
   selectTipe: "Seleccione: ",
 };
 
-// ===== OPCIONES DE ÃREAS =====
+// ===== OPCIONES DE ÁREAS =====
 export const AREA_OPTIONS = [
   { label: "U T I", icon: "hospital", value: "UTI" },
   { label: "U C G", icon: "stethoscope", value: "UCG" },
@@ -12,65 +12,65 @@ export const AREA_OPTIONS = [
 
 // ===== OPCIONES DE TIPOS =====
 export const TIPE_OPTIONS = [
-  { label: "Empleados", icon: "account", value: "EnfermerÃ­a" },
+  { label: "Empleados", icon: "account", value: "Enfermería" },
   { label: "Pacientes", icon: "account-group", value: "Paciente" },
 ];
 
-// ===== TÃTULOS DE TOP BAR =====
+// ===== TÍTULOS DE TOP BAR =====
 export const TOP_BAR_HEADER_TITLES = {
   topBarTitleChoice: "Empleados/ Pacientes",
   topBarTitlePatient: "Seleccione Paciente:",
   topBarTitleEmploy: "Seleccione Empleado:",
   topBarModalTitlePatient: "Datos del Paciente",
   topBarModalTitleEmploy: "Datos del Empleado",
-  topBarNoData: "UPS! AÃºn no hay datos",
+  topBarNoData: "UPS! Aún no hay datos",
   topBarNewData: "Agregar nuevo",
 };
 
-// ===== TÃTULOS DE MODALES =====
+// ===== TÍTULOS DE MODALES =====
 export const MODAL_TITLES = {
   modalTitleEmployPatients: "Empleados/ Pacientes",
   modalTitlePatient: "Datos del Paciente:",
   modalTitleEmploy: "Datos del Empleado:",
-  modalNoData: "Ingresalos aquÃ­:",
+  modalNoData: "Ingresalos aquí:",
 };
 
-// ===== TEXTO DE AUTENTICACIÃ“N =====
+// ===== TEXTO DE AUTENTICACIÓN =====
 export const AUTH_TEXTS = {
-  // SelecciÃ³n de rol
+  // Selección de rol
   selectRole: "Seleccione su rol:",
   adminRole: "SOY ADMINISTRADOR",
   employeeRole: "SOY EMPLEADO",
   changeRole: "Cambiar de rol",
   
   // Login
-  loginTitle: "Iniciar SesiÃ³n",
+  loginTitle: "Iniciar Sesión",
   emailLabel: "Email",
-  passwordLabel: "ContraseÃ±a",
-  loginButton: "INICIAR SESIÃ“N",
-  forgotPassword: "Â¿Olvidaste tu contraseÃ±a?",
-  noAccount: "Â¿No tienes cuenta?",
+  passwordLabel: "Contraseña",
+  loginButton: "INICIAR SESIÓN",
+  forgotPassword: "¿Olvidaste tu contraseña?",
+  noAccount: "¿No tienes cuenta?",
   createAccount: "Crear cuenta",
   
   // Registro
   registerTitle: "Crear Usuario",
   createUserButton: "CREAR USUARIO",
   cancelButton: "Cancelar",
-  selectRoleFirst: "âš ï¸ Primero debes seleccionar un rol",
+  selectRoleFirst: "⚠️ Primero debes seleccionar un rol",
   
-  // VerificaciÃ³n de email
+  // Verificación de email
   verificationTitle: "Verificar Email",
   verificationMessage: "Por favor, revisa tu correo y haz clic en el enlace para verificar tu cuenta.",
-  verificationButton: "Reenviar verificaciÃ³n",
-  backToLogin: "Ya verifiquÃ© mi correo",
+  verificationButton: "Reenviar verificación",
+  backToLogin: "Ya verifiqué mi correo",
   
-  // RecuperaciÃ³n de contraseÃ±a
-  forgotPasswordTitle: "Recuperar ContraseÃ±a",
-  forgotPasswordMessage: "Ingresa tu email y te enviaremos un enlace para restablecer tu contraseÃ±a.",
+  // Recuperación de contraseña
+  forgotPasswordTitle: "Recuperar Contraseña",
+  forgotPasswordMessage: "Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.",
   sendResetButton: "Enviar enlace",
   
   // Logout
-  logoutButton: "ðŸšª Cerrar SesiÃ³n",
+  logoutButton: "🚪 Cerrar Sesión",
 };
 
 // ===== TEXTO DE FORMULARIOS =====
@@ -80,7 +80,7 @@ export const FORM_TEXTS = {
   ageLabel: "Edad",
   dniLabel: "DNI",
   typeLabel: "Tipo",
-  areaLabel: "Ãrea",
+  areaLabel: "Área",
   
   // Botones de formulario
   saveButton: "Guardar",
@@ -90,12 +90,12 @@ export const FORM_TEXTS = {
   
   // Validaciones
   requiredField: "Este campo es requerido",
-  invalidEmail: "Email invÃ¡lido",
-  passwordTooShort: "La contraseÃ±a debe tener al menos 6 caracteres",
+  invalidEmail: "Email inválido",
+  passwordTooShort: "La contraseña debe tener al menos 6 caracteres",
   
   // Campos adicionales de persona
   birthLabel: "Nacimiento",
-  admissionLabel: "IngresÃ³",
+  admissionLabel: "Ingresó",
   socialCoverageLabel: "Obra Social",
   nationalityLabel: "Nacionalidad",
   maritalStatusLabel: "Estado Civil",
@@ -106,11 +106,11 @@ export const FORM_TEXTS = {
 export const ROLE_TEXTS = {
   admin: "ADMINISTRADOR",
   employee: "EMPLEADO",
-  adminIcon: "ðŸ›¡ï¸",
-  employeeIcon: "ðŸ‘¤",
+  adminIcon: "👨‍💼",
+  employeeIcon: "👷",
 };
 
-// ===== TEXTO DE ÃREAS =====
+// ===== TEXTO DE ÁREAS =====
 export const AREA_TEXTS = {
   uti: "Unidad de Terapia Intensiva",
   ucg: "Unidad de Cuidados Generales",
@@ -119,7 +119,7 @@ export const AREA_TEXTS = {
 // ===== TEXTO DE TIPOS DE PERSONA =====
 export const PERSON_TYPE_TEXTS = {
   patient: "Paciente",
-  nursing: "EnfermerÃ­a",
+  nursing: "Enfermería",
   administrator: "Administrador",
 };
 
@@ -128,29 +128,33 @@ export const STATUS_MESSAGES = {
   loading: "Cargando...",
   noData: "No hay datos disponibles",
   error: "Ha ocurrido un error",
-  success: "OperaciÃ³n exitosa",
+  success: "Operación exitosa",
   saving: "Guardando...",
   deleting: "Eliminando...",
 };
 
-// ===== TEXTO DE NAVEGACIÃ“N =====
+// ===== TEXTO DE NAVEGACIÓN =====
 export const NAVIGATION_TEXTS = {
-  back: "AtrÃ¡s",
+  back: "Atrás",
   next: "Siguiente",
   done: "Finalizar",
   close: "Cerrar",
-  goHome: "ðŸ  Volver a inicio",
+  goHome: "🏠 Volver a inicio",
 };
 
-// ===== TEXTO DE VALIDACIÃ“N =====
+// ===== TEXTO DE VALIDACIÓN =====
 export const VALIDATION_TEXTS = {
   requiredFields: "Campos obligatorios",
   fillAllFields: "Debes completar todos los campos antes de guardar",
   missingFields: "Campos faltantes:",
   ok: "OK",
-  // ValidaciÃ³n de recuperar contraseÃ±a
-  invalidEmail: "Email invÃ¡lido",
-  enterValidEmail: "Por favor ingresa un email vÃ¡lido",
+  // Validación de recuperar contraseña
+  invalidEmail: "Email inválido",
+  enterValidEmail: "Por favor ingresa un email válido",
   emailRequired: "El email es obligatorio",
+  // Validaciones generales
+  enterValidEmailText: "Ingrese un mail válido",
+  cancelText: "Cancelar",
+  yesText: "Sí",
+  noText: "No",
 };
-  

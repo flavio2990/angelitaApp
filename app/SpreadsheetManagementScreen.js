@@ -32,13 +32,13 @@ export default function SpreadsheetManagementScreen() {
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/MED.png')}
-          label="MedicaciÃ³n"
+          label="Medicación"
           color="#4a9cbb"
           onPress={() => {}}
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/ALIM.png')}
-          label="AlimentaciÃ³n"
+          label="Alimentación"
           color="#f1a137"
           onPress={() => {}}
         />

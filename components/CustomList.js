@@ -29,7 +29,7 @@ export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPre
         key={`list-${data?.length || 0}`}
         data={data}
         renderItem={renderItem}
-        keyExtractor={(item) => (item.dni || item.id || Math.random()).toString()}
+        keyExtractor={(item, index) => `${item.id || item.dni || 'unknown'}-${index}`}
         contentContainerStyle={styles.listContent}
         extraData={data?.length}
         removeClippedSubviews={false} />

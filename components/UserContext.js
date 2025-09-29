@@ -60,17 +60,17 @@ export const AuthProvider = ({ children }) => {
     try {
       // Validar email antes de intentar crear usuario
       if (!email || !email.includes('@')) {
-        throw new Error('Email invÃ¡lido');
+        throw new Error('Email inválido');
       }
       
-      // Validar contraseÃ±a
+      // Validar contraseña
       if (!password || password.length < 6) {
-        throw new Error('La contraseÃ±a debe tener al menos 6 caracteres');
+        throw new Error('La contraseña debe tener al menos 6 caracteres');
       }
       
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
 
-      // Verificar que la base de datos estÃ© disponible
+      // Verificar que la base de datos esté disponible
       if (!database) {
         throw new Error('Base de datos no disponible');
       }
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
         email: firebaseUser.email,
         role: role,
         createdAt: new Date().toISOString(),
-        // Agregar campos adicionales segÃºn el rol
+        // Agregar campos adicionales según el rol
         ...(role === 'admin' && {
           adminSettings: {
             nombreHospital: 'Hogar de Ancianos',
@@ -118,14 +118,14 @@ export const AuthProvider = ({ children }) => {
         })
       };
       
-              // Guardar en la estructura principal segÃºn el rol
+              // Guardar en la estructura principal según el rol
         let userRef;
         if (role === 'admin') {
-          // El admin principal se guarda en la raÃ­z de admins
+          // El admin principal se guarda en la raíz de admins
           userRef = ref(database, `admins/${firebaseUser.uid}`);
         } else if (role === 'empleado') {
           // Los empleados se guardan dentro del admin principal
-          // Por ahora los guardamos en empleados, pero podrÃ­an estar dentro de un admin especÃ­fico
+          // Por ahora los guardamos en empleados, pero podrían estar dentro de un admin específico
           userRef = ref(database, `empleados/${firebaseUser.uid}`);
         }
       
@@ -137,23 +137,23 @@ export const AuthProvider = ({ children }) => {
 
       await sendEmailVerification(firebaseUser);
       
-      // Solo mostrar alerta de Ã©xito si todo saliÃ³ bien
-      Alert.alert('Usuario creado exitosamente', 'Te enviamos un email de verificaciÃ³n.');
+      // Solo mostrar alerta de éxito si todo salió bien
+      Alert.alert('Usuario creado exitosamente', 'Te enviamos un email de verificación.');
       
     } catch (e) {
       console.error('Error completo en registro:', e);
       console.error('Mensaje de error:', e.message);
-      console.error('CÃ³digo de error:', e.code);
+      console.error('Código de error:', e.code);
       
-      // Mostrar alerta de error especÃ­fica
+      // Mostrar alerta de error específica
       let errorMessage = 'Error al crear usuario';
       
       if (e.code === 'auth/invalid-email') {
-        errorMessage = 'El formato del email no es vÃ¡lido';
+        errorMessage = 'El formato del email no es válido';
       } else if (e.code === 'auth/weak-password') {
-        errorMessage = 'La contraseÃ±a es muy dÃ©bil';
+        errorMessage = 'La contraseña es muy débil';
       } else if (e.code === 'auth/email-already-in-use') {
-        errorMessage = 'Este email ya estÃ¡ registrado';
+        errorMessage = 'Este email ya está registrado';
       } else if (e.message) {
         errorMessage = e.message;
       }
@@ -170,38 +170,30 @@ export const AuthProvider = ({ children }) => {
       
       // Verificar que se proporcionen credenciales
       if (!email || !password) {
-        throw new Error('Debe ingresar email y contraseÃ±a');
+        throw new Error('Debe ingresar email y contraseña');
       }
       
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       console.log('Usuario autenticado:', user.uid);
       
-      // Verificar que el email estÃ© verificado
+      // Verificar que el email esté verificado
       if (!user.emailVerified) {
         Alert.alert('Verifica tu correo', 'Debes verificar tu email antes de continuar.');
         await signOut(auth);
         return false; // No permitir acceso
       }
       
-      // Si el email estÃ¡ verificado, permitir acceso
+      // Si el email está verificado, permitir acceso
       return true; // Permitir acceso
     } catch (e) {
       Alert.alert('Error', e.message || String(e));
       return false; // No permitir acceso
     }
   };
-
-  // ===== LOGOUT COMPLETO =====
-  // Este logout garantiza que:
-  // 1. No quedan roles cacheados en el contexto
-  // 2. Se limpia AsyncStorage COMPLETAMENTE (todos los datos del usuario)
-  // 3. Se resetea el AuthContext completamente
-  // 4. Se muestra el modal de selecciÃ³n solo cuando corresponde
-  // 5. Se evita que un usuario use data de otro por error
-  // 6. Limpia datos de personas, configuraciones y cualquier otro dato local
+  
   const logout = async () => {
     try {
-      // 1. Deshabilitar carga automÃ¡tica de rol persistido
+      // 1. Deshabilitar carga automática de rol persistido
       setShouldLoadPersistedRole(false);
       
       // 2. SignOut de Firebase
@@ -217,7 +209,7 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.clear();
       
     } catch (error) {
-      // AÃºn asÃ­, intentar limpiar el estado local
+      // Aún así, intentar limpiar el estado local
       setUser(null);
       setFirebaseUser(null);
       setGlobalUserRole(null);
@@ -226,10 +218,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Limpiar solo la sesiÃ³n sin tocar el rol (para verificaciÃ³n de email)
+  // Limpiar solo la sesión sin tocar el rol (para verificación de email)
   const clearSessionOnly = async () => {
     await signOut(auth);
-    // NO limpiar globalUserRole aquÃ­
+    // NO limpiar globalUserRole aquí
   };
 
 
@@ -241,7 +233,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     
-    // Re-habilitar carga automÃ¡tica de rol persistido
+    // Re-habilitar carga automática de rol persistido
     setShouldLoadPersistedRole(true);
     
     // Persistir en estado local
@@ -284,7 +276,7 @@ export const AuthProvider = ({ children }) => {
       // Remover de AsyncStorage
       await AsyncStorage.removeItem('globalUserRole');
       
-      // Deshabilitar carga automÃ¡tica
+      // Deshabilitar carga automática
       setShouldLoadPersistedRole(false);
       
     } catch (error) {
@@ -294,21 +286,21 @@ export const AuthProvider = ({ children }) => {
 
 
 
-  // Reenviar verificaciÃ³n
+  // Reenviar verificación
   const resendVerification = async () => {
     try {
       if (!firebaseUser) {
-        throw new Error('No hay usuario autenticado. Debes estar logueado para reenviar la verificaciÃ³n.');
+        throw new Error('No hay usuario autenticado. Debes estar logueado para reenviar la verificación.');
       }
       
       if (firebaseUser.emailVerified) {
-        throw new Error('Tu email ya estÃ¡ verificado. No es necesario reenviar la verificaciÃ³n.');
+        throw new Error('Tu email ya está verificado. No es necesario reenviar la verificación.');
       }
       
       await sendEmailVerification(firebaseUser);
       return true;
     } catch (e) {
-      let errorMessage = 'Error al reenviar el email de verificaciÃ³n';
+      let errorMessage = 'Error al reenviar el email de verificación';
       
       if (e.code === 'auth/too-many-requests') {
         errorMessage = 'Demasiados intentos. Espera unos minutos antes de volver a intentar.';
@@ -325,7 +317,7 @@ export const AuthProvider = ({ children }) => {
   const refreshUser = async () => {
     try {
       if (firebaseUser) {
-        // Recargar el usuario de Firebase para obtener el estado mÃ¡s reciente
+        // Recargar el usuario de Firebase para obtener el estado más reciente
         await firebaseUser.reload();
         
         // Intentar obtener el rol desde la base de datos
@@ -337,7 +329,7 @@ export const AuthProvider = ({ children }) => {
           if (adminSnapshot.exists()) {
             userRole = adminSnapshot.val().role || 'admin';
           } else {
-            // Si no estÃ¡ en admins, buscar en empleados
+            // Si no está en admins, buscar en empleados
             const employeeRef = ref(database, `empleados/${firebaseUser.uid}`);
             const employeeSnapshot = await get(employeeRef);
             if (employeeSnapshot.exists()) {
@@ -348,7 +340,7 @@ export const AuthProvider = ({ children }) => {
           // Error silencioso, usar rol por defecto
         }
         
-        // Actualizar el estado del usuario con la informaciÃ³n mÃ¡s reciente
+        // Actualizar el estado del usuario con la información más reciente
         const updatedUser = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -379,19 +371,19 @@ export const AuthProvider = ({ children }) => {
       await sendPasswordResetEmail(auth, email);
       Alert.alert(
         'Correo enviado',
-        'Se ha enviado un enlace de recuperaciÃ³n a tu correo electrÃ³nico. Revisa tu bandeja de entrada y sigue las instrucciones.',
+        'Se ha enviado un enlace de recuperación a tu correo electrónico. Revisa tu bandeja de entrada y sigue las instrucciones.',
         [{ text: 'OK' }]
       );
       return true;
     } catch (error) {
-      let errorMessage = 'Error al enviar el correo de recuperaciÃ³n.';
+      let errorMessage = 'Error al enviar el correo de recuperación.';
       
       switch (error.code) {
         case 'auth/user-not-found':
-          errorMessage = 'No existe una cuenta con este correo electrÃ³nico.';
+          errorMessage = 'No existe una cuenta con este correo electrónico.';
           break;
         case 'auth/invalid-email':
-          errorMessage = 'El formato del correo electrÃ³nico no es vÃ¡lido.';
+          errorMessage = 'El formato del correo electrónico no es válido.';
           break;
         case 'auth/too-many-requests':
           errorMessage = 'Demasiados intentos. Intenta nuevamente en unos minutos.';

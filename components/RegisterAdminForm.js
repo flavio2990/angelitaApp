@@ -41,11 +41,11 @@ export default function RegisterAdminForm({ onRegister }) {
             />
             {registerEmailTouched && !isValidEmail(registerEmail) && (
                 <Text style={{ color: 'red', fontSize: 14, marginBottom: 8 }}>
-                    Ingrese un mail vÃ¡lido
+                    Ingrese un mail válido
                 </Text>
             )}
             <TextInput
-                label="Crea Una ContraseÃ±a"
+                label="Crea Una Contraseña"
                 value={registerPassword}
                 onChangeText={text => {
                     setRegisterPassword(text);
@@ -57,7 +57,7 @@ export default function RegisterAdminForm({ onRegister }) {
             />
             {registerPasswordTouched && registerPassword.length > 0 && registerPassword.length < 6 && (
                 <Text style={{ color: 'red', fontSize: 14, marginBottom: 8 }}>
-                    La contraseÃ±a debe tener al menos 6 caracteres
+                    La contraseña debe tener al menos 6 caracteres
                 </Text>
             )}
             <CustomButton
