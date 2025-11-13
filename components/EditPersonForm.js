@@ -13,9 +13,46 @@ import { Dropdown } from 'react-native-paper-dropdown';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DatePicker from 'react-native-date-picker';
-import { FORM_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
+import { FORM_TEXTS, PERSON_TYPE_TEXTS, VITALS_TEXTS } from '../constants/Strings';
+import { ref, set, update, get } from 'firebase/database';
+import { database } from '../env/firebase';
 
-export default function EditPersonForm({ person, onChange, isAdding, selectedArea, userType }) {
+const VITALS_INITIAL_VALUES = {
+  taSystolic: '',
+  taDiastolic: '',
+  heartRate: '',
+  spo2: '',
+  temperature: '',
+  glucose: '',
+};
+
+const formatNumericInput = (text) => {
+  return text.replace(/[^\d]/g, '');
+};
+
+const formatDecimalInput = (text) => {
+  const sanitized = text.replace(/[^0-9.]/g, '');
+  const parts = sanitized.split('.');
+  if (parts.length > 2) {
+    return `${parts[0]}.${parts[1]}`;
+  }
+  return sanitized;
+};
+
+export default function EditPersonForm({ 
+  person, 
+  onChange, 
+  isAdding, 
+  selectedArea, 
+  userType,
+  isVitalsMode = false,
+  adminUid = null,
+  area = null,
+  personId = null,
+  visible = true,
+  onModify = null,
+  onSave = null,
+}) {
   const [showUserTypeDropDown, setShowUserTypeDropDown] = React.useState(false);
   const [showAreaDropDown, setShowAreaDropDown] = React.useState(false);
   const [showDatePicker, setShowDatePicker] = React.useState(false);
@@ -24,6 +61,11 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
   const [selectedBirthDate, setSelectedBirthDate] = React.useState(new Date());
   const insets = useSafeAreaInsets();
   const scrollViewRef = React.useRef(null);
+  
+  // Estados para modo signos vitales
+  const [vitalsFormValues, setVitalsFormValues] = React.useState(VITALS_INITIAL_VALUES);
+  const [vitalsDataExists, setVitalsDataExists] = React.useState(false);
+  const [isVitalsEditing, setIsVitalsEditing] = React.useState(false);
 
   const formatDateInput = (text) => {
     let cleaned = text.replace(/[^\d]/g, '');
@@ -39,9 +81,7 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
     return cleaned;
   };
 
-  const formatNumericInput = (text) => {
-    return text.replace(/[^\d]/g, '');
-  };
+  // formatNumericInput ya está definido arriba, se usa para ambos modos
 
   const formatDateForDisplay = (date) => {
     const day = date.getDate().toString().padStart(2, '0');
@@ -124,6 +164,89 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
     }
   };
 
+  // Funciones para modo signos vitales
+  const handleVitalsChange = React.useCallback((field, allowDecimal = false) => (text) => {
+    const sanitized = allowDecimal ? formatDecimalInput(text) : formatNumericInput(text);
+    setVitalsFormValues((prev) => ({
+      ...prev,
+      [field]: sanitized,
+    }));
+  }, []);
+
+  const resetVitalsForm = React.useCallback(() => {
+    setVitalsFormValues(VITALS_INITIAL_VALUES);
+    setVitalsDataExists(false);
+    setIsVitalsEditing(true);
+  }, []);
+
+  const loadSignosVitales = React.useCallback(async () => {
+    if (!isVitalsMode || !adminUid || !area || !personId) return;
+
+    try {
+      const signosRef = ref(
+        database,
+        `admins/${adminUid}/areas/${area}/personas/${personId}/planillas/signosVitales`
+      );
+      const snapshot = await get(signosRef);
+
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setVitalsFormValues({
+          taSystolic: data.taSystolic || '',
+          taDiastolic: data.taDiastolic || '',
+          heartRate: data.heartRate || '',
+          spo2: data.spo2 || '',
+          temperature: data.temperature || '',
+          glucose: data.glucose || '',
+        });
+        setVitalsDataExists(true);
+        setIsVitalsEditing(false);
+      } else {
+        resetVitalsForm();
+      }
+    } catch (error) {
+      console.error('Error loading vital signs:', error);
+    }
+  }, [isVitalsMode, adminUid, area, personId, resetVitalsForm]);
+
+  const saveSignosVitales = React.useCallback(async () => {
+    if (!isVitalsMode || !adminUid || !area || !personId) return;
+
+    try {
+      const signosRef = ref(
+        database,
+        `admins/${adminUid}/areas/${area}/personas/${personId}/planillas/signosVitales`
+      );
+
+      const dataToSave = {
+        taSystolic: vitalsFormValues.taSystolic,
+        taDiastolic: vitalsFormValues.taDiastolic,
+        heartRate: vitalsFormValues.heartRate,
+        spo2: vitalsFormValues.spo2,
+        temperature: vitalsFormValues.temperature,
+        glucose: vitalsFormValues.glucose,
+        updatedAt: new Date().toISOString(),
+        updatedBy: adminUid,
+      };
+
+      if (!vitalsDataExists) {
+        await set(signosRef, {
+          ...dataToSave,
+          createdAt: new Date().toISOString(),
+          createdBy: adminUid,
+        });
+        setVitalsDataExists(true);
+      } else {
+        await update(signosRef, dataToSave);
+      }
+
+      setIsVitalsEditing(false);
+      Keyboard.dismiss();
+    } catch (error) {
+      console.error('Error saving vital signs:', error);
+    }
+  }, [isVitalsMode, adminUid, area, personId, vitalsFormValues, vitalsDataExists]);
+
   React.useEffect(() => {
     if (isAdding && selectedArea && !person?.area) {
       onChange({ ...person, area: selectedArea });
@@ -143,6 +266,40 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
     }
   }, [isAdding, userType, person, onChange]);
 
+  // Cargar datos de signos vitales cuando se abre el modal
+  React.useEffect(() => {
+    if (isVitalsMode && adminUid && area && personId) {
+      loadSignosVitales();
+    } else if (isVitalsMode) {
+      resetVitalsForm();
+    }
+  }, [isVitalsMode, adminUid, area, personId, loadSignosVitales, resetVitalsForm]);
+
+  // Manejar estado de edición de signos vitales
+  React.useEffect(() => {
+    if (isVitalsMode) {
+      if (!visible) {
+        setIsVitalsEditing(false);
+      } else if (!vitalsDataExists) {
+        setIsVitalsEditing(true);
+      }
+    }
+  }, [isVitalsMode, visible, vitalsDataExists]);
+
+  // Exponer funciones para refs en modo signos vitales
+  React.useEffect(() => {
+    if (isVitalsMode) {
+      if (onModify) {
+        onModify.current = () => setIsVitalsEditing(true);
+      }
+      if (onSave) {
+        onSave.current = async () => {
+          await saveSignosVitales();
+        };
+      }
+    }
+  }, [isVitalsMode, onModify, onSave, saveSignosVitales]);
+
   React.useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
@@ -158,6 +315,89 @@ export default function EditPersonForm({ person, onChange, isAdding, selectedAre
     };
   }, []);
 
+  // Si está en modo signos vitales, mostrar solo campos de signos vitales
+  if (isVitalsMode) {
+    if (!adminUid || !area || !personId) {
+      return null;
+    }
+
+    return (
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <ScrollView
+            ref={scrollViewRef}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 46 }}
+            style={{ flexGrow: 1 }}
+            showsVerticalScrollIndicator={true}
+          >
+            <TextInput
+              mode="outlined"
+              label={VITALS_TEXTS.fields.taSystolic}
+              value={vitalsFormValues.taSystolic}
+              onChangeText={handleVitalsChange('taSystolic')}
+              keyboardType="numeric"
+              style={styles.styleInput}
+              dense={false}
+              editable={isVitalsEditing}
+            />
+            <TextInput
+              mode="outlined"
+              label={VITALS_TEXTS.fields.taDiastolic}
+              value={vitalsFormValues.taDiastolic}
+              onChangeText={handleVitalsChange('taDiastolic')}
+              keyboardType="numeric"
+              style={styles.styleInput}
+              dense={false}
+              editable={isVitalsEditing}
+            />
+            <TextInput
+              mode="outlined"
+              label={VITALS_TEXTS.fields.heartRate}
+              value={vitalsFormValues.heartRate}
+              onChangeText={handleVitalsChange('heartRate')}
+              keyboardType="numeric"
+              style={styles.styleInput}
+              dense={false}
+              editable={isVitalsEditing}
+            />
+            <TextInput
+              mode="outlined"
+              label={VITALS_TEXTS.fields.spo2}
+              value={vitalsFormValues.spo2}
+              onChangeText={handleVitalsChange('spo2')}
+              keyboardType="numeric"
+              style={styles.styleInput}
+              dense={false}
+              editable={isVitalsEditing}
+            />
+            <TextInput
+              mode="outlined"
+              label={VITALS_TEXTS.fields.temperature}
+              value={vitalsFormValues.temperature}
+              onChangeText={handleVitalsChange('temperature', true)}
+              keyboardType="decimal-pad"
+              style={styles.styleInput}
+              dense={false}
+              editable={isVitalsEditing}
+            />
+            <TextInput
+              mode="outlined"
+              label={VITALS_TEXTS.fields.glucose}
+              value={vitalsFormValues.glucose}
+              onChangeText={handleVitalsChange('glucose')}
+              keyboardType="numeric"
+              style={styles.styleInput}
+              dense={false}
+              editable={isVitalsEditing}
+            />
+          </ScrollView>
+        </View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
+  // Modo normal (edición de persona)
   return (
     <>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

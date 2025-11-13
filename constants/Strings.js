@@ -161,5 +161,15 @@ export const VALIDATION_TEXTS = {
 
 // ===== TEXTO DE SIGNOS VITALES =====
 export const VITALS_TEXTS = {
-  headerColumns: "Sístole    ·     Diástole    ·     Pulso",
+  formTitle: "Ingresar Aquí:",
+  headerColumns: "Ingresar Aquí:",
+  patientLabelPrefix: "_Paciente:",
+  fields: {
+    taSystolic: "TA (Sist.)",
+    taDiastolic: "TA (Diast.)",
+    heartRate: "FC (lpm)",
+    spo2: "SpO₂ %",
+    temperature: "T°C",
+    glucose: "Glu (mg/dL)",
+  },
 };

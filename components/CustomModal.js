@@ -59,7 +59,7 @@ const CustomModal = ({
   vitalsInfoExtraMargin = 0,
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const resolvedTitle = isVitalsModal ? VITALS_TEXTS.headerColumns : title;
+  const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : title;
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -128,7 +128,7 @@ const CustomModal = ({
             }
           ]}>
             <Text style={styles.patientTextModal}>
-              _Paciente: {vitalsData.patientName}
+              {VITALS_TEXTS.patientLabelPrefix} {vitalsData.patientName}
             </Text>
           </View>
         )}
@@ -171,7 +171,7 @@ const CustomModal = ({
                     </View>
                   )}
                   <Card.Content style={styles.cardContent}>
-                    {isVitalsModal ? (
+                    {isVitalsModal && !children ? (
                       <VitalSignsColumns
                         adminUid={vitalsData?.adminUid}
                         area={vitalsData?.area}
@@ -256,7 +256,7 @@ const CustomModal = ({
                     </View>
                   )}
                   <Card.Content style={styles.cardContent}>
-                    {isVitalsModal ? (
+                    {isVitalsModal && !children ? (
                       <VitalSignsColumns
                         adminUid={vitalsData?.adminUid}
                         area={vitalsData?.area}
@@ -440,8 +440,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   vitalsCard: {
-    width: '25%',
-    borderRadius: 32,
+    width: '92%',
+    maxWidth: 420,
+    borderRadius: 40,
   },
   cardContent: {
     justifyContent: 'center',

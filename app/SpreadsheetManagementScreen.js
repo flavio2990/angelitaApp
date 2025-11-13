@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -7,8 +7,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import TopBarHeader from '../components/TopBarHeader';
 import CustomLogButton from '../components/CustomLogButton';
 import CustomModal from '../components/CustomModal';
+import EditPersonForm from '../components/EditPersonForm';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { useAuth } from '../components/UserContext';
+
+const { height } = Dimensions.get('window');
 
 const theme = {
   ...DefaultTheme,
@@ -110,16 +113,25 @@ export default function SpreadsheetManagementScreen() {
       {/* Modal de Signos Vitales */}
       <CustomModal
         visible={showSignosVitalesModal}
-        onDismiss={() => setShowSignosVitalesModal(false)}
-        topbarTitle="Signos Vitales"
-        centerCard={true}
+        onRequestClose={() => setShowSignosVitalesModal(false)}
         showTopbar={true}
-        onBack={() => setShowSignosVitalesModal(false)}
-        showHamburgerMenu={true}
-        topbarMarginTop={80}
+        topbarTitle="Signos Vitales"
+        title="Ingresar Aquí:"
+        isEditModal={true}
+        canEdit={true}
         offsetWithTopbar={true}
-        vitalsInfoExtraMargin={8}
-        scrollable={true}
+        topbarMarginTop={80}
+        onSavePress={() => {
+          if (saveRef.current) {
+            saveRef.current();
+          }
+        }}
+        onBack={() => setShowSignosVitalesModal(false)}
+        onGoHome={() => {
+          router.push('/');
+        }}
+        showGoHomeOption={true}
+        cardMarginTop={height * 0.07}
         isVitalsModal={true}
         vitalsData={{
           adminUid: user?.uid,
@@ -127,36 +139,17 @@ export default function SpreadsheetManagementScreen() {
           personId: personId,
           patientName: patientName
         }}
-        onVitalsModify={modifyRef}
-        onVitalsSave={saveRef}
-        onGoHome={() => {
-          router.push('/');
-        }}
-        actions={[
-          {
-            label: "Modificar",
-            onPress: () => {
-              if (modifyRef.current) {
-                modifyRef.current();
-              }
-            },
-            mode: "outlined",
-            style: { borderColor: '#5124A5', borderWidth: 2 },
-            textColor: '#5124A5'
-          },
-          {
-            label: "Guardar",
-            onPress: () => {
-              if (saveRef.current) {
-                saveRef.current();
-              }
-            },
-            mode: "contained",
-            buttonColor: '#5124A5',
-            textColor: 'white'
-          }
-        ]}
-      />
+      >
+        <EditPersonForm
+          isVitalsMode={true}
+          adminUid={user?.uid}
+          area={area}
+          personId={personId}
+          visible={showSignosVitalesModal}
+          onModify={modifyRef}
+          onSave={saveRef}
+        />
+      </CustomModal>
       </View>
     </PaperProvider>
   );
