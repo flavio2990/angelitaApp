@@ -11,14 +11,17 @@ export default function HamburgerMenu({
   onLogout, // Función personalizada de logout que limpia datos locales
   onGoHome, // Función para volver a la vista principal (selección de área)
   hasTopBar = false, // Indica si hay un TopBarHeader presente
-  showGoHomeOption = true // Controla si se muestra la opción "Volver a inicio"
+  showGoHomeOption = true, // Controla si se muestra la opción "Volver a inicio"
+  forceShow = false // Forzar renderización sin verificar contexto
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { globalUserRole, logout } = useAuth();
 
-  // Si no hay rol definido o no se debe mostrar en modal, no mostrar nada
-  if (!globalUserRole || !showInModal) {
+  // Si se fuerza la renderización, mostrar siempre
+  if (forceShow) {
+    // Renderizar siempre
+  } else if (!globalUserRole) {
     return null;
   }
 
@@ -44,7 +47,7 @@ export default function HamburgerMenu({
       default:
         return {
           icon: ROLE_TEXTS.employeeIcon,
-          text: role.toUpperCase(),
+          text: role ? role.toUpperCase() : 'USUARIO',
           color: '#666',
           bgColor: '#F5F5F5',
           borderColor: '#9CA3AF'
@@ -104,6 +107,7 @@ export default function HamburgerMenu({
     setIsOpen(false);
   };
 
+  
   return (
     <>
       {/* Overlay de loading durante logout */}
@@ -128,7 +132,7 @@ export default function HamburgerMenu({
       <View style={[styles.container, getPositionStyle(), style]}>
         {/* Botón del menú hamburguesa */}
         <TouchableOpacity 
-          style={[styles.hamburgerButton, { backgroundColor: roleInfo.bgColor }]} 
+          style={styles.hamburgerButton}
           onPress={handleToggleMenu}
           activeOpacity={0.8}
         >
@@ -202,11 +206,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 9998,
+    zIndex: 99998,
   },
   container: {
     position: 'absolute',
-    zIndex: 9999,
+    zIndex: 99999,
   },
   
   // Botón del menú hamburguesa
@@ -214,6 +218,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+    backgroundColor: '#E8E4F7',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,

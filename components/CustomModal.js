@@ -2,7 +2,6 @@
 import { 
   Modal as PaperModal, 
   Portal, 
-  Text, 
   Button, 
   Card 
 } from 'react-native-paper';
@@ -13,11 +12,15 @@ import {
   Platform, 
   ScrollView, 
   KeyboardAvoidingView,
-  Keyboard 
+  Keyboard,
+  Text,
+  TouchableWithoutFeedback
 } from 'react-native';
 
 import TopBarHeader from '@/components/TopBarHeader';
 import HamburgerMenu from './HamburgerMenu';
+import VitalSignsColumns from './VitalSignsColumns';
+import { VITALS_TEXTS } from '../constants/Strings';
 
 const { width, height } = Dimensions.get('window');
 
@@ -46,8 +49,17 @@ const CustomModal = ({
   showGoHomeOption = true,
   scrollable = true,
   outsideActions = [],
+  topbarMarginTop = 50,
+  isVitalsModal = false,
+  vitalsData = null,
+  onVitalsSave = null,
+  onVitalsModify = null,
+  offsetWithTopbar = false,
+  vitalsInfoMarginTop = 20,
+  vitalsInfoExtraMargin = 0,
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const resolvedTitle = isVitalsModal ? VITALS_TEXTS.headerColumns : title;
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -79,12 +91,15 @@ const CustomModal = ({
         ]}
       >
         {showTopbar && (
-          <TopBarHeader
-            showTopBar={true}
-            topBarTitle={topbarTitle}
-            onBack={onBack}
-            centerTitle={centerTopbarTitle}
-          />
+          <View style={styles.topBarOverlay} pointerEvents="box-none">
+            <TopBarHeader
+              showTopBar={true}
+              topBarTitle={topbarTitle}
+              onBack={onBack}
+              centerTopbarTitle={centerTopbarTitle}
+              style={styles.topBarFloating}
+            />
+          </View>
         )}
         
         {/* MENÚ HAMBURGUESA */}
@@ -95,7 +110,27 @@ const CustomModal = ({
             onLogout={onLogout}
             onGoHome={onGoHome}
             showGoHomeOption={showGoHomeOption}
+            showInModal={true}
+            forceShow={true}
           />
+        )}
+        
+        {/* Información del paciente para modales de signos vitales */}
+        {isVitalsModal && vitalsData?.patientName && (
+          <View style={[
+            styles.patientBoxModal,
+            {
+              top: showTopbar
+                ? (offsetWithTopbar
+                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
+                    : vitalsInfoMarginTop)
+                : 16
+            }
+          ]}>
+            <Text style={styles.patientTextModal}>
+              _Paciente: {vitalsData.patientName}
+            </Text>
+          </View>
         )}
         
         {outsideActions.length > 0 && (
@@ -119,170 +154,209 @@ const CustomModal = ({
           </View>
         )}
 
-        {centerCard ? (
-          <View style={styles.flex}>
-            <View style={[styles.modalContent, styles.centerModalContent]}>
-              <Card style={[
-                styles.theCard, 
-                styles.centerCard,
-                showTopbar && { marginTop: -50 } // Compensar altura del TopBarHeader
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          {centerCard ? (
+            <View style={styles.flex}>
+              <View style={[
+                styles.modalContent, 
+                styles.centerModalContent
               ]}>
-                <View style={styles.titleWrapper}>
-                  <Text style={styles.title}>{title}</Text>
-                </View>
-                <Card.Content style={styles.cardContent}>
-                  {scrollable ? (
-                    <ScrollView
-                      style={{ width: '100%' }}
-                      contentContainerStyle={styles.scrollContent}
-                      keyboardShouldPersistTaps="handled"
-                      showsVerticalScrollIndicator={true}
-                    >
-                      {content}
-                      {children}
-                      {actions.map((action, index) => (
-                        <Button
-                          key={index}
-                          mode={action.mode || "outlined"}
-                          onPress={action.onPress}
-                          style={[styles.button, action.style]}
-                          labelStyle={styles.buttonLabel}
-                          icon={action.icon}
-                          textColor={action.textColor || "#5124A5"}
-                          buttonColor={action.buttonColor || "white"}
-                        >
-                          {action.label}
-                        </Button>
-                      ))}
-                    </ScrollView>
-                  ) : (
-                    <View style={{ width: '100%' }}>
-                      {content}
-                      {children}
-                      {actions.map((action, index) => (
-                        <Button
-                          key={index}
-                          mode={action.mode || "outlined"}
-                          onPress={action.onPress}
-                          style={[styles.button, action.style]}
-                          labelStyle={styles.buttonLabel}
-                          icon={action.icon}
-                          textColor={action.textColor || "#5124A5"}
-                          buttonColor={action.buttonColor || "white"}
-                        >
-                          {action.label}
-                        </Button>
-                      ))}
+                <Card style={[
+                  styles.theCard, 
+                  styles.centerCard
+                ]}>
+                  {resolvedTitle && (
+                    <View style={styles.titleWrapper}>
+                      <Text style={styles.title}>{resolvedTitle}</Text>
                     </View>
                   )}
-                </Card.Content>
-              </Card>
+                  <Card.Content style={styles.cardContent}>
+                    {isVitalsModal ? (
+                      <VitalSignsColumns
+                        adminUid={vitalsData?.adminUid}
+                        area={vitalsData?.area}
+                        personId={vitalsData?.personId}
+                        patientName={vitalsData?.patientName}
+                        visible={visible}
+                        onDismiss={onDismiss}
+                        onModify={onVitalsModify}
+                        onSave={onVitalsSave}
+                      />
+                    ) : scrollable ? (
+                      <ScrollView
+                        style={{ width: '100%' }}
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={true}
+                      >
+                        {content}
+                        {children}
+                        {actions.map((action, index) => (
+                          <Button
+                            key={index}
+                            mode={action.mode || "outlined"}
+                            onPress={action.onPress}
+                            style={[styles.button, action.style]}
+                            labelStyle={styles.buttonLabel}
+                            icon={action.icon}
+                            textColor={action.textColor || "#5124A5"}
+                            buttonColor={action.buttonColor || "white"}
+                          >
+                            {action.label}
+                          </Button>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <View style={{ width: '100%' }}>
+                        {content}
+                        {children}
+                        {actions.map((action, index) => (
+                          <Button
+                            key={index}
+                            mode={action.mode || "outlined"}
+                            onPress={action.onPress}
+                            style={[styles.button, action.style]}
+                            labelStyle={styles.buttonLabel}
+                            icon={action.icon}
+                            textColor={action.textColor || "#5124A5"}
+                            buttonColor={action.buttonColor || "white"}
+                          >
+                            {action.label}
+                          </Button>
+                        ))}
+                      </View>
+                    )}
+                  </Card.Content>
+                </Card>
+              </View>
             </View>
-          </View>
-        ) : (
-          <KeyboardAvoidingView 
-            style={styles.flex}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={showTopbar ? 120 : 80}
-          >
-            <View style={styles.modalContent}>
-              <Card style={[
-                styles.theCard, 
-                cardMarginTop !== undefined && { marginTop: cardMarginTop }
+          ) : (
+            <KeyboardAvoidingView 
+              style={styles.flex}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={showTopbar ? 120 : 80}
+            >
+              <View style={[
+                styles.modalContent,
+                cardMarginTop === 0 && !showTopbar && styles.fullScreenModalContent,
+                showTopbar && offsetWithTopbar && topbarMarginTop !== undefined && { paddingTop: topbarMarginTop }
               ]}>
-                <View style={styles.titleWrapper}>
-                  <Text style={styles.title}>{title}</Text>
-                </View>
-                <Card.Content style={styles.cardContent}>
-                  {scrollable ? (
-                    <ScrollView
-                      style={{ width: '100%' }}
-                      contentContainerStyle={styles.scrollContent}
-                      keyboardShouldPersistTaps="handled"
-                      showsVerticalScrollIndicator={true}
-                    >
-                      {content}
-                      {children}
-                      {actions.map((action, index) => (
-                        <Button
-                          key={index}
-                          mode={action.mode || "outlined"}
-                          onPress={action.onPress}
-                          style={[styles.button, action.style]}
-                          labelStyle={styles.buttonLabel}
-                          icon={action.icon}
-                          textColor={action.textColor || "#5124A5"}
-                          buttonColor={action.buttonColor || "white"}
-                        >
-                          {action.label}
-                        </Button>
-                      ))}
-                    </ScrollView>
-                  ) : (
-                    <View style={{ width: '100%' }}>
-                      {content}
-                      {children}
-                      {actions.map((action, index) => (
-                        <Button
-                          key={index}
-                          mode={action.mode || "outlined"}
-                          onPress={action.onPress}
-                          style={[styles.button, action.style]}
-                          labelStyle={styles.buttonLabel}
-                          icon={action.icon}
-                          textColor={action.textColor || "#5124A5"}
-                          buttonColor={action.buttonColor || "white"}
-                        >
-                          {action.label}
-                        </Button>
-                      ))}
+                <Card style={[
+                  styles.theCard, 
+                  cardMarginTop !== undefined && { marginTop: cardMarginTop },
+                  cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
+                  isVitalsModal && styles.vitalsCard
+                ]}>
+                  {resolvedTitle && (
+                    <View style={[
+                      styles.titleWrapper,
+                      cardMarginTop === 0 && styles.fullScreenTitleWrapper
+                    ]}>
+                      <Text style={styles.title}>{resolvedTitle}</Text>
                     </View>
                   )}
-                </Card.Content>
-              </Card>
+                  <Card.Content style={styles.cardContent}>
+                    {isVitalsModal ? (
+                      <VitalSignsColumns
+                        adminUid={vitalsData?.adminUid}
+                        area={vitalsData?.area}
+                        personId={vitalsData?.personId}
+                        patientName={vitalsData?.patientName}
+                        visible={visible}
+                        onDismiss={onDismiss}
+                        onModify={onVitalsModify}
+                        onSave={onVitalsSave}
+                      />
+                    ) : scrollable ? (
+                      <ScrollView
+                        style={{ width: '100%' }}
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={true}
+                      >
+                        {content}
+                        {children}
+                        {actions.map((action, index) => (
+                          <Button
+                            key={index}
+                            mode={action.mode || "outlined"}
+                            onPress={action.onPress}
+                            style={[styles.button, action.style]}
+                            labelStyle={styles.buttonLabel}
+                            icon={action.icon}
+                            textColor={action.textColor || "#5124A5"}
+                            buttonColor={action.buttonColor || "white"}
+                          >
+                            {action.label}
+                          </Button>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <View style={{ width: '100%' }}>
+                        {content}
+                        {children}
+                        {actions.map((action, index) => (
+                          <Button
+                            key={index}
+                            mode={action.mode || "outlined"}
+                            onPress={action.onPress}
+                            style={[styles.button, action.style]}
+                            labelStyle={styles.buttonLabel}
+                            icon={action.icon}
+                            textColor={action.textColor || "#5124A5"}
+                            buttonColor={action.buttonColor || "white"}
+                          >
+                            {action.label}
+                          </Button>
+                        ))}
+                      </View>
+                    )}
+                  </Card.Content>
+                </Card>
 
-              {(isDetailModal || isEditModal) && (
-                <View style={styles.buttonContainer}>
-                  {isDetailModal && (
-                    <>
-                      {canEdit && (
+                {(isDetailModal || isEditModal) && (
+                  <View style={styles.buttonContainer}>
+                    {isDetailModal && (
+                      <>
+                        {canEdit && (
+                          <Button
+                            mode="contained"
+                            onPress={onModifyPress}
+                            style={styles.detailButton}
+                            labelStyle={styles.detailButtonLabel}
+                            buttonColor="#5124A5"
+                          >
+                            Modificar
+                          </Button>
+                        )}
                         <Button
                           mode="contained"
-                          onPress={onModifyPress}
+                          onPress={onGoToPlanPress}
                           style={styles.detailButton}
                           labelStyle={styles.detailButtonLabel}
                           buttonColor="#5124A5"
                         >
-                          Modificar
+                          Ir a planilla
                         </Button>
-                      )}
+                      </>
+                    )}
+                    {isEditModal && canEdit && (
                       <Button
                         mode="contained"
-                        onPress={onGoToPlanPress}
+                        onPress={onSavePress}
                         style={styles.detailButton}
                         labelStyle={styles.detailButtonLabel}
                         buttonColor="#5124A5"
                       >
-                        Ir a planilla
+                        Guardar
                       </Button>
-                    </>
-                  )}
-                  {isEditModal && canEdit && (
-                    <Button
-                      mode="contained"
-                      onPress={onSavePress}
-                      style={styles.detailButton}
-                      labelStyle={styles.detailButtonLabel}
-                      buttonColor="#5124A5"
-                    >
-                      Guardar
-                    </Button>
-                  )}
-                </View>
-              )}
-            </View>
-          </KeyboardAvoidingView>
-        )}
+                    )}
+                  </View>
+                )}
+              </View>
+            </KeyboardAvoidingView>
+          )}
+        </TouchableWithoutFeedback>
       </PaperModal>
     </Portal>
   );
@@ -299,10 +373,18 @@ const styles = StyleSheet.create({
     height,
     justifyContent: 'flex-start',
     borderColor: '#5124A5',
+    zIndex: 9999,
+    elevation: 9999,
   },
   modalContent: {
     flex: 1,
     justifyContent: 'space-between',
+    zIndex: 10000,
+    elevation: 10000,
+  },
+  fullScreenModalContent: {
+    justifyContent: 'flex-start',
+    paddingHorizontal: 0,
   },
   centerModalContent: {
     justifyContent: 'center',
@@ -316,6 +398,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
+  },
+  fullScreenTitleWrapper: {
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
   },
   title: {
     fontSize: 22,
@@ -332,6 +418,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: height * 0.2,
     alignSelf: 'center',
+    zIndex: 10001,
+    elevation: 10001,
+  },
+  fullScreenCard: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
+    marginTop: 0,
+    marginVertical: 0,
+    maxHeight: '100%',
+    alignSelf: 'stretch',
   },
   centerCard: { 
     marginTop: 0,
@@ -341,6 +438,10 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginHorizontal: 10,
     alignSelf: 'center',
+  },
+  vitalsCard: {
+    width: '25%',
+    borderRadius: 32,
   },
   cardContent: {
     justifyContent: 'center',
@@ -376,6 +477,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingTop: 10,
   },
+  topBarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20001,
+    elevation: 20001,
+  },
+  topBarFloating: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   buttonContainer: {
     alignItems: 'center',
     paddingVertical: 20,
@@ -387,7 +502,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    zIndex: 1000,
+    zIndex: 20000,
+    elevation: 20000,
   },
   outsideActionButton: {
     paddingVertical: 8,
@@ -398,6 +514,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'normal',
     textDecorationLine: 'none',
+  },
+  // Estilos para el patientBox en modales de signos vitales
+  patientBoxModal: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    backgroundColor: '#EDE7F6',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+    zIndex: 10001,
+    elevation: 10001,
+  },
+  patientTextModal: {
+    fontSize: 24,
+    color: '#5124A5',
+    fontWeight: 'bold',
   }
 });
 

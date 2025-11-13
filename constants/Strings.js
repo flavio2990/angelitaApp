@@ -1,7 +1,7 @@
 ﻿// ===== TÍTULOS DE TARJETAS =====
 export const CARD_TITLES = {
   selectArea: "Seleccione Área",
-  selectTipe: "Seleccione: ",
+  selectTipe: "Seleccionar de ",
 };
 
 // ===== OPCIONES DE ÁREAS =====
@@ -157,4 +157,9 @@ export const VALIDATION_TEXTS = {
   cancelText: "Cancelar",
   yesText: "Sí",
   noText: "No",
+};
+
+// ===== TEXTO DE SIGNOS VITALES =====
+export const VITALS_TEXTS = {
+  headerColumns: "Sístole    ·     Diástole    ·     Pulso",
 };

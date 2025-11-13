@@ -19,11 +19,11 @@ import { useAuth } from '../components/UserContext';
 import HamburgerMenu from '../components/HamburgerMenu';
 // import GlobalUserDebugger from '../components/GlobalUserDebugger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  CARD_TITLES, 
-  AREA_OPTIONS, 
-  TIPE_OPTIONS, 
-  MODAL_TITLES, 
+import {
+  CARD_TITLES,
+  AREA_OPTIONS,
+  TIPE_OPTIONS,
+  MODAL_TITLES,
   TOP_BAR_HEADER_TITLES,
   AUTH_TEXTS,
   FORM_TEXTS,
@@ -77,6 +77,8 @@ export default function MasterScreen() {
   const [showVerificationModalAfterRegister, setShowVerificationModalAfterRegister] = useState(false);
   const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
 
+  const [authStep, setAuthStep] = useState('login'); 
+
   const router = useRouter();
 
   const theme = {
@@ -116,7 +118,7 @@ export default function MasterScreen() {
 
     const filteredData = peopleList.filter(
       (p) =>
-        p.tipo?.toLowerCase() === type.toLowerCase() &&
+        p.tipo?.toLowerCase() === type?.toLowerCase() &&
         p.area?.toLowerCase() === selectedArea?.toLowerCase()
     );
 
@@ -157,17 +159,17 @@ export default function MasterScreen() {
       setEditModalVisible(false);
       setEditablePerson(null);
       setNoDataModalVisible(false);
-      setIsInitialFlow(true); // Resetear para el próximo login
+      setIsInitialFlow(true);
       setNewPerson({});
       setAddMode(false);
       setShowConfirmModal(false);
       setSaveSuccess(false);
       setOriginalDni(null);
       setIsCreatingNewPerson(false);
-      
+
       // Ejecutar logout del contexto (que ya limpia AsyncStorage)
       await logout();
-      
+
     } catch (error) {
       // Aún así, intentar limpiar el estado local
       setAsyncPeopleData([]);
@@ -179,7 +181,7 @@ export default function MasterScreen() {
   const handleGoHome = () => {
     // Verificar si se está editando o agregando datos
     const isEditing = editModalVisible || noDataModalVisible;
-    
+
     if (isEditing) {
       // Mostrar confirmación si se está editando o agregando
       Alert.alert(
@@ -212,7 +214,7 @@ export default function MasterScreen() {
     setModalUserTypeVisible(false);
     setNoDataModalVisible(false);
     setShowConfirmModal(false);
-    
+
     // Limpiar estados
     setSelectedPerson(null);
     setEditablePerson(null);
@@ -223,7 +225,7 @@ export default function MasterScreen() {
     setAddMode(false);
     setSaveSuccess(false);
     setIsCreatingNewPerson(false);
-    
+
     // Abrir modal de selección de área
     setModalAreaVisible(true);
     setIsInitialFlow(false);
@@ -239,13 +241,13 @@ export default function MasterScreen() {
   // Función para validar campos obligatorios
   const validateRequiredFields = (person) => {
     // Determinar si es empleado
-    const isEmployee = person?.tipo && 
+    const isEmployee = person?.tipo &&
       (person.tipo.toLowerCase() === 'enfermería' || person.tipo.toLowerCase() === 'administrador');
 
     // Campos base requeridos para todos
     const baseRequiredFields = [
       { key: 'tipo', label: 'Tipo' },
-      { key: 'area', label: 'Ãrea' },
+      { key: 'area', label: 'area' },
       { key: 'nombre', label: 'Nombre' },
       { key: 'edad', label: 'Edad' },
       { key: 'dni', label: 'DNI' },
@@ -264,7 +266,7 @@ export default function MasterScreen() {
     // Combinar campos según el tipo de usuario
     const requiredFields = isEmployee ? baseRequiredFields : [...baseRequiredFields, ...patientOnlyFields];
 
-    const missingFields = requiredFields.filter(field => 
+    const missingFields = requiredFields.filter(field =>
       !person[field.key] || person[field.key].toString().trim() === ''
     );
 
@@ -279,8 +281,8 @@ export default function MasterScreen() {
 
     try {
       const personId = Date.now().toString();
-      const personWithId = { 
-        ...newPerson, 
+      const personWithId = {
+        ...newPerson,
         id: personId,
         createdAt: new Date().toISOString()
       };
@@ -332,12 +334,12 @@ export default function MasterScreen() {
       // Verificar si se cambió el área
       const originalArea = selectedPerson?.area;
       const newArea = editablePerson.area;
-      
+
       if (originalArea !== newArea) {
         // Si cambió el área, eliminar del área anterior y crear en la nueva
         const oldPersonRef = ref(database, `admins/${user.uid}/areas/${originalArea}/personas/${editablePerson.id}`);
         await set(oldPersonRef, null); // Eliminar de área anterior
-        
+
         // Crear en nueva área
         const newPersonRef = ref(database, `admins/${user.uid}/areas/${newArea}/personas/${editablePerson.id}`);
         await set(newPersonRef, {
@@ -353,7 +355,6 @@ export default function MasterScreen() {
         });
       }
 
-      console.log("Datos guardados exitosamente en Firebase y AsyncStorage");
       return true;
     } catch (error) {
       console.error("Error al guardar:", error);
@@ -394,7 +395,7 @@ export default function MasterScreen() {
     try {
       setLoginError(null);
       const success = await login(email, password);
-      
+
       if (success) {
         setEmail('');
         setPassword('');
@@ -435,13 +436,13 @@ export default function MasterScreen() {
       setResendVerificationLoading(true);
       await resendVerification();
       Alert.alert(
-        'Éxito', 
+        'Éxito',
         'Enlace de verificación reenviado. Revisa tu correo electrónico y haz clic en el enlace para verificar tu cuenta.',
         [{ text: 'OK' }]
       );
     } catch (e) {
       Alert.alert(
-        'Error al reenviar verificación', 
+        'Error al reenviar verificación',
         e.message || 'No se pudo reenviar el enlace de verificación. Intenta nuevamente.',
         [{ text: 'OK' }]
       );
@@ -455,16 +456,16 @@ export default function MasterScreen() {
       if (user) {
         // Refrescar el usuario y obtener el resultado
         const updatedUser = await refreshUser();
-        
+
         if (updatedUser && updatedUser.emailVerified) {
           // Email verificado, mantener el rol pero limpiar la sesión
           await clearSessionOnly(); // Solo limpia la sesión, mantiene el rol
-          
+
           // Ocultar modal de verificación
           setShowVerificationModalAfterRegister(false);
-          
+
           Alert.alert('¡Verificado exitosamente!', 'Ahora logeate con tu usuario y contraseña.');
-          
+
           // Limpiar campos de login
           setEmail('');
           setPassword('');
@@ -490,6 +491,7 @@ export default function MasterScreen() {
     }
   }, [globalUserRole, user, showEmployeeList, modalAreaVisible, modalUserTypeVisible, noDataModalVisible, detailModalVisible, editModalVisible, isInitialFlow]);
 
+
   useEffect(() => {
     if (!user?.uid) return;
     const empleadosRef = ref(database, `admins/${user.uid}/empleados`);
@@ -506,7 +508,7 @@ export default function MasterScreen() {
       if (snapshot.exists()) {
         const areasObj = snapshot.val();
         let allPeople = [];
-        
+
         // Recorrer todas las áreas y extraer las personas
         Object.keys(areasObj).forEach(areaKey => {
           const area = areasObj[areaKey];
@@ -515,7 +517,7 @@ export default function MasterScreen() {
             allPeople = [...allPeople, ...areaPeople];
           }
         });
-        
+
         await AsyncStorage.setItem('peopleData', JSON.stringify(allPeople));
         setAsyncPeopleData(allPeople);
       } else {
@@ -541,7 +543,7 @@ export default function MasterScreen() {
       </PaperProvider>
     );
   }
- 
+
   if (!globalUserRole) {
     return (
       <PaperProvider theme={theme}>
@@ -556,7 +558,7 @@ export default function MasterScreen() {
               Bienvenido a tu Hogar!
             </ThemedText>
           </View>
-          
+
           {/* Modal inicial para el rol */}
           <CustomModal
             visible={true}
@@ -564,18 +566,19 @@ export default function MasterScreen() {
             title={AUTH_TEXTS.selectRole}
             centerCard={true}
             actions={[]}
+            showHamburgerMenu={false}
           >
             <View style={{ padding: 20 }}>
-              <Text style={{ 
-                fontSize: 18, 
-                textAlign: 'center', 
-                marginBottom: 30, 
+              <Text style={{
+                fontSize: 18,
+                textAlign: 'center',
+                marginBottom: 30,
                 color: '#5124A5',
                 fontWeight: '500'
               }}>
                 ¿Qué tipo de usuario eres?
               </Text>
-              
+
               <CustomButton
                 label={AUTH_TEXTS.adminRole}
                 onPress={() => {
@@ -603,11 +606,12 @@ export default function MasterScreen() {
     return (
       <PaperProvider theme={theme}>
         <StatusBar />
-        
+
         {/* MODAL DE REGISTRO */}
         {showRegisterModal && (
           <CustomModal
-            visible={true}
+            // visible={true}
+            visible={showRegisterModal}
             onDismiss={() => setShowRegisterModal(false)}
             title={AUTH_TEXTS.registerTitle}
             centerCard={true}
@@ -630,19 +634,19 @@ export default function MasterScreen() {
             ]}
           >
             <View style={{ padding: 16, alignItems: 'center' }}>
-              <Text style={{ 
-                marginBottom: 10, 
-                fontSize: 16, 
+              <Text style={{
+                marginBottom: 10,
+                fontSize: 16,
                 textAlign: 'center',
                 color: '#666'
               }}>
                 Ingresa estos datos para crear una cuenta
               </Text>
-        
+
               {!globalUserRole && (
-                <Text style={{ 
-                  marginBottom: 12, 
-                  fontSize: 14, 
+                <Text style={{
+                  marginBottom: 12,
+                  fontSize: 14,
                   textAlign: 'center',
                   color: '#FF6B6B',
                   fontWeight: '600'
@@ -650,7 +654,7 @@ export default function MasterScreen() {
                   {AUTH_TEXTS.selectRoleFirst}
                 </Text>
               )}
-              
+
               <TextInput
                 label={AUTH_TEXTS.emailLabel}
                 value={email}
@@ -661,7 +665,7 @@ export default function MasterScreen() {
                 style={{ marginBottom: 16, width: 260 }}
                 theme={{ colors: { text: '#000', primary: '#007AFF' } }}
               />
-              
+
               <TextInput
                 label={AUTH_TEXTS.passwordLabel}
                 value={password}
@@ -670,7 +674,7 @@ export default function MasterScreen() {
                 style={{ marginBottom: 16, width: 260 }}
                 theme={{ colors: { text: '#000', primary: '#007AFF' } }}
               />
-              
+
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
                   label={AUTH_TEXTS.createUserButton}
@@ -699,7 +703,7 @@ export default function MasterScreen() {
         {/* MODAL DE RECUPERACIÓN DE CONTRASEÑA */}
         {showForgotPasswordModal && (
           <CustomModal
-            visible={true}
+            visible={showForgotPasswordModal}
             onDismiss={() => setShowForgotPasswordModal(false)}
             title={AUTH_TEXTS.forgotPasswordTitle}
             centerCard={true}
@@ -721,15 +725,15 @@ export default function MasterScreen() {
             ]}
           >
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <Text style={{ 
-                marginBottom: 20, 
-                fontSize: 16, 
+              <Text style={{
+                marginBottom: 20,
+                fontSize: 16,
                 textAlign: 'center',
                 color: '#666'
               }}>
                 {AUTH_TEXTS.forgotPasswordMessage}
               </Text>
-              
+
               <TextInput
                 label={AUTH_TEXTS.emailLabel}
                 value={forgotPasswordEmail}
@@ -740,7 +744,7 @@ export default function MasterScreen() {
                 style={{ marginBottom: 20, width: 260 }}
                 theme={{ colors: { text: '#000', primary: '#007AFF' } }}
               />
-              
+
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
                   label={AUTH_TEXTS.sendResetButton}
@@ -763,15 +767,15 @@ export default function MasterScreen() {
             showHamburgerMenu={false}
           >
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <Text style={{ 
-                marginBottom: 20, 
-                fontSize: 16, 
+              <Text style={{
+                marginBottom: 20,
+                fontSize: 16,
                 textAlign: 'center',
                 color: '#666'
               }}>
                 {AUTH_TEXTS.verificationMessage}
               </Text>
-              
+
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
                 <CustomButton
                   label={resendVerificationLoading ? STATUS_MESSAGES.saving : AUTH_TEXTS.verificationButton}
@@ -789,8 +793,9 @@ export default function MasterScreen() {
             </View>
           </CustomModal>
         )}
-        
-        {/* PANTALLA DE LOGIN PRINCIPAL */}
+
+        {/* VISTA DE LOGIN PRINCIPAL */}
+        {authStep === 'login' && (
         <View style={styles.content}>
           <View style={styles.imageContainer}>
             <Image
@@ -801,7 +806,7 @@ export default function MasterScreen() {
               Bienvenido a tu Hogar!
             </ThemedText>
           </View>
-          
+
           <Card style={styles.card}>
             <Card.Content style={styles.cardContent}>
               <Text variant="titleLarge" style={styles.bigWelcomeText}>
@@ -846,50 +851,49 @@ export default function MasterScreen() {
                   {loginError}
                 </Text>
               )}
-              
+
               {/* Botón Olvidé mi contraseña */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowForgotPasswordModal(true)}
-                style={{ 
+                style={{
                   marginTop: 16,
                   paddingVertical: 8
                 }}
               >
-                <Text style={{ 
-                  color: '#5124A5', 
+                <Text style={{
+                  color: '#5124A5',
                   fontSize: 16,
-                  textDecorationLine: 'underline',
                   textAlign: 'center'
                 }}>
                   {AUTH_TEXTS.forgotPassword}
                 </Text>
               </TouchableOpacity>
-              
-                             {globalUserRole === 'admin' && (
+
+              {globalUserRole === 'admin' && (
                 <TouchableOpacity onPress={() => setShowRegisterModal(true)} style={{ marginTop: 16 }}>
                   <Text style={{ color: '#5124A5', fontWeight: 'bold', fontSize: 18 }}>
                     {AUTH_TEXTS.noAccount} {AUTH_TEXTS.createAccount}
                   </Text>
                 </TouchableOpacity>
               )}
-              
+
               {/* Botón para cambiar de rol */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={async () => {
                   try {
                     // Limpiar rol de manera segura
                     await clearUserRole();
                     setIsAdminSelected(false);
-                    
+
                     // Luego hacer logout
                     await logout();
-                    
+
                   } catch (error) {
                     // Aún así, intentar logout
                     await logout();
                   }
-                }} 
-                style={{ 
+                }}
+                style={{
                   marginTop: 16,
                   paddingHorizontal: 16,
                   paddingVertical: 8,
@@ -897,8 +901,8 @@ export default function MasterScreen() {
                   borderRadius: 20
                 }}
               >
-                <Text style={{ 
-                  color: 'white', 
+                <Text style={{
+                  color: 'white',
                   fontSize: 16,
                   fontWeight: '600'
                 }}>
@@ -908,20 +912,21 @@ export default function MasterScreen() {
             </Card.Content>
           </Card>
         </View>
+      )}
       </PaperProvider>
     );
   }
 
   // ---------- 4. APP PRINCIPAL (usuario logueado y verificado) ----------
-  
+
   return (
     <PaperProvider theme={theme}>
       <StatusBar />
 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-          <HamburgerMenu position="top-right" onLogout={handleLogout} onGoHome={handleGoHome} showGoHomeOption={false} />
-        
-        
+        <HamburgerMenu position="top-right" onLogout={handleLogout} onGoHome={handleGoHome} showGoHomeOption={true} />
+
+
         {/* LISTA DE EMPLEADOS/PACIENTES */}
         {showEmployeeList ? (
           <CustomList
@@ -942,7 +947,7 @@ export default function MasterScreen() {
           />
         ) : null}
 
-        {/* MODAL SELECCIÓN DE ÃREA */}
+        {/* MODAL SELECCIÓN DE AREA */}
         <CustomModal
           visible={modalAreaVisible}
           onDismiss={() => setModalAreaVisible(false)}
@@ -964,9 +969,11 @@ export default function MasterScreen() {
           visible={modalUserTypeVisible}
           onDismiss={() => setModalUserTypeVisible(false)}
           topbarTitle={MODAL_TITLES.modalTitleEmployPatients}
-          title={`Seleccionar de ${selectedArea}:`}
+          title={`${CARD_TITLES.selectTipe}${selectedArea}:`}
           centerCard={true}
           showTopbar={true}
+          showHamburgerMenu={true}
+          topbarMarginTop={20}
           onBack={() => {
             setModalUserTypeVisible(false);
             setModalAreaVisible(true);
@@ -974,6 +981,7 @@ export default function MasterScreen() {
           }}
           onLogout={handleLogout}
           onGoHome={handleGoHome}
+          showGoHomeOption={true}
           actions={TIPE_OPTIONS.map(opt => ({
             label: opt.label,
             icon: opt.icon,
@@ -991,6 +999,8 @@ export default function MasterScreen() {
           title={MODAL_TITLES.modalNoData}
           isEditModal={true}
           canEdit={true}
+          offsetWithTopbar={true}
+          topbarMarginTop={80}
           onSavePress={() => {
             // Validar campos obligatorios antes de proceder
             const missingFields = validateRequiredFields(newPerson);
@@ -1003,7 +1013,7 @@ export default function MasterScreen() {
               );
               return; // No proceder si faltan campos
             }
-            
+
             // Si todos los campos están completos, proceder con el flujo normal
             setNoDataModalVisible(false);
             setIsCreatingNewPerson(true);
@@ -1027,12 +1037,15 @@ export default function MasterScreen() {
           />
         </CustomModal>
 
-        {/* MODAL CON DETALLES */}
+        {/* MODAL DATOS DEL PACIENTE */}
         <CustomModal
           cardMarginTop={height * 0.07}
           visible={detailModalVisible}
           onRequestClose={() => setDetailModalVisible(false)}
           showTopbar={true}
+          showHamburgerMenu={true}
+          offsetWithTopbar={true}
+          topbarMarginTop={80}
           onBack={() => setDetailModalVisible(false)}
           topbarTitle={getTopBarTitle(userType, TOP_BAR_HEADER_TITLES)}
           title={getModalTitle(userType, MODAL_TITLES)}
@@ -1043,25 +1056,33 @@ export default function MasterScreen() {
             if (selectedPerson?.nombre) {
               router.push({
                 pathname: '/SpreadsheetManagementScreen',
-                params: { patientName: selectedPerson.nombre }
+                params: {
+                  patientName: selectedPerson.nombre,
+                  area: selectedPerson.area,
+                  personId: selectedPerson.id
+                }
               });
             }
           }}
           onModifyPress={handleModifyPress}
           onLogout={handleLogout}
           onGoHome={handleGoHome}
+          showGoHomeOption={true}
         >
           <View >
             <PersonDetails person={selectedPerson} userType={userType} />
           </View>
         </CustomModal>
 
-        {/* MODAL PARA EDITAR DATOS */}
+        {/* MODAL PARA MODIFICAR INFORMACION */}
         <CustomModal
           cardMarginTop={height * 0.07}
           visible={editModalVisible}
           onRequestClose={() => setEditModalVisible(false)}
           showTopbar={true}
+          showHamburgerMenu={true}
+          offsetWithTopbar={true}
+          topbarMarginTop={80}
           topbarTitle={FORM_TEXTS.editButton}
           onBack={() => {
             setEditModalVisible(false);
@@ -1077,6 +1098,7 @@ export default function MasterScreen() {
           }}
           onLogout={handleLogout}
           onGoHome={handleGoHome}
+          showGoHomeOption={true}
         >
           <View
             contentContainerStyle={{ padding: 20, backgroundColor: 'rgba(0, 255, 0, 0.2)' }}
@@ -1115,7 +1137,7 @@ export default function MasterScreen() {
                   setEditModalVisible(false);
                   setNewPerson({});
                   setAddMode(false);
-                  
+
                   // Si estamos editando una persona existente, mostrar el modal de detalles
                   if (editablePerson && !isCreatingNewPerson) {
                     setSelectedPerson(editablePerson);
@@ -1137,7 +1159,7 @@ export default function MasterScreen() {
                     } else {
                       success = await handleSaveEditPerson();
                     }
-                    
+
                     // Solo mostrar modal de éxito si la operación fue exitosa
                     if (success) {
                       setSaveSuccess(true);
@@ -1157,6 +1179,7 @@ export default function MasterScreen() {
             )}
           </View>
         </CustomModal>
+
       </SafeAreaView>
     </PaperProvider>
   );

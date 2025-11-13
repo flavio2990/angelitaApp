@@ -18,7 +18,9 @@ const TopBarHeader = ({
           {onBack && (
             <IconButton
               icon="arrow-left"
-              onPress={onBack}
+              onPress={() => {
+                onBack();
+              }}
               style={styles.backButton}
               iconColor="white"
               size={24}

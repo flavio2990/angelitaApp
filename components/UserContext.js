@@ -166,17 +166,11 @@ export const AuthProvider = ({ children }) => {
   // Login
   const login = async (email, password) => {
     try {
-      console.log('Intentando login con:', email);
-      
-      // Verificar que se proporcionen credenciales
       if (!email || !password) {
         throw new Error('Debe ingresar email y contraseña');
       }
       
       const { user } = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Usuario autenticado:', user.uid);
-      
-      // Verificar que el email esté verificado
       if (!user.emailVerified) {
         Alert.alert('Verifica tu correo', 'Debes verificar tu email antes de continuar.');
         await signOut(auth);
