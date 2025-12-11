@@ -58,6 +58,7 @@ const CustomModal = ({
   offsetWithTopbar = false,
   vitalsInfoMarginTop = 20,
   vitalsInfoExtraMargin = 0,
+  hasVitalsData = false,
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : title;
@@ -272,7 +273,7 @@ const CustomModal = ({
                       <>
                         {isVitalsModal ? (
                           <>
-                            {onModifyPress && (
+                            {onModifyPress && hasVitalsData && (
                               <CustomButton
                                 onPress={onModifyPress}
                                 label={FORM_TEXTS.editButton}
@@ -419,7 +420,7 @@ const CustomModal = ({
                       <>
                         {isVitalsModal ? (
                           <>
-                            {onModifyPress && (
+                            {onModifyPress && hasVitalsData && (
                               <CustomButton
                                 onPress={onModifyPress}
                                 label={FORM_TEXTS.editButton}

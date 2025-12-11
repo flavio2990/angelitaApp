@@ -52,6 +52,7 @@ export default function EditPersonForm({
   visible = true,
   onModify = null,
   onSave = null,
+  onVitalsDataExistsChange = null,
 }) {
   const [showUserTypeDropDown, setShowUserTypeDropDown] = React.useState(false);
   const [showAreaDropDown, setShowAreaDropDown] = React.useState(false);
@@ -189,23 +190,21 @@ export default function EditPersonForm({
       );
       const snapshot = await get(signosRef);
 
+      // Solo verificar si existen datos para saber si debemos actualizar o crear
+      // Pero siempre empezar con el formulario vacío
       if (snapshot.exists()) {
-        const data = snapshot.val();
-        setVitalsFormValues({
-          taSystolic: data.taSystolic || '',
-          taDiastolic: data.taDiastolic || '',
-          heartRate: data.heartRate || '',
-          respiratoryRate: data.respiratoryRate || '',
-          spo2: data.spo2 || '',
-          temperature: data.temperature || '',
-        });
         setVitalsDataExists(true);
-        setIsVitalsEditing(false);
       } else {
-        resetVitalsForm();
+        setVitalsDataExists(false);
       }
+      
+      // Siempre resetear el formulario para que empiece vacío (solo los valores, no vitalsDataExists)
+      setVitalsFormValues(VITALS_INITIAL_VALUES);
+      setIsVitalsEditing(true);
     } catch (error) {
       console.error('Error loading vital signs:', error);
+      setVitalsFormValues(VITALS_INITIAL_VALUES);
+      setIsVitalsEditing(true);
     }
   }, [isVitalsMode, adminUid, area, personId, resetVitalsForm]);
 
@@ -229,6 +228,8 @@ export default function EditPersonForm({
         updatedBy: adminUid,
       };
 
+      // Siempre actualizar los datos existentes si ya existen
+      // Si no existen, crear nuevos
       if (!vitalsDataExists) {
         await set(signosRef, {
           ...dataToSave,
@@ -237,7 +238,14 @@ export default function EditPersonForm({
         });
         setVitalsDataExists(true);
       } else {
-        await update(signosRef, dataToSave);
+        // Actualizar manteniendo createdAt y createdBy originales
+        const snapshot = await get(signosRef);
+        const existingData = snapshot.exists() ? snapshot.val() : {};
+        await update(signosRef, {
+          ...dataToSave,
+          createdAt: existingData.createdAt || new Date().toISOString(),
+          createdBy: existingData.createdBy || adminUid,
+        });
       }
 
       setIsVitalsEditing(false);
@@ -277,16 +285,27 @@ export default function EditPersonForm({
     }
   }, [isVitalsMode, adminUid, area, personId, loadSignosVitales, resetVitalsForm]);
 
+  // Notificar cambios en vitalsDataExists
+  React.useEffect(() => {
+    if (isVitalsMode && onVitalsDataExistsChange) {
+      onVitalsDataExistsChange(vitalsDataExists);
+    }
+  }, [isVitalsMode, vitalsDataExists, onVitalsDataExistsChange]);
+
   // Manejar estado de edición de signos vitales
   React.useEffect(() => {
     if (isVitalsMode) {
       if (!visible) {
         setIsVitalsEditing(false);
-      } else if (!vitalsDataExists) {
+        // Resetear solo los valores del formulario cuando se cierra el modal
+        // No resetear vitalsDataExists para mantener la lógica de actualización
+        setVitalsFormValues(VITALS_INITIAL_VALUES);
+      } else {
+        // Siempre empezar en modo edición cuando se abre el modal
         setIsVitalsEditing(true);
       }
     }
-  }, [isVitalsMode, visible, vitalsDataExists]);
+  }, [isVitalsMode, visible]);
 
   // Exponer funciones para refs en modo signos vitales
   React.useEffect(() => {

@@ -34,6 +34,7 @@ export default function SpreadsheetManagementScreen() {
   const [showSignosVitalesModal, setShowSignosVitalesModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [hasVitalsData, setHasVitalsData] = useState(false);
 
   // Refs para conectar con VitalSignsColumns
   const modifyRef = useRef();
@@ -154,6 +155,7 @@ export default function SpreadsheetManagementScreen() {
           showGoHomeOption={true}
           cardMarginTop={height * 0.07}
           isVitalsModal={true}
+          hasVitalsData={hasVitalsData}
           vitalsData={{
             adminUid: user?.uid,
             area: area,
@@ -169,6 +171,7 @@ export default function SpreadsheetManagementScreen() {
             visible={showSignosVitalesModal}
             onModify={modifyRef}
             onSave={saveRef}
+            onVitalsDataExistsChange={setHasVitalsData}
           />
         </CustomModal>
 
