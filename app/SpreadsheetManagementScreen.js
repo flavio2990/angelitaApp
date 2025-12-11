@@ -12,6 +12,8 @@ import EditPersonForm from '../components/EditPersonForm';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { useAuth } from '../components/UserContext';
 import { STATUS_MESSAGES, FORM_TEXTS } from '../constants/Strings';
+import { ref, get } from 'firebase/database';
+import { database } from '../env/firebase';
 
 const { height } = Dimensions.get('window');
 
@@ -35,6 +37,8 @@ export default function SpreadsheetManagementScreen() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasVitalsData, setHasVitalsData] = useState(false);
+  const [vitalsView, setVitalsView] = useState('nuevo'); // 'nuevo' o 'anterior'
+  const [previousVitalsData, setPreviousVitalsData] = useState(null);
 
   // Refs para conectar con VitalSignsColumns
   const modifyRef = useRef();
@@ -45,6 +49,39 @@ export default function SpreadsheetManagementScreen() {
     setShowSignosVitalesModal(true);
     // Resetear el estado cuando se abre el modal para asegurar que el botón Modificar no aparezca
     setHasVitalsData(false);
+    setVitalsView('nuevo');
+    setPreviousVitalsData(null);
+  };
+
+  // Función para cargar datos anteriores de signos vitales
+  const loadPreviousVitals = async () => {
+    if (!user?.uid || !area || !personId) return;
+
+    try {
+      const signosRef = ref(
+        database,
+        `admins/${user.uid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
+      );
+      const snapshot = await get(signosRef);
+
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setPreviousVitalsData(data);
+      } else {
+        setPreviousVitalsData(null);
+      }
+    } catch (error) {
+      console.error('Error loading previous vitals:', error);
+      setPreviousVitalsData(null);
+    }
+  };
+
+  // Función para cambiar la vista
+  const handleViewChange = async (view) => {
+    setVitalsView(view);
+    if (view === 'anterior') {
+      await loadPreviousVitals();
+    }
   };
 
   // Función para guardar signos vitales
@@ -158,6 +195,9 @@ export default function SpreadsheetManagementScreen() {
           cardMarginTop={height * 0.07}
           isVitalsModal={true}
           hasVitalsData={hasVitalsData}
+          vitalsView={vitalsView}
+          onVitalsViewChange={handleViewChange}
+          previousVitalsData={previousVitalsData}
           vitalsData={{
             adminUid: user?.uid,
             area: area,

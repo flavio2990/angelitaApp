@@ -14,13 +14,15 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Text,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  TouchableOpacity
 } from 'react-native';
 
 import TopBarHeader from '@/components/TopBarHeader';
 import HamburgerMenu from './HamburgerMenu';
 import VitalSignsColumns from './VitalSignsColumns';
 import CustomButton from './CustomButton';
+import VitalsDetails from './VitalsDetails';
 import { VITALS_TEXTS, FORM_TEXTS } from '../constants/Strings';
 
 const { width, height } = Dimensions.get('window');
@@ -59,6 +61,9 @@ const CustomModal = ({
   vitalsInfoMarginTop = 20,
   vitalsInfoExtraMargin = 0,
   hasVitalsData = false,
+  vitalsView = 'nuevo',
+  onVitalsViewChange = null,
+  previousVitalsData = null,
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : title;
@@ -101,6 +106,61 @@ const CustomModal = ({
               centerTopbarTitle={centerTopbarTitle}
               style={styles.topBarFloating}
             />
+          </View>
+        )}
+
+        {/* Información del paciente para modales de signos vitales */}
+        {isVitalsModal && vitalsData?.patientName && (
+          <View style={[
+            styles.patientBoxModal,
+            {
+              top: showTopbar
+                ? (offsetWithTopbar
+                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
+                    : vitalsInfoMarginTop)
+                : 16
+            }
+          ]}>
+            <Text style={styles.patientTextModal}>
+              {VITALS_TEXTS.patientLabelPrefix} {vitalsData.patientName}
+            </Text>
+          </View>
+        )}
+
+        {/* Botones Anterior/Nuevo para modal de signos vitales */}
+        {isVitalsModal && showTopbar && (
+          <View style={[
+            styles.vitalsViewButtons,
+            {
+              top: showTopbar
+                ? (offsetWithTopbar
+                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin - 50
+                    : vitalsInfoMarginTop - 50)
+                : 16
+            }
+          ]}>
+            <TouchableOpacity
+              onPress={() => onVitalsViewChange && onVitalsViewChange('anterior')}
+              style={styles.vitalsViewButton}
+            >
+              <Text style={[
+                styles.vitalsViewButtonText,
+                vitalsView === 'anterior' && styles.vitalsViewButtonTextActive
+              ]}>
+                Anterior
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => onVitalsViewChange && onVitalsViewChange('nuevo')}
+              style={styles.vitalsViewButton}
+            >
+              <Text style={[
+                styles.vitalsViewButtonText,
+                vitalsView === 'nuevo' && styles.vitalsViewButtonTextActive
+              ]}>
+                Nuevo
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
         
@@ -240,7 +300,7 @@ const CustomModal = ({
                   </Card.Content>
                 </Card>
 
-                {(isDetailModal || isEditModal) && !(isVitalsModal && isKeyboardVisible) && (
+                {(isDetailModal || (isEditModal && !(isVitalsModal && vitalsView === 'anterior'))) && !(isVitalsModal && isKeyboardVisible) && (
                   <View style={[
                     styles.buttonContainer,
                     isVitalsModal && styles.vitalsButtonContainer,
@@ -326,11 +386,15 @@ const CustomModal = ({
                       styles.titleWrapper,
                       cardMarginTop === 0 && styles.fullScreenTitleWrapper
                     ]}>
-                      <Text style={styles.title}>{resolvedTitle}</Text>
+                      <Text style={styles.title}>
+                        {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
+                      </Text>
                     </View>
                   )}
                   <Card.Content style={styles.cardContent}>
-                    {isVitalsModal && !children ? (
+                    {isVitalsModal && vitalsView === 'anterior' ? (
+                      <VitalsDetails vitalsData={previousVitalsData} />
+                    ) : isVitalsModal && !children ? (
                       <VitalSignsColumns
                         adminUid={vitalsData?.adminUid}
                         area={vitalsData?.area}
@@ -643,6 +707,32 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#5124A5',
     fontWeight: 'bold',
-  }
+  },
+  vitalsViewButtons: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    zIndex: 20000,
+    elevation: 20000,
+  },
+  vitalsViewButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 16,
+    marginHorizontal: 36,
+  },
+  vitalsViewButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: 'normal',
+  },
+  vitalsViewButtonTextActive: {
+    color: '#5124A5',
+    fontWeight: 'normal',
+  },
 });
 
