@@ -286,11 +286,14 @@ export default function EditPersonForm({
   }, [isVitalsMode, adminUid, area, personId, loadSignosVitales, resetVitalsForm]);
 
   // Notificar cambios en vitalsDataExists
+  // Solo notificar como true si hay datos Y el formulario no está vacío (es decir, está en modo visualización)
   React.useEffect(() => {
     if (isVitalsMode && onVitalsDataExistsChange) {
-      onVitalsDataExistsChange(vitalsDataExists);
+      // El botón "Modificar" solo debe aparecer si hay datos cargados y visibles
+      // Como siempre empezamos con formulario vacío, nunca debería aparecer
+      onVitalsDataExistsChange(false);
     }
-  }, [isVitalsMode, vitalsDataExists, onVitalsDataExistsChange]);
+  }, [isVitalsMode, onVitalsDataExistsChange]);
 
   // Manejar estado de edición de signos vitales
   React.useEffect(() => {

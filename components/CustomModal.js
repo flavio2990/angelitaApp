@@ -173,6 +173,7 @@ const CustomModal = ({
                 <Card style={[
                   styles.theCard, 
                   styles.centerCard,
+                  isVitalsModal && styles.vitalsCard,
                   isVitalsModal && { marginTop: 0 }
                 ]}>
                   {resolvedTitle && (
@@ -535,7 +536,7 @@ const styles = StyleSheet.create({
   },
   vitalsCard: {
     width: '95%',
-    maxHeight: height * 0.45,
+    maxHeight: height * 0.55,
     borderRadius: 50,
     marginHorizontal: 'auto',
     marginBottom: -5,

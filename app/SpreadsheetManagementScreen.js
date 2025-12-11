@@ -43,6 +43,8 @@ export default function SpreadsheetManagementScreen() {
   // Función para abrir modal de signos vitales
   const handleOpenSignosVitales = () => {
     setShowSignosVitalesModal(true);
+    // Resetear el estado cuando se abre el modal para asegurar que el botón Modificar no aparezca
+    setHasVitalsData(false);
   };
 
   // Función para guardar signos vitales
