@@ -7,9 +7,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import TopBarHeader from '../components/TopBarHeader';
 import CustomLogButton from '../components/CustomLogButton';
 import CustomModal from '../components/CustomModal';
+import CustomButton from '../components/CustomButton';
 import EditPersonForm from '../components/EditPersonForm';
 import HamburgerMenu from '../components/HamburgerMenu';
 import { useAuth } from '../components/UserContext';
+import { STATUS_MESSAGES, FORM_TEXTS } from '../constants/Strings';
 
 const { height } = Dimensions.get('window');
 
@@ -30,6 +32,8 @@ export default function SpreadsheetManagementScreen() {
   const { patientName, area, personId } = useLocalSearchParams();
   const { user, globalUserRole } = useAuth();
   const [showSignosVitalesModal, setShowSignosVitalesModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Refs para conectar con VitalSignsColumns
   const modifyRef = useRef();
@@ -38,6 +42,16 @@ export default function SpreadsheetManagementScreen() {
   // Función para abrir modal de signos vitales
   const handleOpenSignosVitales = () => {
     setShowSignosVitalesModal(true);
+  };
+
+  // Función para guardar signos vitales
+  const handleSaveVitals = async () => {
+    if (saveRef.current) {
+      const success = await saveRef.current();
+      if (success) {
+        setSaveSuccess(true);
+      }
+    }
   };
 
   return (
@@ -125,9 +139,8 @@ export default function SpreadsheetManagementScreen() {
           topbarMarginTop={80}
           vitalsInfoExtraMargin={20}
           onSavePress={() => {
-            if (saveRef.current) {
-              saveRef.current();
-            }
+            setShowSignosVitalesModal(false);
+            setShowConfirmModal(true);
           }}
           onModifyPress={() => {
             if (modifyRef.current) {
@@ -157,6 +170,48 @@ export default function SpreadsheetManagementScreen() {
             onModify={modifyRef}
             onSave={saveRef}
           />
+        </CustomModal>
+
+        {/* MODAL DE CONFIRMACIÓN */}
+        <CustomModal
+          visible={showConfirmModal}
+          onDismiss={() => {
+            setShowConfirmModal(false);
+            setSaveSuccess(false);
+          }}
+          title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
+          centerCard={true}
+          showHamburgerMenu={false}
+        >
+          <View style={{ alignItems: 'center', padding: 20 }}>
+            {saveSuccess ? (
+              <CustomButton
+                label="OK"
+                onPress={() => {
+                  setShowConfirmModal(false);
+                  setSaveSuccess(false);
+                  setShowSignosVitalesModal(false);
+                }}
+              />
+            ) : (
+              <View style={{ width: '100%', alignItems: 'center' }}>
+                <CustomButton
+                  label="Sí"
+                  onPress={async () => {
+                    await handleSaveVitals();
+                  }}
+                  style={{ marginBottom: 16 }}
+                />
+                <CustomButton
+                  label="No"
+                  onPress={() => {
+                    setShowConfirmModal(false);
+                  }}
+                  buttonColor="#FF6B6B"
+                />
+              </View>
+            )}
+          </View>
         </CustomModal>
       </View>
     </PaperProvider>
