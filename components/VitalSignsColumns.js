@@ -62,7 +62,7 @@ export default function VitalSignsColumns({
     try {
       const signosRef = ref(
         database,
-        `admins/${adminUid}/areas/${area}/personas/${personId}/planillas/signosVitales`
+        `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
       );
       const snapshot = await get(signosRef);
 
@@ -95,7 +95,7 @@ export default function VitalSignsColumns({
     try {
       const signosRef = ref(
         database,
-        `admins/${adminUid}/areas/${area}/personas/${personId}/planillas/signosVitales`
+        `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
       );
 
       const dataToSave = {

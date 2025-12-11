@@ -30,7 +30,7 @@ export default function SpreadsheetManagementScreen() {
   const { patientName, area, personId } = useLocalSearchParams();
   const { user, globalUserRole } = useAuth();
   const [showSignosVitalesModal, setShowSignosVitalesModal] = useState(false);
-  
+
   // Refs para conectar con VitalSignsColumns
   const modifyRef = useRef();
   const saveRef = useRef();
@@ -43,113 +43,121 @@ export default function SpreadsheetManagementScreen() {
   return (
     <PaperProvider theme={theme}>
       <View style={styles.container}>
-      {!showSignosVitalesModal && (
-        <TopBarHeader
-          showTopBar={true}
-          topBarTitle="Planilla"
-          onBack={() => router.back()}
-          centerTopbarTitle={true}
-        />
-      )}
-      
-      {/* HamburgerMenu para la pantalla principal */}
-      {!showSignosVitalesModal && (
-        <HamburgerMenu 
-          position="top-right" 
-          hasTopBar={true}
+        {!showSignosVitalesModal && (
+          <TopBarHeader
+            showTopBar={true}
+            topBarTitle="Planilla"
+            onBack={() => router.back()}
+            centerTopbarTitle={true}
+          />
+        )}
+
+        {/* HamburgerMenu para la pantalla principal */}
+        {!showSignosVitalesModal && (
+          <HamburgerMenu
+            position="top-right"
+            hasTopBar={true}
+            onGoHome={() => {
+              router.push('/');
+            }}
+            showGoHomeOption={true}
+            showInModal={false}
+          />
+        )}
+
+        {/* Nombre del paciente - solo cuando el modal está cerrado */}
+        {!showSignosVitalesModal && (
+          <View style={styles.patientBox}>
+            <Text style={styles.patientText}>_Paciente: {patientName}</Text>
+          </View>
+        )}
+
+        {!showSignosVitalesModal && (
+          <>
+            {/* Botones */}
+            <View style={styles.buttonsGrid}>
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/SV.png')}
+                label="Signos Vitales"
+                color="#e85158"
+                onPress={handleOpenSignosVitales}
+              />
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/MED.png')}
+                label="Medicación"
+                color="#4a9cbb"
+                onPress={() => { }}
+              />
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/ALIM.png')}
+                label="Alimentación"
+                color="#f1a137"
+                onPress={() => { }}
+              />
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/DEPO.png')}
+                label="Deposiciones"
+                color="#549f82"
+                onPress={() => { }}
+              />
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/OBS.png')}
+                label="Observaciones"
+                color="#7d76b3"
+                onPress={() => { }}
+              />
+            </View>
+          </>
+        )}
+
+        {/* Modal de Signos Vitales */}
+        <CustomModal
+          visible={showSignosVitalesModal}
+          onRequestClose={() => setShowSignosVitalesModal(false)}
+          showTopbar={true}
+          topbarTitle="Signos Vitales"
+          centerCard={true}
+          scrollable={true}
+          title="Ingresar Aquí:"
+          isEditModal={true}
+          canEdit={true}
+          offsetWithTopbar={true}
+          topbarMarginTop={80}
+          vitalsInfoExtraMargin={20}
+          onSavePress={() => {
+            if (saveRef.current) {
+              saveRef.current();
+            }
+          }}
+          onModifyPress={() => {
+            if (modifyRef.current) {
+              modifyRef.current();
+            }
+          }}
+          onBack={() => setShowSignosVitalesModal(false)}
           onGoHome={() => {
             router.push('/');
           }}
           showGoHomeOption={true}
-          showInModal={false}
-        />
-      )}
-      
-      {/* Nombre del paciente - solo cuando el modal está cerrado */}
-      {!showSignosVitalesModal && (
-        <View style={styles.patientBox}>
-          <Text style={styles.patientText}>_Paciente: {patientName}</Text>
-        </View>
-      )}
-      
-      {!showSignosVitalesModal && (
-        <>
-          {/* Botones */}
-          <View style={styles.buttonsGrid}>
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/SV.png')}
-          label="Signos Vitales"
-          color="#e85158"
-          onPress={handleOpenSignosVitales}
-        />
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/MED.png')}
-          label="Medicación"
-          color="#4a9cbb"
-          onPress={() => {}}
-        />
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/ALIM.png')}
-          label="Alimentación"
-          color="#f1a137"
-          onPress={() => {}}
-        />
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/DEPO.png')}
-          label="Deposiciones"
-          color="#549f82"
-          onPress={() => {}}
-        />
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/OBS.png')}
-          label="Observaciones"
-          color="#7d76b3"
-          onPress={() => {}}
-        />
-          </View>
-        </>
-      )}
-
-      {/* Modal de Signos Vitales */}
-      <CustomModal
-        visible={showSignosVitalesModal}
-        onRequestClose={() => setShowSignosVitalesModal(false)}
-        showTopbar={true}
-        topbarTitle="Signos Vitales"
-        title="Ingresar Aquí:"
-        isEditModal={true}
-        canEdit={true}
-        offsetWithTopbar={true}
-        topbarMarginTop={80}
-        onSavePress={() => {
-          if (saveRef.current) {
-            saveRef.current();
-          }
-        }}
-        onBack={() => setShowSignosVitalesModal(false)}
-        onGoHome={() => {
-          router.push('/');
-        }}
-        showGoHomeOption={true}
-        cardMarginTop={height * 0.07}
-        isVitalsModal={true}
-        vitalsData={{
-          adminUid: user?.uid,
-          area: area,
-          personId: personId,
-          patientName: patientName
-        }}
-      >
-        <EditPersonForm
-          isVitalsMode={true}
-          adminUid={user?.uid}
-          area={area}
-          personId={personId}
-          visible={showSignosVitalesModal}
-          onModify={modifyRef}
-          onSave={saveRef}
-        />
-      </CustomModal>
+          cardMarginTop={height * 0.07}
+          isVitalsModal={true}
+          vitalsData={{
+            adminUid: user?.uid,
+            area: area,
+            personId: personId,
+            patientName: patientName
+          }}
+        >
+          <EditPersonForm
+            isVitalsMode={true}
+            adminUid={user?.uid}
+            area={area}
+            personId={personId}
+            visible={showSignosVitalesModal}
+            onModify={modifyRef}
+            onSave={saveRef}
+          />
+        </CustomModal>
       </View>
     </PaperProvider>
   );

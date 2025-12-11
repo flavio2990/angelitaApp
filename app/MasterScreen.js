@@ -146,7 +146,7 @@ export default function MasterScreen() {
   // Función para limpiar datos locales cuando se hace logout
   const handleLogout = async () => {
     try {
-      // Limpiar estado local de personas
+      // Limpiar estado local de subjects
       setAsyncPeopleData([]);
       setShowEmployeeList(false);
       setModalAreaVisible(false);
@@ -287,8 +287,8 @@ export default function MasterScreen() {
         createdAt: new Date().toISOString()
       };
 
-      // Guardar en Firebase usando la estructura correcta: areas/{area}/personas/{id}
-      const personRef = ref(database, `admins/${user.uid}/areas/${newPerson.area}/personas/${personId}`);
+      // Guardar en Firebase usando la estructura correcta: areas/{area}/subjects/{id}
+      const personRef = ref(database, `admins/${user.uid}/areas/${newPerson.area}/subjects/${personId}`);
       await set(personRef, personWithId);
 
       // No actualizar AsyncStorage manualmente - el useEffect se encargará de sincronizar
@@ -337,18 +337,18 @@ export default function MasterScreen() {
 
       if (originalArea !== newArea) {
         // Si cambió el área, eliminar del área anterior y crear en la nueva
-        const oldPersonRef = ref(database, `admins/${user.uid}/areas/${originalArea}/personas/${editablePerson.id}`);
+        const oldPersonRef = ref(database, `admins/${user.uid}/areas/${originalArea}/subjects/${editablePerson.id}`);
         await set(oldPersonRef, null); // Eliminar de área anterior
 
         // Crear en nueva área
-        const newPersonRef = ref(database, `admins/${user.uid}/areas/${newArea}/personas/${editablePerson.id}`);
+        const newPersonRef = ref(database, `admins/${user.uid}/areas/${newArea}/subjects/${editablePerson.id}`);
         await set(newPersonRef, {
           ...editablePerson,
           updatedAt: new Date().toISOString()
         });
       } else {
         // Si no cambió el área, solo actualizar
-        const personRef = ref(database, `admins/${user.uid}/areas/${editablePerson.area}/personas/${editablePerson.id}`);
+        const personRef = ref(database, `admins/${user.uid}/areas/${editablePerson.area}/subjects/${editablePerson.id}`);
         await update(personRef, {
           ...editablePerson,
           updatedAt: new Date().toISOString()
@@ -512,8 +512,8 @@ export default function MasterScreen() {
         // Recorrer todas las áreas y extraer las personas
         Object.keys(areasObj).forEach(areaKey => {
           const area = areasObj[areaKey];
-          if (area.personas) {
-            const areaPeople = Object.values(area.personas);
+          if (area.subjects) {
+            const areaPeople = Object.values(area.subjects);
             allPeople = [...allPeople, ...areaPeople];
           }
         });

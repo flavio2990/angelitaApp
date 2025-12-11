@@ -21,9 +21,9 @@ const VITALS_INITIAL_VALUES = {
   taSystolic: '',
   taDiastolic: '',
   heartRate: '',
+  respiratoryRate: '',
   spo2: '',
   temperature: '',
-  glucose: '',
 };
 
 const formatNumericInput = (text) => {
@@ -185,7 +185,7 @@ export default function EditPersonForm({
     try {
       const signosRef = ref(
         database,
-        `admins/${adminUid}/areas/${area}/personas/${personId}/planillas/signosVitales`
+        `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
       );
       const snapshot = await get(signosRef);
 
@@ -195,9 +195,9 @@ export default function EditPersonForm({
           taSystolic: data.taSystolic || '',
           taDiastolic: data.taDiastolic || '',
           heartRate: data.heartRate || '',
+          respiratoryRate: data.respiratoryRate || '',
           spo2: data.spo2 || '',
           temperature: data.temperature || '',
-          glucose: data.glucose || '',
         });
         setVitalsDataExists(true);
         setIsVitalsEditing(false);
@@ -210,21 +210,21 @@ export default function EditPersonForm({
   }, [isVitalsMode, adminUid, area, personId, resetVitalsForm]);
 
   const saveSignosVitales = React.useCallback(async () => {
-    if (!isVitalsMode || !adminUid || !area || !personId) return;
+    if (!isVitalsMode || !adminUid || !area || !personId) return false;
 
     try {
       const signosRef = ref(
         database,
-        `admins/${adminUid}/areas/${area}/personas/${personId}/planillas/signosVitales`
+        `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
       );
 
       const dataToSave = {
         taSystolic: vitalsFormValues.taSystolic,
         taDiastolic: vitalsFormValues.taDiastolic,
         heartRate: vitalsFormValues.heartRate,
+        respiratoryRate: vitalsFormValues.respiratoryRate,
         spo2: vitalsFormValues.spo2,
         temperature: vitalsFormValues.temperature,
-        glucose: vitalsFormValues.glucose,
         updatedAt: new Date().toISOString(),
         updatedBy: adminUid,
       };
@@ -242,8 +242,10 @@ export default function EditPersonForm({
 
       setIsVitalsEditing(false);
       Keyboard.dismiss();
+      return true;
     } catch (error) {
       console.error('Error saving vital signs:', error);
+      return false;
     }
   }, [isVitalsMode, adminUid, area, personId, vitalsFormValues, vitalsDataExists]);
 
@@ -294,7 +296,7 @@ export default function EditPersonForm({
       }
       if (onSave) {
         onSave.current = async () => {
-          await saveSignosVitales();
+          return await saveSignosVitales();
         };
       }
     }
@@ -363,6 +365,16 @@ export default function EditPersonForm({
             />
             <TextInput
               mode="outlined"
+              label={VITALS_TEXTS.fields.respiratoryRate}
+              value={vitalsFormValues.respiratoryRate}
+              onChangeText={handleVitalsChange('respiratoryRate')}
+              keyboardType="numeric"
+              style={styles.styleInput}
+              dense={false}
+              editable={isVitalsEditing}
+            />
+            <TextInput
+              mode="outlined"
               label={VITALS_TEXTS.fields.spo2}
               value={vitalsFormValues.spo2}
               onChangeText={handleVitalsChange('spo2')}
@@ -377,16 +389,6 @@ export default function EditPersonForm({
               value={vitalsFormValues.temperature}
               onChangeText={handleVitalsChange('temperature', true)}
               keyboardType="decimal-pad"
-              style={styles.styleInput}
-              dense={false}
-              editable={isVitalsEditing}
-            />
-            <TextInput
-              mode="outlined"
-              label={VITALS_TEXTS.fields.glucose}
-              value={vitalsFormValues.glucose}
-              onChangeText={handleVitalsChange('glucose')}
-              keyboardType="numeric"
               style={styles.styleInput}
               dense={false}
               editable={isVitalsEditing}

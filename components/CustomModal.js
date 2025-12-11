@@ -20,7 +20,8 @@ import {
 import TopBarHeader from '@/components/TopBarHeader';
 import HamburgerMenu from './HamburgerMenu';
 import VitalSignsColumns from './VitalSignsColumns';
-import { VITALS_TEXTS } from '../constants/Strings';
+import CustomButton from './CustomButton';
+import { VITALS_TEXTS, FORM_TEXTS } from '../constants/Strings';
 
 const { width, height } = Dimensions.get('window');
 
@@ -159,11 +160,19 @@ const CustomModal = ({
             <View style={styles.flex}>
               <View style={[
                 styles.modalContent, 
-                styles.centerModalContent
+                styles.centerModalContent,
+                isVitalsModal && { 
+                  justifyContent: 'flex-start',
+                  paddingBottom: 0,
+                  paddingTop: showTopbar 
+                    ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
+                    : 110
+                }
               ]}>
                 <Card style={[
                   styles.theCard, 
-                  styles.centerCard
+                  styles.centerCard,
+                  isVitalsModal && { marginTop: 0 }
                 ]}>
                   {resolvedTitle && (
                     <View style={styles.titleWrapper}>
@@ -228,6 +237,68 @@ const CustomModal = ({
                     )}
                   </Card.Content>
                 </Card>
+
+                {(isDetailModal || isEditModal) && !(isVitalsModal && isKeyboardVisible) && (
+                  <View style={[
+                    styles.buttonContainer,
+                    isVitalsModal && styles.vitalsButtonContainer,
+                    isVitalsModal && { position: 'absolute', bottom: 0, left: 0, right: 0 }
+                  ]}>
+                    {isDetailModal && (
+                      <>
+                        {canEdit && (
+                          <Button
+                            mode="contained"
+                            onPress={onModifyPress}
+                            style={styles.detailButton}
+                            labelStyle={styles.detailButtonLabel}
+                            buttonColor="#5124A5"
+                          >
+                            Modificar
+                          </Button>
+                        )}
+                        <Button
+                          mode="contained"
+                          onPress={onGoToPlanPress}
+                          style={styles.detailButton}
+                          labelStyle={styles.detailButtonLabel}
+                          buttonColor="#5124A5"
+                        >
+                          Ir a planilla
+                        </Button>
+                      </>
+                    )}
+                    {isEditModal && canEdit && (
+                      <>
+                        {isVitalsModal ? (
+                          <>
+                            {onModifyPress && (
+                              <CustomButton
+                                onPress={onModifyPress}
+                                label={FORM_TEXTS.editButton}
+                                style={{ marginBottom: 15 }}
+                              />
+                            )}
+                            <CustomButton
+                              onPress={onSavePress}
+                              label={FORM_TEXTS.saveButton}
+                            />
+                          </>
+                        ) : (
+                          <Button
+                            mode="contained"
+                            onPress={onSavePress}
+                            style={styles.detailButton}
+                            labelStyle={styles.detailButtonLabel}
+                            buttonColor="#5124A5"
+                          >
+                            {FORM_TEXTS.saveButton}
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </View>
+                )}
               </View>
             </View>
           ) : (
@@ -239,7 +310,8 @@ const CustomModal = ({
               <View style={[
                 styles.modalContent,
                 cardMarginTop === 0 && !showTopbar && styles.fullScreenModalContent,
-                showTopbar && offsetWithTopbar && topbarMarginTop !== undefined && { paddingTop: topbarMarginTop }
+                showTopbar && offsetWithTopbar && topbarMarginTop !== undefined && { paddingTop: topbarMarginTop },
+                isVitalsModal && { paddingBottom: 20 }
               ]}>
                 <Card style={[
                   styles.theCard, 
@@ -315,7 +387,10 @@ const CustomModal = ({
                 </Card>
 
                 {(isDetailModal || isEditModal) && (
-                  <View style={styles.buttonContainer}>
+                  <View style={[
+                    styles.buttonContainer,
+                    isVitalsModal && styles.vitalsButtonContainer
+                  ]}>
                     {isDetailModal && (
                       <>
                         {canEdit && (
@@ -341,15 +416,33 @@ const CustomModal = ({
                       </>
                     )}
                     {isEditModal && canEdit && (
-                      <Button
-                        mode="contained"
-                        onPress={onSavePress}
-                        style={styles.detailButton}
-                        labelStyle={styles.detailButtonLabel}
-                        buttonColor="#5124A5"
-                      >
-                        Guardar
-                      </Button>
+                      <>
+                        {isVitalsModal ? (
+                          <>
+                            {onModifyPress && (
+                              <CustomButton
+                                onPress={onModifyPress}
+                                label={FORM_TEXTS.editButton}
+                                style={{ marginBottom: 15 }}
+                              />
+                            )}
+                            <CustomButton
+                              onPress={onSavePress}
+                              label={FORM_TEXTS.saveButton}
+                            />
+                          </>
+                        ) : (
+                          <Button
+                            mode="contained"
+                            onPress={onSavePress}
+                            style={styles.detailButton}
+                            labelStyle={styles.detailButtonLabel}
+                            buttonColor="#5124A5"
+                          >
+                            {FORM_TEXTS.saveButton}
+                          </Button>
+                        )}
+                      </>
                     )}
                   </View>
                 )}
@@ -440,9 +533,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   vitalsCard: {
-    width: '92%',
-    maxWidth: 420,
-    borderRadius: 40,
+    width: '95%',
+    maxHeight: height * 0.45,
+    borderRadius: 50,
+    marginHorizontal: 'auto',
+    marginBottom: -5,
+    marginTop: height * 0.25,
   },
   cardContent: {
     justifyContent: 'center',
@@ -497,6 +593,18 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     backgroundColor: 'transparent',
+    zIndex: 10002,
+    elevation: 10002,
+  },
+  vitalsButtonContainer: {
+    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 20,
+    marginTop: 0,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
   },
   outsideActionsContainer: {
     position: 'absolute',
@@ -527,6 +635,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10001,
     elevation: 10001,
+    marginBottom: 16,
   },
   patientTextModal: {
     fontSize: 24,

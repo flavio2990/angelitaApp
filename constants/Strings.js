@@ -168,8 +168,8 @@ export const VITALS_TEXTS = {
     taSystolic: "TA (Sist.)",
     taDiastolic: "TA (Diast.)",
     heartRate: "FC (lpm)",
+    respiratoryRate: "FR/min",
     spo2: "SpO₂ %",
     temperature: "T°C",
-    glucose: "Glu (mg/dL)",
   },
 };
