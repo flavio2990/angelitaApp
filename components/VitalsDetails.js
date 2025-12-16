@@ -9,7 +9,7 @@ export default function VitalsDetails({ vitalsData }) {
     );
   }
 
-  // Formatear fecha y hora
+  // Formatear fecha según el diseño: "Realizado el 12/2/2025"
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -24,42 +24,49 @@ export default function VitalsDetails({ vitalsData }) {
     }
   };
 
+  // Formatear hora según el diseño: "10: 23 am"
   const formatTime = (dateString) => {
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
-      return date.toLocaleTimeString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      const displayHours = hours % 12 || 12;
+      const displayMinutes = minutes.toString().padStart(2, '0');
+      return `${displayHours}: ${displayMinutes} ${ampm}`;
     } catch (e) {
       return dateString;
     }
   };
 
+  // Usar solo createdAt según los requerimientos
+  const displayDate = vitalsData.createdAt;
+  const displayBy = vitalsData.createdBy || 'N/A';
+
   return (
     <View style={styles.container}>
-      {/* Fecha de realizado */}
+      {/* Realizado el */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_Fecha de realizado:</Text>
+        <Text style={styles.detailsModal}>Realizado el</Text>
         <Text style={styles.dynamicText}>
-          {formatDate(vitalsData.updatedAt || vitalsData.createdAt)}
+          {displayDate ? formatDate(displayDate) : 'N/A'}
         </Text>
       </View>
 
-      {/* Hora de realizado */}
+      {/* Realizado a las */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_Hora de realizado:</Text>
+        <Text style={styles.detailsModal}>Realizado a las:</Text>
         <Text style={styles.dynamicText}>
-          {formatTime(vitalsData.updatedAt || vitalsData.createdAt)}
+          {displayDate ? formatTime(displayDate) : 'N/A'}
         </Text>
       </View>
 
-      {/* Por quien */}
-      <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_Por quien:</Text>
-        <Text style={styles.dynamicText}>
-          {vitalsData.updatedBy || vitalsData.createdBy || 'N/A'}
+      {/* Ingresado por */}
+      <View style={styles.detailsRowWrap}>
+        <Text style={styles.detailsModal}>Ingresado por:</Text>
+        <Text style={styles.dynamicTextWrap}>
+          {displayBy}
         </Text>
       </View>
 
@@ -68,23 +75,23 @@ export default function VitalsDetails({ vitalsData }) {
 
       {/* TA Sistólica */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_TA (Sist.):</Text>
+        <Text style={styles.detailsModal}>_TA(Sist):</Text>
         <Text style={styles.dynamicText}>
-          {vitalsData.taSystolic || 'N/A'}
+          {vitalsData.taSystolic ? `${vitalsData.taSystolic} mmHg` : 'N/A'}
         </Text>
       </View>
 
       {/* TA Diastólica */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_TA (Diast.):</Text>
+        <Text style={styles.detailsModal}>_TA(Diast):</Text>
         <Text style={styles.dynamicText}>
-          {vitalsData.taDiastolic || 'N/A'}
+          {vitalsData.taDiastolic ? `${vitalsData.taDiastolic} mmHg` : 'N/A'}
         </Text>
       </View>
 
       {/* FC */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_FC:</Text>
+        <Text style={styles.detailsModal}>_FC(Ipm):</Text>
         <Text style={styles.dynamicText}>
           {vitalsData.heartRate || 'N/A'}
         </Text>
@@ -92,7 +99,7 @@ export default function VitalsDetails({ vitalsData }) {
 
       {/* FR */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_FR:</Text>
+        <Text style={styles.detailsModal}>_FR/min:</Text>
         <Text style={styles.dynamicText}>
           {vitalsData.respiratoryRate || 'N/A'}
         </Text>
@@ -100,7 +107,7 @@ export default function VitalsDetails({ vitalsData }) {
 
       {/* SpO2 */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_SpO₂:</Text>
+        <Text style={styles.detailsModal}>_SpO2%:</Text>
         <Text style={styles.dynamicText}>
           {vitalsData.spo2 || 'N/A'}
         </Text>
@@ -108,7 +115,7 @@ export default function VitalsDetails({ vitalsData }) {
 
       {/* Temp */}
       <View style={styles.detailsRow}>
-        <Text style={styles.detailsModal}>_Temp:</Text>
+        <Text style={styles.detailsModal}>_T °C:</Text>
         <Text style={styles.dynamicText}>
           {vitalsData.temperature || 'N/A'}
         </Text>
@@ -121,13 +128,19 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'flex-start',
     width: '100%',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   detailsRow: {
     flexDirection: 'row',
     width: '100%',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  detailsRowWrap: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
   },
   detailsModal: {
     fontSize: 18,
@@ -138,7 +151,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#0a0a1e',
     fontWeight: 'regular',
+  },
+  dynamicTextWrap: {
+    fontSize: 18,
+    color: '#0a0a1e',
+    fontWeight: 'regular',
     flex: 1,
+    flexWrap: 'wrap',
   },
   separator: {
     width: '100%',
@@ -155,4 +174,3 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 });
-

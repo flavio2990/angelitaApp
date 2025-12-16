@@ -232,17 +232,22 @@ const CustomModal = ({
               ]}>
                 <Card style={[
                   styles.theCard, 
-                  styles.centerCard,
-                  isVitalsModal && styles.vitalsCard,
+                  !(isVitalsModal && vitalsView === 'anterior') && styles.centerCard,
+                  isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
+                  isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
                   isVitalsModal && { marginTop: 0 }
                 ]}>
                   {resolvedTitle && (
                     <View style={styles.titleWrapper}>
-                      <Text style={styles.title}>{resolvedTitle}</Text>
+                      <Text style={styles.title}>
+                        {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
+                      </Text>
                     </View>
                   )}
                   <Card.Content style={styles.cardContent}>
-                    {isVitalsModal && !children ? (
+                    {isVitalsModal && vitalsView === 'anterior' ? (
+                      <VitalsDetails vitalsData={previousVitalsData} />
+                    ) : isVitalsModal && !children ? (
                       <VitalSignsColumns
                         adminUid={vitalsData?.adminUid}
                         area={vitalsData?.area}
@@ -379,7 +384,8 @@ const CustomModal = ({
                   styles.theCard, 
                   cardMarginTop !== undefined && { marginTop: cardMarginTop },
                   cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
-                  isVitalsModal && styles.vitalsCard
+                  isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
+                  isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew
                 ]}>
                   {resolvedTitle && (
                     <View style={[
@@ -598,13 +604,28 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     alignSelf: 'center',
   },
-  vitalsCard: {
+  vitalsCardDetails: {
+    maxHeight: height * 0.9,
+    minHeight: height * 0.7,
     width: '95%',
+  },
+  vitalsCard: {
+    width: width - 20, // Ancho completo menos un pequeño margen
     maxHeight: height * 0.55,
+    borderRadius: 50,
+    marginHorizontal: 10,
+    marginBottom: -5,
+    marginTop: height * 0.25,
+    alignSelf: 'center',
+  },
+  vitalsCardNew: {
+    width: '95%',
+    maxHeight: height * 0.6,
     borderRadius: 50,
     marginHorizontal: 'auto',
     marginBottom: -5,
     marginTop: height * 0.25,
+    alignSelf: 'center',
   },
   cardContent: {
     justifyContent: 'center',
