@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DatePicker from 'react-native-date-picker';
 import { FORM_TEXTS, PERSON_TYPE_TEXTS, VITALS_TEXTS } from '../constants/Strings';
-import { ref, set, update, get } from 'firebase/database';
+import { ref, set, update, get, push } from 'firebase/database';
 import { database } from '../env/firebase';
 
 const VITALS_INITIAL_VALUES = {
@@ -209,7 +209,21 @@ export default function EditPersonForm({
   }, [isVitalsMode, adminUid, area, personId, resetVitalsForm]);
 
   const saveSignosVitales = React.useCallback(async () => {
-    if (!isVitalsMode || !adminUid || !area || !personId) return false;
+    if (!isVitalsMode || !adminUid || !area || !personId) {
+      return false;
+    }
+
+    // Validar que al menos un campo tenga datos (verificar que no esté vacío o solo espacios)
+    const hasData = (vitalsFormValues.taSystolic && vitalsFormValues.taSystolic.trim() !== '') || 
+                    (vitalsFormValues.taDiastolic && vitalsFormValues.taDiastolic.trim() !== '') || 
+                    (vitalsFormValues.heartRate && vitalsFormValues.heartRate.trim() !== '') || 
+                    (vitalsFormValues.respiratoryRate && vitalsFormValues.respiratoryRate.trim() !== '') || 
+                    (vitalsFormValues.spo2 && vitalsFormValues.spo2.trim() !== '') || 
+                    (vitalsFormValues.temperature && vitalsFormValues.temperature.trim() !== '');
+    
+    if (!hasData) {
+      return false;
+    }
 
     try {
       const signosRef = ref(
@@ -217,45 +231,36 @@ export default function EditPersonForm({
         `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
       );
 
-      const dataToSave = {
-        taSystolic: vitalsFormValues.taSystolic,
-        taDiastolic: vitalsFormValues.taDiastolic,
-        heartRate: vitalsFormValues.heartRate,
-        respiratoryRate: vitalsFormValues.respiratoryRate,
-        spo2: vitalsFormValues.spo2,
-        temperature: vitalsFormValues.temperature,
+      // Siempre crear un NUEVO registro usando push() para mantener el historial
+      const newRecord = {
+        taSystolic: vitalsFormValues.taSystolic || '',
+        taDiastolic: vitalsFormValues.taDiastolic || '',
+        heartRate: vitalsFormValues.heartRate || '',
+        respiratoryRate: vitalsFormValues.respiratoryRate || '',
+        spo2: vitalsFormValues.spo2 || '',
+        temperature: vitalsFormValues.temperature || '',
+        createdAt: new Date().toISOString(),
+        createdBy: adminUid,
         updatedAt: new Date().toISOString(),
         updatedBy: adminUid,
+        personId: personId, // Agregar personId al registro
       };
 
-      // Siempre actualizar los datos existentes si ya existen
-      // Si no existen, crear nuevos
-      if (!vitalsDataExists) {
-        await set(signosRef, {
-          ...dataToSave,
-          createdAt: new Date().toISOString(),
-          createdBy: adminUid,
-        });
-        setVitalsDataExists(true);
-      } else {
-        // Actualizar manteniendo createdAt y createdBy originales
-        const snapshot = await get(signosRef);
-        const existingData = snapshot.exists() ? snapshot.val() : {};
-        await update(signosRef, {
-          ...dataToSave,
-          createdAt: existingData.createdAt || new Date().toISOString(),
-          createdBy: existingData.createdBy || adminUid,
-        });
-      }
+      // Usar push() para crear un nuevo registro sin sobrescribir los anteriores
+      await push(signosRef, newRecord);
 
+      // NO resetear el formulario aquí - se reseteará cuando se cierre el modal
+      // Esto permite que el usuario vea lo que guardó antes de cerrar
+      setVitalsDataExists(true); // Ahora hay datos guardados
       setIsVitalsEditing(false);
       Keyboard.dismiss();
+      
       return true;
     } catch (error) {
       console.error('Error saving vital signs:', error);
       return false;
     }
-  }, [isVitalsMode, adminUid, area, personId, vitalsFormValues, vitalsDataExists]);
+  }, [isVitalsMode, adminUid, area, personId, vitalsFormValues]);
 
   React.useEffect(() => {
     if (isAdding && selectedArea && !person?.area) {
@@ -300,9 +305,12 @@ export default function EditPersonForm({
     if (isVitalsMode) {
       if (!visible) {
         setIsVitalsEditing(false);
-        // Resetear solo los valores del formulario cuando se cierra el modal
-        // No resetear vitalsDataExists para mantener la lógica de actualización
-        setVitalsFormValues(VITALS_INITIAL_VALUES);
+        // Resetear solo los valores del formulario cuando se cierra el modal completamente
+        // Usar un pequeño delay para asegurar que el guardado se complete primero
+        const resetTimer = setTimeout(() => {
+          setVitalsFormValues(VITALS_INITIAL_VALUES);
+        }, 500);
+        return () => clearTimeout(resetTimer);
       } else {
         // Siempre empezar en modo edición cuando se abre el modal
         setIsVitalsEditing(true);

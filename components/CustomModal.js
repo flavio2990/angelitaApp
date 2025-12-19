@@ -3,7 +3,7 @@ import {
   Modal as PaperModal, 
   Portal, 
   Button, 
-  Card
+  Card 
 } from 'react-native-paper';
 import { 
   View, 
@@ -24,8 +24,8 @@ import HamburgerMenu from './HamburgerMenu';
 import VitalSignsColumns from './VitalSignsColumns';
 import CustomButton from './CustomButton';
 import VitalsDetails from './VitalsDetails';
-import { Calendar } from 'react-native-calendars';
 import { VITALS_TEXTS, FORM_TEXTS } from '../constants/Strings';
+import { Calendar } from 'react-native-calendars';
 
 const { width, height } = Dimensions.get('window');
 
@@ -66,12 +66,14 @@ const CustomModal = ({
   vitalsView = 'nuevo',
   onVitalsViewChange = null,
   previousVitalsData = null,
+  vitalsHistoryByDate = {},
   onViewHistory = null,
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [showHistoryCalendar, setShowHistoryCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [historySelectedData, setHistorySelectedData] = useState(null);
+  const [historySelectionAttempted, setHistorySelectionAttempted] = useState(false);
   const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : title;
 
   useEffect(() => {
@@ -94,49 +96,49 @@ const CustomModal = ({
     };
   }, []);
 
-  // Reset calendar view when modal closes or vitalsView changes
+  // Reset calendario al cerrar o cambiar de vista
   useEffect(() => {
     if (!visible || vitalsView !== 'anterior') {
       setShowHistoryCalendar(false);
+      setHistorySelectedData(null);
+      setHistorySelectionAttempted(false);
     }
   }, [visible, vitalsView]);
 
-  const normalizeDate = (date) => {
-    const d = new Date(date);
-    return d.toISOString().split('T')[0];
-  };
-
   const handleViewHistory = () => {
     setShowHistoryCalendar(true);
-    // reset selection to today
-    setSelectedDate(new Date());
+    setSelectedDate(previousVitalsData?.createdAt ? new Date(previousVitalsData.createdAt) : new Date());
     setHistorySelectedData(null);
-    if (onViewHistory) {
-      onViewHistory();
-    }
+    setHistorySelectionAttempted(false);
+    if (onViewHistory) onViewHistory();
   };
 
   const handleDayPress = (day) => {
-    const picked = new Date(day.dateString);
+    const pickedKey = day.dateString; // YYYY-MM-DD
+    const picked = new Date(pickedKey);
     setSelectedDate(picked);
-    const pickedKey = day.dateString;
-    // validar contra los datos actuales (placeholder; idealmente se debería pedir al backend por fecha)
-    if (previousVitalsData?.createdAt) {
-      const dataKey = normalizeDate(previousVitalsData.createdAt);
-      if (dataKey === pickedKey) {
-        setHistorySelectedData(previousVitalsData);
-        setShowHistoryCalendar(false); // cerrar calendario y mostrar la ficha
+    setHistorySelectionAttempted(true);
+
+    // Buscar en el mapa de histórico usando la fecha como clave
+    const recordForDate = vitalsHistoryByDate[pickedKey];
+
+    if (recordForDate && vitalsData?.personId) {
+      // Validar que el registro pertenezca al subject actual
+      if (recordForDate.personId === vitalsData.personId) {
+        setHistorySelectedData(recordForDate);
+        setShowHistoryCalendar(false); // Cerrar calendario y mostrar los datos
         return;
       }
     }
+
+    // No se encontró data para esta fecha
     setHistorySelectedData(null);
     Alert.alert(
       'Signos y Constantes',
-      'No hay datos de signos vitales disponibles para la fecha seleccionada',
+      'No hay datos de signos vitales disponibles para la fecha seleccionada.',
       [{ text: 'OK' }]
     );
   };
-
   return (
     <Portal>
       <PaperModal
@@ -297,7 +299,7 @@ const CustomModal = ({
                   <Card.Content style={styles.cardContent}>
                     {isVitalsModal && vitalsView === 'anterior' ? (
                       showHistoryCalendar ? (
-                        <View style={{ width: '100%' }}>
+                        <View style={{ width: '100%', gap: 12 }}>
                           <Calendar
                             current={selectedDate.toISOString().split('T')[0]}
                             onDayPress={handleDayPress}
@@ -373,17 +375,14 @@ const CustomModal = ({
                   </Card.Content>
                 </Card>
 
-                {isVitalsModal && vitalsView === 'anterior' && !isKeyboardVisible && (previousVitalsData || hasVitalsData) && (
-                  <View style={[
-                    styles.vitalsButtonContainer,
-                    { position: 'absolute', bottom: 0, left: 0, right: 0 }
-                  ]}>
-                    <CustomButton
-                      onPress={handleViewHistory}
-                      label={VITALS_TEXTS.viewHistoryButton}
-                    />
-                  </View>
-                )}
+              {isVitalsModal && vitalsView === 'anterior' && !isKeyboardVisible && (previousVitalsData || hasVitalsData) && (
+                <View style={[styles.buttonContainer, styles.vitalsButtonContainer, styles.viewHistoryWrapper]}>
+                  <CustomButton
+                    onPress={handleViewHistory}
+                    label="Ver Histórico"
+                  />
+                </View>
+              )}
 
                 {(isDetailModal || (isEditModal && !(isVitalsModal && vitalsView === 'anterior'))) && !(isVitalsModal && isKeyboardVisible) && (
                   <View style={[
@@ -479,25 +478,7 @@ const CustomModal = ({
                   )}
                   <Card.Content style={styles.cardContent}>
                     {isVitalsModal && vitalsView === 'anterior' ? (
-                      showHistoryCalendar ? (
-                        <Calendar
-                          current={selectedDate.toISOString().split('T')[0]}
-                          onDayPress={(day) => {
-                            setSelectedDate(new Date(day.dateString));
-                          }}
-                          markedDates={{
-                            [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#5124A5' }
-                          }}
-                          style={styles.calendar}
-                          theme={{
-                            selectedDayBackgroundColor: '#5124A5',
-                            todayTextColor: '#5124A5',
-                            arrowColor: '#5124A5',
-                          }}
-                        />
-                      ) : (
-                        <VitalsDetails vitalsData={previousVitalsData} />
-                      )
+                      <VitalsDetails vitalsData={previousVitalsData} />
                     ) : isVitalsModal && !children ? (
                       <VitalSignsColumns
                         adminUid={vitalsData?.adminUid}
@@ -555,18 +536,6 @@ const CustomModal = ({
                     )}
                   </Card.Content>
                 </Card>
-
-                {isVitalsModal && vitalsView === 'anterior' && !isKeyboardVisible && (previousVitalsData || hasVitalsData) && (
-                  <View style={[
-                    styles.vitalsButtonContainer,
-                    { position: 'absolute', bottom: 0, left: 0, right: 0 }
-                  ]}>
-                    <CustomButton
-                      onPress={handleViewHistory}
-                      label={VITALS_TEXTS.viewHistoryButton}
-                    />
-                  </View>
-                )}
 
                 {(isDetailModal || isEditModal) && (
                   <View style={[
@@ -808,18 +777,22 @@ const styles = StyleSheet.create({
   },
   noDataContainer: {
     width: '100%',
-    paddingVertical: 24,
-    paddingHorizontal: 24,
+    paddingVertical: 16,
     alignItems: 'center',
   },
   noDataText: {
-    fontSize: 18,
-    color: '#777',
+    fontSize: 16,
+    color: '#666',
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  calendar: {
+  viewHistoryWrapper: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
     width: '100%',
+    paddingHorizontal: 20,
   },
   outsideActionsContainer: {
     position: 'absolute',
@@ -884,3 +857,4 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
   },
 });
+

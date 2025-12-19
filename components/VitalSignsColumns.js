@@ -20,13 +20,13 @@ const sanitizeValue = (value, allowDecimal = false) => {
     const parts = sanitized.split('.');
     if (parts.length > 2) {
       return `${parts[0]}.${parts[1]}`;
-    }
+  }
     return sanitized;
   }
   return value.replace(/[^0-9]/g, '');
 };
 
-export default function VitalSignsColumns({
+export default function VitalSignsColumns({ 
   adminUid,
   area,
   personId,
@@ -57,7 +57,7 @@ export default function VitalSignsColumns({
 
   const loadSignosVitales = useCallback(async () => {
     if (!adminUid || !area || !personId) return;
-
+    
     setIsLoading(true);
     try {
       const signosRef = ref(
@@ -65,7 +65,7 @@ export default function VitalSignsColumns({
         `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
       );
       const snapshot = await get(signosRef);
-
+      
       if (snapshot.exists()) {
         const data = snapshot.val();
         setFormValues({
@@ -90,14 +90,14 @@ export default function VitalSignsColumns({
 
   const saveSignosVitales = useCallback(async () => {
     if (!adminUid || !area || !personId) return;
-
+    
     setIsSaving(true);
     try {
       const signosRef = ref(
         database,
         `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
       );
-
+      
       const dataToSave = {
         taSystolic: formValues.taSystolic,
         taDiastolic: formValues.taDiastolic,
@@ -146,10 +146,10 @@ export default function VitalSignsColumns({
   }, [visible, dataExists]);
 
   useEffect(() => {
-    if (onModify) {
+      if (onModify) {
       onModify.current = () => setIsEditing(true);
-    }
-    if (onSave) {
+      }
+      if (onSave) {
       onSave.current = async () => {
         await saveSignosVitales();
       };
@@ -162,7 +162,7 @@ export default function VitalSignsColumns({
 
   const inputEditable = isEditing && !isLoading && !isSaving;
 
-  return (
+    return (
     <ScrollView
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
@@ -187,21 +187,21 @@ export default function VitalSignsColumns({
           style={styles.input}
           editable={inputEditable}
         />
-        <TextInput
+            <TextInput
           mode="outlined"
           label={VITALS_TEXTS.fields.heartRate}
           value={formValues.heartRate}
           onChangeText={handleChange('heartRate')}
-          keyboardType="number-pad"
+              keyboardType="number-pad"
           style={styles.input}
           editable={inputEditable}
         />
-        <TextInput
+            <TextInput
           mode="outlined"
           label={VITALS_TEXTS.fields.spo2}
           value={formValues.spo2}
           onChangeText={handleChange('spo2')}
-          keyboardType="number-pad"
+              keyboardType="number-pad"
           style={styles.input}
           editable={inputEditable}
         />
@@ -214,17 +214,17 @@ export default function VitalSignsColumns({
           style={styles.input}
           editable={inputEditable}
         />
-        <TextInput
+            <TextInput
           mode="outlined"
           label={VITALS_TEXTS.fields.glucose}
           value={formValues.glucose}
           onChangeText={handleChange('glucose')}
-          keyboardType="number-pad"
+              keyboardType="number-pad"
           style={styles.input}
           editable={inputEditable}
         />
       </View>
-    </ScrollView>
+        </ScrollView>
   );
 }
 
