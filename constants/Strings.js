@@ -1,7 +1,7 @@
 ﻿// ===== TÍTULOS DE TARJETAS =====
 export const CARD_TITLES = {
   selectArea: "Seleccione Área",
-  selectTipe: "Seleccione: ",
+  selectTipe: "Seleccionar de ",
 };
 
 // ===== OPCIONES DE ÁREAS =====
@@ -157,4 +157,21 @@ export const VALIDATION_TEXTS = {
   cancelText: "Cancelar",
   yesText: "Sí",
   noText: "No",
+};
+
+// ===== TEXTO DE SIGNOS VITALES =====
+export const VITALS_TEXTS = {
+  formTitle: "Ingresar Aquí:",
+  headerColumns: "Ingresar Aquí:",
+  patientLabelPrefix: "_Paciente:",
+  viewHistoryButton: "Ver Histórico",
+  cancelHistoryButton: "Cancelar",
+  fields: {
+    taSystolic: "TA (Sist.)",
+    taDiastolic: "TA (Diast.)",
+    heartRate: "FC (lpm)",
+    respiratoryRate: "FR/min",
+    spo2: "SpO₂ %",
+    temperature: "T°C",
+  },
 };
