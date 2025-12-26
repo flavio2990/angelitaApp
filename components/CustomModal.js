@@ -113,9 +113,30 @@ const CustomModal = ({
     if (onViewHistory) onViewHistory();
   };
 
+  const handleCancelHistory = () => {
+    setShowHistoryCalendar(false);
+    setHistorySelectedData(null);
+    setHistorySelectionAttempted(false);
+  };
+
   const handleDayPress = (day) => {
     const pickedKey = day.dateString; // YYYY-MM-DD
     const picked = new Date(pickedKey);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const pickedDate = new Date(picked);
+    pickedDate.setHours(0, 0, 0, 0);
+
+    // Validar que la fecha seleccionada no sea futura
+    if (pickedDate > today) {
+      Alert.alert(
+        'Signos y Constantes',
+        'No se pueden seleccionar fechas futuras.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     setSelectedDate(picked);
     setHistorySelectionAttempted(true);
 
@@ -302,6 +323,7 @@ const CustomModal = ({
                         <View style={{ width: '100%', gap: 12 }}>
                           <Calendar
                             current={selectedDate.toISOString().split('T')[0]}
+                            maxDate={new Date().toISOString().split('T')[0]}
                             onDayPress={handleDayPress}
                             markedDates={{
                               [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#5124A5' }
@@ -311,6 +333,7 @@ const CustomModal = ({
                               selectedDayBackgroundColor: '#5124A5',
                               todayTextColor: '#5124A5',
                               arrowColor: '#5124A5',
+                              textDisabledColor: '#d3d3d3',
                             }}
                           />
                         </View>
@@ -378,8 +401,8 @@ const CustomModal = ({
               {isVitalsModal && vitalsView === 'anterior' && !isKeyboardVisible && (previousVitalsData || hasVitalsData) && (
                 <View style={[styles.buttonContainer, styles.vitalsButtonContainer, styles.viewHistoryWrapper]}>
                   <CustomButton
-                    onPress={handleViewHistory}
-                    label="Ver Histórico"
+                    onPress={showHistoryCalendar ? handleCancelHistory : handleViewHistory}
+                    label={showHistoryCalendar ? VITALS_TEXTS.cancelHistoryButton : VITALS_TEXTS.viewHistoryButton}
                   />
                 </View>
               )}

@@ -165,6 +165,7 @@ export const VITALS_TEXTS = {
   headerColumns: "Ingresar Aquí:",
   patientLabelPrefix: "_Paciente:",
   viewHistoryButton: "Ver Histórico",
+  cancelHistoryButton: "Cancelar",
   fields: {
     taSystolic: "TA (Sist.)",
     taDiastolic: "TA (Diast.)",
