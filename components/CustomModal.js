@@ -1,16 +1,16 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { 
-  Modal as PaperModal, 
-  Portal, 
-  Button, 
-  Card 
+import {
+  Modal as PaperModal,
+  Portal,
+  Button,
+  Card
 } from 'react-native-paper';
-import { 
-  View, 
-  StyleSheet, 
-  Dimensions, 
-  Platform, 
-  ScrollView, 
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  Platform,
+  ScrollView,
   KeyboardAvoidingView,
   Keyboard,
   Text,
@@ -24,7 +24,7 @@ import HamburgerMenu from './HamburgerMenu';
 import VitalSignsColumns from './VitalSignsColumns';
 import CustomButton from './CustomButton';
 import VitalsDetails from './VitalsDetails';
-import { VITALS_TEXTS, FORM_TEXTS } from '../constants/Strings';
+import { VITALS_TEXTS, FORM_TEXTS, MEDICATION_TEXTS } from '../constants/Strings';
 import { Calendar } from 'react-native-calendars';
 
 const { width, height } = Dimensions.get('window');
@@ -47,7 +47,7 @@ const CustomModal = ({
   centerTopbarTitle = false,
   cardMarginTop = 0,
   centerCard = false,
-  showHamburgerMenu = true, 
+  showHamburgerMenu = true,
   canEdit = false,
   onLogout,
   onGoHome,
@@ -56,6 +56,7 @@ const CustomModal = ({
   outsideActions = [],
   topbarMarginTop = 50,
   isVitalsModal = false,
+  isMedicationModal = false,
   vitalsData = null,
   onVitalsSave = null,
   onVitalsModify = null,
@@ -68,13 +69,14 @@ const CustomModal = ({
   previousVitalsData = null,
   vitalsHistoryByDate = {},
   onViewHistory = null,
+  medicationCount = 1,
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [showHistoryCalendar, setShowHistoryCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [historySelectedData, setHistorySelectedData] = useState(null);
   const [historySelectionAttempted, setHistorySelectionAttempted] = useState(false);
-  const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : title;
+  const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : (isMedicationModal && children ? `${MEDICATION_TEXTS.columns.droga}/${MEDICATION_TEXTS.columns.dosis}` : title);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -182,20 +184,23 @@ const CustomModal = ({
           </View>
         )}
 
-        {/* Información del paciente para modales de signos vitales */}
-        {isVitalsModal && vitalsData?.patientName && (
+        {/* Información del paciente para modales de signos vitales y medicación */}
+        {((isVitalsModal || isMedicationModal) && vitalsData?.patientName) && (
           <View style={[
             styles.patientBoxModal,
             {
               top: showTopbar
                 ? (offsetWithTopbar
-                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
-                    : vitalsInfoMarginTop)
+                  ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
+                  : vitalsInfoMarginTop)
                 : 16
             }
           ]}>
             <Text style={styles.patientTextModal}>
-              {VITALS_TEXTS.patientLabelPrefix} {vitalsData.patientName}
+              {isMedicationModal 
+                ? `${MEDICATION_TEXTS.patientLabelPrefix} ${vitalsData.patientName}`
+                : `${VITALS_TEXTS.patientLabelPrefix} ${vitalsData.patientName}`
+              }
             </Text>
           </View>
         )}
@@ -207,8 +212,8 @@ const CustomModal = ({
             {
               top: showTopbar
                 ? (offsetWithTopbar
-                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin - 50
-                    : vitalsInfoMarginTop - 50)
+                  ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin - 50
+                  : vitalsInfoMarginTop - 50)
                 : 16
             }
           ]}>
@@ -236,11 +241,11 @@ const CustomModal = ({
             </TouchableOpacity>
           </View>
         )}
-        
+
         {/* MENÚ HAMBURGUESA */}
         {showHamburgerMenu && (
-          <HamburgerMenu 
-            position="top-right" 
+          <HamburgerMenu
+            position="top-right"
             hasTopBar={showTopbar}
             onLogout={onLogout}
             onGoHome={onGoHome}
@@ -249,25 +254,28 @@ const CustomModal = ({
             forceShow={true}
           />
         )}
-        
-        {/* Información del paciente para modales de signos vitales */}
-        {isVitalsModal && vitalsData?.patientName && (
+
+        {/* Información del paciente para modales de signos vitales y medicación */}
+        {((isVitalsModal || isMedicationModal) && vitalsData?.patientName) && (
           <View style={[
             styles.patientBoxModal,
             {
               top: showTopbar
                 ? (offsetWithTopbar
-                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
-                    : vitalsInfoMarginTop)
+                  ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
+                  : vitalsInfoMarginTop)
                 : 16
             }
           ]}>
             <Text style={styles.patientTextModal}>
-              {VITALS_TEXTS.patientLabelPrefix} {vitalsData.patientName}
+              {isMedicationModal 
+                ? `${MEDICATION_TEXTS.patientLabelPrefix} ${vitalsData.patientName}`
+                : `${VITALS_TEXTS.patientLabelPrefix} ${vitalsData.patientName}`
+              }
             </Text>
           </View>
         )}
-        
+
         {outsideActions.length > 0 && (
           <View style={[
             styles.outsideActionsContainer,
@@ -293,31 +301,56 @@ const CustomModal = ({
           {centerCard ? (
             <View style={styles.flex}>
               <View style={[
-                styles.modalContent, 
-                styles.centerModalContent,
-                isVitalsModal && { 
+                styles.modalContent,
+                !isMedicationModal && styles.centerModalContent,
+                isVitalsModal && {
                   justifyContent: 'flex-start',
                   paddingBottom: 0,
-                  paddingTop: showTopbar 
+                  paddingTop: showTopbar
+                    ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
+                    : 110
+                },
+                isMedicationModal && {
+                  justifyContent: 'flex-start',
+                  alignItems: 'stretch',
+                  paddingTop: showTopbar
                     ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
                     : 110
                 }
               ]}>
                 <Card style={[
-                  styles.theCard, 
-                  !(isVitalsModal && vitalsView === 'anterior') && styles.centerCard,
+                  isMedicationModal ? styles.medicationCard : styles.theCard,
+                  !(isVitalsModal && vitalsView === 'anterior') && !isMedicationModal && styles.centerCard,
                   isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
                   isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
-                  isVitalsModal && { marginTop: 0 }
+                  isVitalsModal && { marginTop: 0 },
+                  isMedicationModal && { marginTop: 0 },
+                  isMedicationModal && {
+                    maxHeight: height * 0.6,
+                  }
                 ]}>
                   {resolvedTitle && (
-                    <View style={styles.titleWrapper}>
-                      <Text style={styles.title}>
-                        {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
-                      </Text>
+                    <View style={[
+                      styles.titleWrapper,
+                      isMedicationModal && styles.medicationTitleWrapper
+                    ]}>
+                      {isMedicationModal ? (
+                        <View style={styles.medicationTitleRow}>
+                          <Text style={[styles.title, styles.medicationTitleDroga]}>
+                            {MEDICATION_TEXTS.columns.droga}
+                          </Text>
+                          <Text style={[styles.title, styles.medicationTitleDosis]}>
+                            {MEDICATION_TEXTS.columns.dosis}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.title}>
+                          {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
+                        </Text>
+                      )}
                     </View>
                   )}
-                  <Card.Content style={styles.cardContent}>
+                  <Card.Content style={[styles.cardContent, isMedicationModal && styles.medicationCardContent]}>
                     {isVitalsModal && vitalsView === 'anterior' ? (
                       showHistoryCalendar ? (
                         <View style={{ width: '100%', gap: 12 }}>
@@ -351,6 +384,8 @@ const CustomModal = ({
                         onModify={onVitalsModify}
                         onSave={onVitalsSave}
                       />
+                    ) : isMedicationModal ? (
+                      children
                     ) : scrollable ? (
                       <ScrollView
                         style={{ width: '100%' }}
@@ -398,20 +433,21 @@ const CustomModal = ({
                   </Card.Content>
                 </Card>
 
-              {isVitalsModal && vitalsView === 'anterior' && !isKeyboardVisible && (previousVitalsData || hasVitalsData) && (
-                <View style={[styles.buttonContainer, styles.vitalsButtonContainer, styles.viewHistoryWrapper]}>
-                  <CustomButton
-                    onPress={showHistoryCalendar ? handleCancelHistory : handleViewHistory}
-                    label={showHistoryCalendar ? VITALS_TEXTS.cancelHistoryButton : VITALS_TEXTS.viewHistoryButton}
-                  />
-                </View>
-              )}
+                {isVitalsModal && vitalsView === 'anterior' && !isKeyboardVisible && (previousVitalsData || hasVitalsData) && (
+                  <View style={[styles.buttonContainer, styles.vitalsButtonContainer, styles.viewHistoryWrapper]}>
+                    <CustomButton
+                      onPress={showHistoryCalendar ? handleCancelHistory : handleViewHistory}
+                      label={showHistoryCalendar ? VITALS_TEXTS.cancelHistoryButton : VITALS_TEXTS.viewHistoryButton}
+                    />
+                  </View>
+                )}
 
                 {(isDetailModal || (isEditModal && !(isVitalsModal && vitalsView === 'anterior'))) && !(isVitalsModal && isKeyboardVisible) && (
                   <View style={[
                     styles.buttonContainer,
                     isVitalsModal && styles.vitalsButtonContainer,
-                    isVitalsModal && { position: 'absolute', bottom: 0, left: 0, right: 0 }
+                    isVitalsModal && { position: 'absolute', bottom: 0, left: 0, right: 0 },
+                    isMedicationModal && styles.medicationButtonContainer
                   ]}>
                     {isDetailModal && (
                       <>
@@ -439,9 +475,9 @@ const CustomModal = ({
                     )}
                     {isEditModal && canEdit && (
                       <>
-                        {isVitalsModal ? (
+                        {(isVitalsModal || isMedicationModal) ? (
                           <>
-                            {onModifyPress && hasVitalsData && (
+                            {onModifyPress && hasVitalsData && !isMedicationModal && (
                               <CustomButton
                                 onPress={onModifyPress}
                                 label={FORM_TEXTS.editButton}
@@ -451,6 +487,7 @@ const CustomModal = ({
                             <CustomButton
                               onPress={onSavePress}
                               label={FORM_TEXTS.saveButton}
+                              style={isMedicationModal ? { width: '100%', maxWidth: 400 } : {}}
                             />
                           </>
                         ) : (
@@ -471,7 +508,7 @@ const CustomModal = ({
               </View>
             </View>
           ) : (
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
               style={styles.flex}
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               keyboardVerticalOffset={showTopbar ? 120 : 80}
@@ -480,26 +517,55 @@ const CustomModal = ({
                 styles.modalContent,
                 cardMarginTop === 0 && !showTopbar && styles.fullScreenModalContent,
                 showTopbar && offsetWithTopbar && topbarMarginTop !== undefined && { paddingTop: topbarMarginTop },
-                isVitalsModal && { paddingBottom: 20 }
+                isVitalsModal && { paddingBottom: 20 },
+                isMedicationModal && {
+                  justifyContent: 'flex-start',
+                  alignItems: 'stretch',
+                  paddingTop: showTopbar
+                    ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
+                    : 110
+                }
               ]}>
                 <Card style={[
-                  styles.theCard, 
-                  cardMarginTop !== undefined && { marginTop: cardMarginTop },
-                  cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
+                  isMedicationModal ? styles.medicationCard : styles.theCard,
+                  !isMedicationModal && cardMarginTop !== undefined && { marginTop: cardMarginTop },
+                  !isMedicationModal && cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
                   isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
-                  isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew
+                  isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
+                  isMedicationModal && { marginTop: 0 },
+                  isMedicationModal && {
+                    height: medicationCount ? (
+                      medicationCount <= 3
+                        ? 60 + (medicationCount * 70) + 50
+                        : height * 0.6
+                      // ) : 60 + 70 + 50,
+                    ) : height * 0.4,
+                    maxHeight: height * 0.6,
+                  }
                 ]}>
                   {resolvedTitle && (
                     <View style={[
                       styles.titleWrapper,
-                      cardMarginTop === 0 && styles.fullScreenTitleWrapper
+                      cardMarginTop === 0 && styles.fullScreenTitleWrapper,
+                      isMedicationModal && styles.medicationTitleWrapper
                     ]}>
-                      <Text style={styles.title}>
-                        {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
-                      </Text>
+                      {isMedicationModal ? (
+                        <View style={styles.medicationTitleRow}>
+                          <Text style={[styles.title, styles.medicationTitleDroga]}>
+                            {MEDICATION_TEXTS.columns.droga}
+                          </Text>
+                          <Text style={[styles.title, styles.medicationTitleDosis]}>
+                            {MEDICATION_TEXTS.columns.dosis}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.title}>
+                          {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
+                        </Text>
+                      )}
                     </View>
                   )}
-                  <Card.Content style={styles.cardContent}>
+                  <Card.Content style={[styles.cardContent, isMedicationModal && styles.medicationCardContent]}>
                     {isVitalsModal && vitalsView === 'anterior' ? (
                       <VitalsDetails vitalsData={previousVitalsData} />
                     ) : isVitalsModal && !children ? (
@@ -513,6 +579,8 @@ const CustomModal = ({
                         onModify={onVitalsModify}
                         onSave={onVitalsSave}
                       />
+                    ) : isMedicationModal ? (
+                      children
                     ) : scrollable ? (
                       <ScrollView
                         style={{ width: '100%' }}
@@ -591,9 +659,9 @@ const CustomModal = ({
                     )}
                     {isEditModal && canEdit && (
                       <>
-                        {isVitalsModal ? (
+                        {(isVitalsModal || isMedicationModal) ? (
                           <>
-                            {onModifyPress && hasVitalsData && (
+                            {onModifyPress && hasVitalsData && !isMedicationModal && (
                               <CustomButton
                                 onPress={onModifyPress}
                                 label={FORM_TEXTS.editButton}
@@ -603,6 +671,7 @@ const CustomModal = ({
                             <CustomButton
                               onPress={onSavePress}
                               label={FORM_TEXTS.saveButton}
+                              style={isMedicationModal ? { width: '100%', maxWidth: 400 } : {}}
                             />
                           </>
                         ) : (
@@ -659,7 +728,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 0,
   },
-  titleWrapper: { 
+  titleWrapper: {
     backgroundColor: '#5124A5',
     width: '100%',
     paddingVertical: 12,
@@ -674,9 +743,9 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: 'white',
+    color: '#ffffff',
   },
-  theCard: { 
+  theCard: {
     backgroundColor: '#ffffff',
     width: '95%',
     borderRadius: 50,
@@ -697,7 +766,7 @@ const styles = StyleSheet.create({
     maxHeight: '100%',
     alignSelf: 'stretch',
   },
-  centerCard: { 
+  centerCard: {
     marginTop: 0,
     marginVertical: 0,
     maxHeight: height * 0.4,
@@ -878,6 +947,48 @@ const styles = StyleSheet.create({
   vitalsViewButtonTextActive: {
     color: '#5124A5',
     fontWeight: 'normal',
+  },
+  medicationCard: {
+    backgroundColor: '#ffffff',
+    maxWidth: '95%',
+    overflow: 'hidden',
+    borderRadius: 50,
+    marginHorizontal: 'auto',
+    marginBottom: 'auto',
+    marginTop: height * 0.25,
+    alignSelf: 'center',
+  },
+  medicationCardContent: {
+    flex: 1,
+    paddingTop: 8,
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+    width: '100%',
+  },
+
+  medicationButtonContainer: {
+    marginTop: 20,
+    paddingTop: 0,
+    paddingBottom: 20,
+    width: '95%',
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  medicationTitleWrapper: {
+    flexDirection: 'row',
+  },
+  medicationTitleRow: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    paddingHorizontal: 48,
+  },
+  medicationTitleDroga: {
+    textAlign: 'center',
+    marginRight: 8,
+  },
+  medicationTitleDosis: {
+    textAlign: 'center',
   },
 });
 

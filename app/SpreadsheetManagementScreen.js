@@ -10,8 +10,9 @@ import CustomModal from '../components/CustomModal';
 import CustomButton from '../components/CustomButton';
 import EditPersonForm from '../components/EditPersonForm';
 import HamburgerMenu from '../components/HamburgerMenu';
+import MedicationColumns from '../components/MedicationColumns';
 import { useAuth } from '../components/UserContext';
-import { STATUS_MESSAGES, FORM_TEXTS } from '../constants/Strings';
+import { STATUS_MESSAGES, FORM_TEXTS, MEDICATION_TEXTS } from '../constants/Strings';
 import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
 
@@ -34,16 +35,23 @@ export default function SpreadsheetManagementScreen() {
   const { patientName, area, personId } = useLocalSearchParams();
   const { user, globalUserRole } = useAuth();
   const [showSignosVitalesModal, setShowSignosVitalesModal] = useState(false);
+  const [showMedicationModal, setShowMedicationModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasVitalsData, setHasVitalsData] = useState(false);
+  const [hasMedicationData, setHasMedicationData] = useState(false);
+  const [medicationCount, setMedicationCount] = useState(1);
   const [vitalsView, setVitalsView] = useState('nuevo'); // 'nuevo' o 'anterior'
   const [previousVitalsData, setPreviousVitalsData] = useState(null);
   const [vitalsHistoryByDate, setVitalsHistoryByDate] = useState({});
-  
+
   // Refs para conectar con VitalSignsColumns
   const modifyRef = useRef();
   const saveRef = useRef();
+
+  // Refs para conectar con MedicationColumns
+  const medicationModifyRef = useRef();
+  const medicationSaveRef = useRef();
 
   // Función para abrir modal de signos vitales
   const handleOpenSignosVitales = () => {
@@ -67,7 +75,7 @@ export default function SpreadsheetManagementScreen() {
 
       if (snapshot.exists()) {
         const allVitals = snapshot.val();
-        
+
         // Con push(), siempre será un objeto con múltiples keys (cada key es un ID único de Firebase)
         // Convertir a array de registros
         const records = Object.keys(allVitals).map(key => {
@@ -78,14 +86,14 @@ export default function SpreadsheetManagementScreen() {
             firebaseKey: key // Guardar la key de Firebase
           };
         });
-        
+
         // Filtrar solo registros válidos que tengan createdAt
         const validRecords = records.filter(r => {
           const hasCreatedAt = r.createdAt && r.createdAt.trim() !== '';
           const hasPersonId = r.personId === personId;
           return hasCreatedAt && hasPersonId;
         });
-        
+
         if (validRecords.length > 0) {
           // Construir mapa vitalsHistoryByDate: clave YYYY-MM-DD -> registro más reciente de ese día
           const historyMap = {};
@@ -96,16 +104,16 @@ export default function SpreadsheetManagementScreen() {
               historyMap[dateKey] = record;
             }
           });
-          
+
           // Encontrar el registro más reciente para previousVitalsData
           const sortedRecords = [...validRecords].sort((a, b) => {
             const dateA = new Date(a.createdAt || 0);
             const dateB = new Date(b.createdAt || 0);
             return dateB.getTime() - dateA.getTime(); // Más reciente primero
           });
-          
+
           const latestRecord = sortedRecords[0];
-          
+
           setVitalsHistoryByDate(historyMap);
           setPreviousVitalsData(latestRecord);
           setHasVitalsData(true);
@@ -151,83 +159,100 @@ export default function SpreadsheetManagementScreen() {
     }
   };
 
+  // Función para abrir modal de medicación
+  const handleOpenMedication = () => {
+    setShowMedicationModal(true);
+    setHasMedicationData(false);
+  };
+
+  // Función para guardar medicación
+  const handleSaveMedication = async () => {
+    if (medicationSaveRef.current) {
+      const success = await medicationSaveRef.current();
+      if (success) {
+        setSaveSuccess(true);
+        setHasMedicationData(true);
+      }
+    }
+  };
+
   return (
     <PaperProvider theme={theme}>
       <View style={styles.container}>
-      {!showSignosVitalesModal && (
-        <TopBarHeader
-          showTopBar={true}
-          topBarTitle="Planilla"
-          onBack={() => router.back()}
-          centerTopbarTitle={true}
-        />
-      )}
-      
-      {/* HamburgerMenu para la pantalla principal */}
-      {!showSignosVitalesModal && (
-        <HamburgerMenu 
-          position="top-right" 
-          hasTopBar={true}
-          onGoHome={() => {
-            router.push('/');
-          }}
-          showGoHomeOption={true}
-          showInModal={false}
-        />
-      )}
-      
-      {/* Nombre del paciente - solo cuando el modal está cerrado */}
-      {!showSignosVitalesModal && (
-        <View style={styles.patientBox}>
-          <Text style={styles.patientText}>_Paciente: {patientName}</Text>
-        </View>
-      )}
-      
-      {!showSignosVitalesModal && (
-        <>
-          {/* Botones */}
-          <View style={styles.buttonsGrid}>
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/SV.png')}
-          label="Signos Vitales"
-          color="#e85158"
-          onPress={handleOpenSignosVitales}
-        />
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/MED.png')}
-          label="Medicación"
-          color="#4a9cbb"
-                onPress={() => { }}
-        />
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/ALIM.png')}
-          label="Alimentación"
-          color="#f1a137"
-                onPress={() => { }}
-        />
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/DEPO.png')}
-          label="Deposiciones"
-          color="#549f82"
-                onPress={() => { }}
-        />
-        <CustomLogButton
-          icon={require('../assets/imageLogButtons/OBS.png')}
-          label="Observaciones"
-          color="#7d76b3"
-                onPress={() => { }}
-        />
-          </View>
-        </>
-      )}
+        {!showSignosVitalesModal && !showMedicationModal && (
+          <TopBarHeader
+            showTopBar={true}
+            topBarTitle="Planilla"
+            onBack={() => router.back()}
+            centerTopbarTitle={true}
+          />
+        )}
 
-      {/* Modal de Signos Vitales */}
-      <CustomModal
-        visible={showSignosVitalesModal}
+        {/* HamburgerMenu para la pantalla principal */}
+        {!showSignosVitalesModal && !showMedicationModal && (
+          <HamburgerMenu
+            position="top-right"
+            hasTopBar={true}
+            onGoHome={() => {
+              router.push('/');
+            }}
+            showGoHomeOption={true}
+            showInModal={false}
+          />
+        )}
+
+        {/* Nombre del paciente - solo cuando el modal está cerrado */}
+        {!showSignosVitalesModal && !showMedicationModal && (
+          <View style={styles.patientBox}>
+            <Text style={styles.patientText}>_Paciente: {patientName}</Text>
+          </View>
+        )}
+
+        {!showSignosVitalesModal && !showMedicationModal && (
+          <>
+            {/* Botones */}
+            <View style={styles.buttonsGrid}>
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/SV.png')}
+                label="Signos Vitales"
+                color="#e85158"
+                onPress={handleOpenSignosVitales}
+              />
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/MED.png')}
+                label="Medicación"
+                color="#4a9cbb"
+                onPress={handleOpenMedication}
+              />
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/ALIM.png')}
+                label="Alimentación"
+                color="#f1a137"
+                onPress={() => { }}
+              />
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/DEPO.png')}
+                label="Deposiciones"
+                color="#549f82"
+                onPress={() => { }}
+              />
+              <CustomLogButton
+                icon={require('../assets/imageLogButtons/OBS.png')}
+                label="Observaciones"
+                color="#7d76b3"
+                onPress={() => { }}
+              />
+            </View>
+          </>
+        )}
+
+        {/* Modal de Signos Vitales */}
+        <CustomModal
+          visible={showSignosVitalesModal}
           onRequestClose={() => setShowSignosVitalesModal(false)}
           showTopbar={true}
-        topbarTitle="Signos Vitales"
-        centerCard={true}
+          topbarTitle="Signos Vitales"
+          centerCard={true}
           scrollable={true}
           title="Ingresar Aquí:"
           isEditModal={true}
@@ -244,24 +269,24 @@ export default function SpreadsheetManagementScreen() {
               modifyRef.current();
             }
           }}
-        onBack={() => setShowSignosVitalesModal(false)}
+          onBack={() => setShowSignosVitalesModal(false)}
           onGoHome={() => {
             router.push('/');
           }}
           showGoHomeOption={true}
           cardMarginTop={height * 0.07}
-        isVitalsModal={true}
+          isVitalsModal={true}
           hasVitalsData={hasVitalsData}
           vitalsView={vitalsView}
           onVitalsViewChange={handleViewChange}
           previousVitalsData={previousVitalsData}
           vitalsHistoryByDate={vitalsHistoryByDate}
-        vitalsData={{
-          adminUid: user?.uid,
-          area: area,
-          personId: personId,
-          patientName: patientName
-        }}
+          vitalsData={{
+            adminUid: user?.uid,
+            area: area,
+            personId: personId,
+            patientName: patientName
+          }}
         >
           <EditPersonForm
             isVitalsMode={true}
@@ -275,13 +300,66 @@ export default function SpreadsheetManagementScreen() {
           />
         </CustomModal>
 
+        {/* Modal de Medicación */}
+        <CustomModal
+          visible={showMedicationModal}
+          onDismiss={() => setShowMedicationModal(false)}
+          showTopbar={true}
+          topbarTitle="Medicación"
+          // centerCard={false}
+          centerCard={true}
+          scrollable={true}
+          title={MEDICATION_TEXTS.formTitle}
+          isEditModal={true}
+          canEdit={true}
+          isMedicationModal={true}
+          offsetWithTopbar={true}
+          topbarMarginTop={80}
+          vitalsInfoExtraMargin={20}
+          onSavePress={() => {
+            setShowMedicationModal(false);
+            setShowConfirmModal(true);
+          }}
+          onModifyPress={() => {
+            if (medicationModifyRef.current) {
+              medicationModifyRef.current();
+            }
+          }}
+          onBack={() => setShowMedicationModal(false)}
+          onGoHome={() => {
+            router.push('/');
+          }}
+          showGoHomeOption={true}
+          cardMarginTop={height * 0.07}
+          hasVitalsData={hasMedicationData}
+          vitalsData={{
+            adminUid: user?.uid,
+            area: area,
+            personId: personId,
+            patientName: patientName
+          }}
+          medicationCount={medicationCount}
+        >
+          <MedicationColumns
+            adminUid={user?.uid}
+            area={area}
+            personId={personId}
+            patientName={patientName}
+            visible={showMedicationModal}
+            onModify={medicationModifyRef}
+            onSave={medicationSaveRef}
+            onDataExistsChange={setHasMedicationData}
+            onMedicationCountChange={setMedicationCount}
+          />
+        </CustomModal>
+
         {/* MODAL DE CONFIRMACIÓN */}
         <CustomModal
           visible={showConfirmModal}
           onDismiss={() => {
             setShowConfirmModal(false);
             setSaveSuccess(false);
-        }}
+          }}
           title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
           centerCard={true}
           showHamburgerMenu={false}
@@ -293,11 +371,15 @@ export default function SpreadsheetManagementScreen() {
                 onPress={async () => {
                   setShowConfirmModal(false);
                   setSaveSuccess(false);
-                  setShowSignosVitalesModal(false);
-                  // Recargar datos después de cerrar el modal para asegurar que estén actualizados
-                  setTimeout(async () => {
-                    await loadPreviousVitals();
-                  }, 500);
+                  if (showSignosVitalesModal) {
+                    setShowSignosVitalesModal(false);
+                    // Recargar datos después de cerrar el modal para asegurar que estén actualizados
+                    setTimeout(async () => {
+                      await loadPreviousVitals();
+                    }, 500);
+                  } else if (showMedicationModal) {
+                    setShowMedicationModal(false);
+                  }
                 }}
               />
             ) : (
@@ -305,7 +387,11 @@ export default function SpreadsheetManagementScreen() {
                 <CustomButton
                   label="Sí"
                   onPress={async () => {
-                    await handleSaveVitals();
+                    if (showSignosVitalesModal) {
+                      await handleSaveVitals();
+                    } else if (showMedicationModal) {
+                      await handleSaveMedication();
+                    }
                   }}
                   style={{ marginBottom: 16 }}
                 />

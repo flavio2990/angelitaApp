@@ -175,3 +175,18 @@ export const VITALS_TEXTS = {
     temperature: "T°C",
   },
 };
+
+// ===== TEXTO DE MEDICACIÓN =====
+export const MEDICATION_TEXTS = {
+  patientLabelPrefix: "_Paciente:",
+  addLineItem: "Añadir Otra Línea",
+  addMore: "Agregar más",
+  columns: {
+    droga: "Droga",
+    dosis: "Dosis",
+  },
+  placeholders: {
+    droga: "Ingrése Medicamento",
+    dosis: "1",
+  },
+};
