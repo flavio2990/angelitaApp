@@ -131,7 +131,6 @@ export default function MedicationColumns({
         `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/medicacion`
       );
       
-      // Filtrar medicamentos vacíos antes de guardar
       const validMedications = medications.filter(
         (med) => med.droga && med.droga.trim() !== ''
       );
@@ -185,7 +184,6 @@ export default function MedicationColumns({
     }
   }, [visible, dataExists]);
 
-  // Notificar al padre sobre el número de medicamentos
   useEffect(() => {
     if (onMedicationCountChange) {
       onMedicationCountChange(medications.length);
@@ -211,14 +209,12 @@ export default function MedicationColumns({
 
   return (
     <View style={styles.container}>
-      {/* Scroll solo para las filas */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={true}
         style={styles.scrollView}
       >
-        {/* Filas de medicamentos */}
         {medications.map((medication, index) => {
           const isFirstLine = index === 0;
           const placeholderDroga = isFirstLine ? MEDICATION_TEXTS.placeholders.droga : MEDICATION_TEXTS.addMore;
@@ -273,7 +269,6 @@ export default function MedicationColumns({
         })}
       </ScrollView>
       
-      {/* Botón para agregar línea - fijo fuera del scroll */}
       {inputEditable && (
         <View style={styles.addLineButtonContainer}>
           <TouchableOpacity

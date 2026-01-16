@@ -17,7 +17,6 @@ import PersonDetails from '@/components/PersonDetails';
 import RegisterAdminForm from '../components/RegisterAdminForm';
 import { useAuth } from '../components/UserContext';
 import HamburgerMenu from '../components/HamburgerMenu';
-// import GlobalUserDebugger from '../components/GlobalUserDebugger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   CARD_TITLES,
@@ -71,8 +70,6 @@ export default function MasterScreen() {
   const [empleados, setEmpleados] = useState({});
   const [loginError, setLoginError] = useState(null);
   const [asyncPeopleData, setAsyncPeopleData] = useState([]);
-  // const [forceUpdate, setForceUpdate] = useState(0);
-  // const [showLoginAfterVerification, setShowLoginAfterVerification] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [showVerificationModalAfterRegister, setShowVerificationModalAfterRegister] = useState(false);
   const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
@@ -143,10 +140,8 @@ export default function MasterScreen() {
     }
   };
 
-  // Función para limpiar datos locales cuando se hace logout
   const handleLogout = async () => {
     try {
-      // Limpiar estado local de subjects
       setAsyncPeopleData([]);
       setShowEmployeeList(false);
       setModalAreaVisible(false);
@@ -167,23 +162,18 @@ export default function MasterScreen() {
       setOriginalDni(null);
       setIsCreatingNewPerson(false);
 
-      // Ejecutar logout del contexto (que ya limpia AsyncStorage)
       await logout();
 
     } catch (error) {
-      // Aún así, intentar limpiar el estado local
       setAsyncPeopleData([]);
       setShowEmployeeList(false);
     }
   };
 
-  // Función para volver a la vista principal (selección de área)
   const handleGoHome = () => {
-    // Verificar si se está editando o agregando datos
     const isEditing = editModalVisible || noDataModalVisible;
 
     if (isEditing) {
-      // Mostrar confirmación si se está editando o agregando
       Alert.alert(
         "¿Estás seguro?",
         "¿Estás seguro de salir sin antes guardar?",
@@ -200,14 +190,11 @@ export default function MasterScreen() {
         ]
       );
     } else {
-      // Si no se está editando, ir directamente
       goHomeConfirmed();
     }
   };
 
-  // Función que ejecuta la navegación a inicio (después de confirmación)
   const goHomeConfirmed = () => {
-    // Cerrar todos los modales y listas
     setShowEmployeeList(false);
     setDetailModalVisible(false);
     setEditModalVisible(false);
@@ -215,7 +202,6 @@ export default function MasterScreen() {
     setNoDataModalVisible(false);
     setShowConfirmModal(false);
 
-    // Limpiar estados
     setSelectedPerson(null);
     setEditablePerson(null);
     setSelectedArea(null);
@@ -226,7 +212,6 @@ export default function MasterScreen() {
     setSaveSuccess(false);
     setIsCreatingNewPerson(false);
 
-    // Abrir modal de selección de área
     setModalAreaVisible(true);
     setIsInitialFlow(false);
   };
@@ -238,13 +223,10 @@ export default function MasterScreen() {
     setOriginalDni(selectedPerson.dni);
   };
 
-  // Función para validar campos obligatorios
   const validateRequiredFields = (person) => {
-    // Determinar si es empleado
     const isEmployee = person?.tipo &&
       (person.tipo.toLowerCase() === 'enfermería' || person.tipo.toLowerCase() === 'administrador');
 
-    // Campos base requeridos para todos
     const baseRequiredFields = [
       { key: 'tipo', label: 'Tipo' },
       { key: 'area', label: 'area' },
@@ -256,14 +238,12 @@ export default function MasterScreen() {
       { key: 'nacionalidad', label: 'Nacionalidad' },
     ];
 
-    // Campos adicionales solo para pacientes
     const patientOnlyFields = [
       { key: 'coberturaSocial', label: 'Cobertura Social' },
       { key: 'estadoCivil', label: 'Estado Civil' },
       { key: 'peso', label: 'Peso' },
     ];
 
-    // Combinar campos según el tipo de usuario
     const requiredFields = isEmployee ? baseRequiredFields : [...baseRequiredFields, ...patientOnlyFields];
 
     const missingFields = requiredFields.filter(field =>
@@ -287,12 +267,8 @@ export default function MasterScreen() {
         createdAt: new Date().toISOString()
       };
 
-      // Guardar en Firebase usando la estructura correcta: areas/{area}/subjects/{id}
       const personRef = ref(database, `admins/${user.uid}/areas/${newPerson.area}/subjects/${personId}`);
       await set(personRef, personWithId);
-
-      // No actualizar AsyncStorage manualmente - el useEffect se encargará de sincronizar
-      // El useEffect detectará el cambio en Firebase y actualizará asyncPeopleData automáticamente
       setNoDataModalVisible(false);
       setNewPerson({});
       setShowEmployeeList(true);
@@ -328,26 +304,18 @@ export default function MasterScreen() {
         return false;
       }
 
-      // No actualizar AsyncStorage manualmente - el useEffect se encargará de sincronizar
-      // El useEffect detectará el cambio en Firebase y actualizará asyncPeopleData automáticamente
-
-      // Verificar si se cambió el área
       const originalArea = selectedPerson?.area;
       const newArea = editablePerson.area;
 
       if (originalArea !== newArea) {
-        // Si cambió el área, eliminar del área anterior y crear en la nueva
         const oldPersonRef = ref(database, `admins/${user.uid}/areas/${originalArea}/subjects/${editablePerson.id}`);
-        await set(oldPersonRef, null); // Eliminar de área anterior
-
-        // Crear en nueva área
+        await set(oldPersonRef, null);
         const newPersonRef = ref(database, `admins/${user.uid}/areas/${newArea}/subjects/${editablePerson.id}`);
         await set(newPersonRef, {
           ...editablePerson,
           updatedAt: new Date().toISOString()
         });
       } else {
-        // Si no cambió el área, solo actualizar
         const personRef = ref(database, `admins/${user.uid}/areas/${editablePerson.area}/subjects/${editablePerson.id}`);
         await update(personRef, {
           ...editablePerson,
@@ -363,7 +331,6 @@ export default function MasterScreen() {
     }
   };
 
-  //////////////////////////// Registro
   const handleRegister = async () => {
     try {
       setLoginError(null);
@@ -375,7 +342,6 @@ export default function MasterScreen() {
     }
   };
 
-  //////////////////////////// Login
   const handleLogin = async () => {
     if (!email || !password) {
       setLoginError('Por favor ingresa tu email y contraseña');
@@ -430,7 +396,6 @@ export default function MasterScreen() {
     }
   };
 
-  //////////////////////////// Verificación
   const handleResendVerification = async () => {
     try {
       setResendVerificationLoading(true);
@@ -454,24 +419,19 @@ export default function MasterScreen() {
   const handleReloadUser = async () => {
     try {
       if (user) {
-        // Refrescar el usuario y obtener el resultado
         const updatedUser = await refreshUser();
 
         if (updatedUser && updatedUser.emailVerified) {
-          // Email verificado, mantener el rol pero limpiar la sesión
-          await clearSessionOnly(); // Solo limpia la sesión, mantiene el rol
+          await clearSessionOnly();
 
-          // Ocultar modal de verificación
           setShowVerificationModalAfterRegister(false);
 
           Alert.alert('¡Verificado exitosamente!', 'Ahora logeate con tu usuario y contraseña.');
 
-          // Limpiar campos de login
           setEmail('');
           setPassword('');
           setLoginError(null);
         } else {
-          // Email aún no verificado
           Alert.alert('Verificación', 'El email aún no está verificado. Revisa tu correo y vuelve a intentar.');
         }
       }
@@ -480,13 +440,11 @@ export default function MasterScreen() {
     }
   };
 
-  // useEffect para mostrar automáticamente el modal de área después del login exitoso
   useEffect(() => {
     if (globalUserRole && user && user.emailVerified && !showEmployeeList && !modalAreaVisible && !modalUserTypeVisible && !noDataModalVisible && !detailModalVisible && !editModalVisible && isInitialFlow) {
-      // Pequeño delay para asegurar que la UI esté lista
       setTimeout(() => {
         setModalAreaVisible(true);
-        setIsInitialFlow(false); // Marcar que ya no es el flujo inicial
+        setIsInitialFlow(false);
       }, 500);
     }
   }, [globalUserRole, user, showEmployeeList, modalAreaVisible, modalUserTypeVisible, noDataModalVisible, detailModalVisible, editModalVisible, isInitialFlow]);
@@ -509,7 +467,6 @@ export default function MasterScreen() {
         const areasObj = snapshot.val();
         let allPeople = [];
 
-        // Recorrer todas las áreas y extraer las personas
         Object.keys(areasObj).forEach(areaKey => {
           const area = areasObj[areaKey];
           if (area.subjects) {
@@ -528,11 +485,6 @@ export default function MasterScreen() {
     return () => unsubscribe();
   }, [user?.uid]);
 
-  /////////////////////////////////
-  // FLUJO PRINCIPAL ORDENADO Y SIN DUPLICACIONES
-  /////////////////////////////////
-
-  // ---------- 1. LOADING ----------
   if (loading) {
     return (
       <PaperProvider theme={theme}>
@@ -601,16 +553,13 @@ export default function MasterScreen() {
     );
   }
 
-  // ---------- 3. LOGIN (usuario no logueado o sin verificar) ----------
   if (!user || (user && !user.emailVerified)) {
     return (
       <PaperProvider theme={theme}>
         <StatusBar />
 
-        {/* MODAL DE REGISTRO */}
         {showRegisterModal && (
           <CustomModal
-            // visible={true}
             visible={showRegisterModal}
             onDismiss={() => setShowRegisterModal(false)}
             title={AUTH_TEXTS.registerTitle}
@@ -684,10 +633,8 @@ export default function MasterScreen() {
                       setShowRegisterModal(false);
                       setEmail('');
                       setPassword('');
-                      // Mostrar modal de verificación después del registro exitoso
                       setShowVerificationModalAfterRegister(true);
                     } catch (error) {
-                      // Solo limpiar campos en caso de error
                       setEmail('');
                       setPassword('');
                     }
@@ -761,7 +708,7 @@ export default function MasterScreen() {
         {showVerificationModalAfterRegister && (
           <CustomModal
             visible={true}
-            onDismiss={() => { }} // No permitir cerrar hasta verificar
+            onDismiss={() => { }} 
             title={AUTH_TEXTS.verificationTitle}
             centerCard={true}
             showHamburgerMenu={false}
@@ -881,15 +828,12 @@ export default function MasterScreen() {
               <TouchableOpacity
                 onPress={async () => {
                   try {
-                    // Limpiar rol de manera segura
                     await clearUserRole();
                     setIsAdminSelected(false);
 
-                    // Luego hacer logout
                     await logout();
 
                   } catch (error) {
-                    // Aún así, intentar logout
                     await logout();
                   }
                 }}
@@ -917,7 +861,6 @@ export default function MasterScreen() {
     );
   }
 
-  // ---------- 4. APP PRINCIPAL (usuario logueado y verificado) ----------
 
   return (
     <PaperProvider theme={theme}>
@@ -1002,7 +945,6 @@ export default function MasterScreen() {
           offsetWithTopbar={true}
           topbarMarginTop={80}
           onSavePress={() => {
-            // Validar campos obligatorios antes de proceder
             const missingFields = validateRequiredFields(newPerson);
             if (missingFields.length > 0) {
               const missingFieldsText = missingFields.map(field => `• ${field.label}`).join('\n');
@@ -1011,10 +953,9 @@ export default function MasterScreen() {
                 `${VALIDATION_TEXTS.fillAllFields}\n\n${VALIDATION_TEXTS.missingFields}\n${missingFieldsText}`,
                 [{ text: VALIDATION_TEXTS.ok }]
               );
-              return; // No proceder si faltan campos
+              return;
             }
 
-            // Si todos los campos están completos, proceder con el flujo normal
             setNoDataModalVisible(false);
             setIsCreatingNewPerson(true);
             setTimeout(() => setShowConfirmModal(true), 300);
@@ -1138,12 +1079,10 @@ export default function MasterScreen() {
                   setNewPerson({});
                   setAddMode(false);
 
-                  // Si estamos editando una persona existente, mostrar el modal de detalles
                   if (editablePerson && !isCreatingNewPerson) {
                     setSelectedPerson(editablePerson);
                     setDetailModalVisible(true);
                   } else {
-                    // Si estamos creando una nueva persona, volver a la lista
                     setShowEmployeeList(true);
                   }
                 }}
@@ -1160,7 +1099,6 @@ export default function MasterScreen() {
                       success = await handleSaveEditPerson();
                     }
 
-                    // Solo mostrar modal de éxito si la operación fue exitosa
                     if (success) {
                       setSaveSuccess(true);
                     }

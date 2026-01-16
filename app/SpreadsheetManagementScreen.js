@@ -41,28 +41,23 @@ export default function SpreadsheetManagementScreen() {
   const [hasVitalsData, setHasVitalsData] = useState(false);
   const [hasMedicationData, setHasMedicationData] = useState(false);
   const [medicationCount, setMedicationCount] = useState(1);
-  const [vitalsView, setVitalsView] = useState('nuevo'); // 'nuevo' o 'anterior'
+  const [vitalsView, setVitalsView] = useState('nuevo');
   const [previousVitalsData, setPreviousVitalsData] = useState(null);
   const [vitalsHistoryByDate, setVitalsHistoryByDate] = useState({});
 
-  // Refs para conectar con VitalSignsColumns
   const modifyRef = useRef();
   const saveRef = useRef();
 
-  // Refs para conectar con MedicationColumns
   const medicationModifyRef = useRef();
   const medicationSaveRef = useRef();
 
-  // Función para abrir modal de signos vitales
   const handleOpenSignosVitales = () => {
     setShowSignosVitalesModal(true);
-    // Resetear el estado cuando se abre el modal para asegurar que el botón Modificar no aparezca
     setHasVitalsData(false);
     setVitalsView('nuevo');
     setPreviousVitalsData(null);
   };
 
-  // Función para cargar datos anteriores de signos vitales
   const loadPreviousVitals = async () => {
     if (!user?.uid || !area || !personId) return;
 
@@ -76,18 +71,15 @@ export default function SpreadsheetManagementScreen() {
       if (snapshot.exists()) {
         const allVitals = snapshot.val();
 
-        // Con push(), siempre será un objeto con múltiples keys (cada key es un ID único de Firebase)
-        // Convertir a array de registros
         const records = Object.keys(allVitals).map(key => {
           const record = allVitals[key];
           return {
             ...record,
-            personId: record.personId || personId, // Asegurar personId
-            firebaseKey: key // Guardar la key de Firebase
+            personId: record.personId || personId, 
+            firebaseKey: key
           };
         });
 
-        // Filtrar solo registros válidos que tengan createdAt
         const validRecords = records.filter(r => {
           const hasCreatedAt = r.createdAt && r.createdAt.trim() !== '';
           const hasPersonId = r.personId === personId;
@@ -95,21 +87,18 @@ export default function SpreadsheetManagementScreen() {
         });
 
         if (validRecords.length > 0) {
-          // Construir mapa vitalsHistoryByDate: clave YYYY-MM-DD -> registro más reciente de ese día
           const historyMap = {};
           validRecords.forEach(record => {
-            const dateKey = record.createdAt.split('T')[0]; // YYYY-MM-DD
-            // Si ya existe un registro para esta fecha, mantener el más reciente
+            const dateKey = record.createdAt.split('T')[0];
             if (!historyMap[dateKey] || new Date(record.createdAt) > new Date(historyMap[dateKey].createdAt)) {
               historyMap[dateKey] = record;
             }
           });
 
-          // Encontrar el registro más reciente para previousVitalsData
           const sortedRecords = [...validRecords].sort((a, b) => {
             const dateA = new Date(a.createdAt || 0);
             const dateB = new Date(b.createdAt || 0);
-            return dateB.getTime() - dateA.getTime(); // Más reciente primero
+            return dateB.getTime() - dateA.getTime(); 
           });
 
           const latestRecord = sortedRecords[0];
@@ -135,23 +124,18 @@ export default function SpreadsheetManagementScreen() {
     }
   };
 
-  // Función para cambiar la vista
   const handleViewChange = async (view) => {
     setVitalsView(view);
     if (view === 'anterior') {
-      // Siempre recargar datos al cambiar a vista "Anterior" para asegurar datos actualizados
       await loadPreviousVitals();
     }
   };
 
-  // Función para guardar signos vitales
   const handleSaveVitals = async () => {
     if (saveRef.current) {
       const success = await saveRef.current();
       if (success) {
         setSaveSuccess(true);
-        // Siempre recargar los datos después de guardar para actualizar el histórico
-        // Pequeño delay para asegurar que Firebase haya guardado
         setTimeout(async () => {
           await loadPreviousVitals();
         }, 300);
@@ -159,13 +143,11 @@ export default function SpreadsheetManagementScreen() {
     }
   };
 
-  // Función para abrir modal de medicación
   const handleOpenMedication = () => {
     setShowMedicationModal(true);
     setHasMedicationData(false);
   };
 
-  // Función para guardar medicación
   const handleSaveMedication = async () => {
     if (medicationSaveRef.current) {
       const success = await medicationSaveRef.current();
@@ -188,7 +170,6 @@ export default function SpreadsheetManagementScreen() {
           />
         )}
 
-        {/* HamburgerMenu para la pantalla principal */}
         {!showSignosVitalesModal && !showMedicationModal && (
           <HamburgerMenu
             position="top-right"
@@ -201,7 +182,6 @@ export default function SpreadsheetManagementScreen() {
           />
         )}
 
-        {/* Nombre del paciente - solo cuando el modal está cerrado */}
         {!showSignosVitalesModal && !showMedicationModal && (
           <View style={styles.patientBox}>
             <Text style={styles.patientText}>_Paciente: {patientName}</Text>
@@ -210,7 +190,6 @@ export default function SpreadsheetManagementScreen() {
 
         {!showSignosVitalesModal && !showMedicationModal && (
           <>
-            {/* Botones */}
             <View style={styles.buttonsGrid}>
               <CustomLogButton
                 icon={require('../assets/imageLogButtons/SV.png')}
@@ -246,7 +225,6 @@ export default function SpreadsheetManagementScreen() {
           </>
         )}
 
-        {/* Modal de Signos Vitales */}
         <CustomModal
           visible={showSignosVitalesModal}
           onRequestClose={() => setShowSignosVitalesModal(false)}
@@ -300,13 +278,11 @@ export default function SpreadsheetManagementScreen() {
           />
         </CustomModal>
 
-        {/* Modal de Medicación */}
         <CustomModal
           visible={showMedicationModal}
           onDismiss={() => setShowMedicationModal(false)}
           showTopbar={true}
           topbarTitle="Medicación"
-          // centerCard={false}
           centerCard={true}
           scrollable={true}
           title={MEDICATION_TEXTS.formTitle}
@@ -353,7 +329,6 @@ export default function SpreadsheetManagementScreen() {
           />
         </CustomModal>
 
-        {/* MODAL DE CONFIRMACIÓN */}
         <CustomModal
           visible={showConfirmModal}
           onDismiss={() => {
@@ -373,7 +348,6 @@ export default function SpreadsheetManagementScreen() {
                   setSaveSuccess(false);
                   if (showSignosVitalesModal) {
                     setShowSignosVitalesModal(false);
-                    // Recargar datos después de cerrar el modal para asegurar que estén actualizados
                     setTimeout(async () => {
                       await loadPreviousVitals();
                     }, 500);

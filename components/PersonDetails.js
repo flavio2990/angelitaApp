@@ -2,7 +2,6 @@
 import { FORM_TEXTS } from '../constants/Strings';
 
 export default function PersonDetails({ person, userType }) {
-  // Determinar si es empleado para ocultar campos específicos
   const isEmployee = person?.tipo && 
     (person.tipo.toLowerCase() === 'enfermería' || person.tipo.toLowerCase() === 'administrador');
 
@@ -28,7 +27,6 @@ export default function PersonDetails({ person, userType }) {
         <Text style={styles.detailsModal}>_{FORM_TEXTS.admissionLabel}:</Text>
         <Text style={styles.dynamicText}>{person?.ingreso}</Text>
       </View>
-      {/* Campos específicos para pacientes - ocultos para empleados */}
       {!isEmployee && (
         <>
           <View style={styles.detailsRow}>
@@ -41,7 +39,6 @@ export default function PersonDetails({ person, userType }) {
           </View>
         </>
       )}
-      {/* Campo de nacionalidad - visible para todos */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_{FORM_TEXTS.nationalityLabel}:</Text>
         <Text style={styles.dynamicText}>{person?.nacionalidad}</Text>

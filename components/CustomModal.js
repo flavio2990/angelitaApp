@@ -98,7 +98,6 @@ const CustomModal = ({
     };
   }, []);
 
-  // Reset calendario al cerrar o cambiar de vista
   useEffect(() => {
     if (!visible || vitalsView !== 'anterior') {
       setShowHistoryCalendar(false);
@@ -122,14 +121,13 @@ const CustomModal = ({
   };
 
   const handleDayPress = (day) => {
-    const pickedKey = day.dateString; // YYYY-MM-DD
+    const pickedKey = day.dateString; 
     const picked = new Date(pickedKey);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const pickedDate = new Date(picked);
     pickedDate.setHours(0, 0, 0, 0);
 
-    // Validar que la fecha seleccionada no sea futura
     if (pickedDate > today) {
       Alert.alert(
         'Signos y Constantes',
@@ -142,19 +140,16 @@ const CustomModal = ({
     setSelectedDate(picked);
     setHistorySelectionAttempted(true);
 
-    // Buscar en el mapa de histórico usando la fecha como clave
     const recordForDate = vitalsHistoryByDate[pickedKey];
 
     if (recordForDate && vitalsData?.personId) {
-      // Validar que el registro pertenezca al subject actual
       if (recordForDate.personId === vitalsData.personId) {
         setHistorySelectedData(recordForDate);
-        setShowHistoryCalendar(false); // Cerrar calendario y mostrar los datos
+        setShowHistoryCalendar(false); 
         return;
       }
     }
 
-    // No se encontró data para esta fecha
     setHistorySelectedData(null);
     Alert.alert(
       'Signos y Constantes',
@@ -184,7 +179,6 @@ const CustomModal = ({
           </View>
         )}
 
-        {/* Información del paciente para modales de signos vitales y medicación */}
         {((isVitalsModal || isMedicationModal) && vitalsData?.patientName) && (
           <View style={[
             styles.patientBoxModal,
@@ -205,7 +199,6 @@ const CustomModal = ({
           </View>
         )}
 
-        {/* Botones Anterior/Nuevo para modal de signos vitales */}
         {isVitalsModal && showTopbar && (
           <View style={[
             styles.vitalsViewButtons,
@@ -242,7 +235,6 @@ const CustomModal = ({
           </View>
         )}
 
-        {/* MENÚ HAMBURGUESA */}
         {showHamburgerMenu && (
           <HamburgerMenu
             position="top-right"
@@ -255,7 +247,6 @@ const CustomModal = ({
           />
         )}
 
-        {/* Información del paciente para modales de signos vitales y medicación */}
         {((isVitalsModal || isMedicationModal) && vitalsData?.patientName) && (
           <View style={[
             styles.patientBoxModal,
@@ -538,7 +529,6 @@ const CustomModal = ({
                       medicationCount <= 3
                         ? 60 + (medicationCount * 70) + 50
                         : height * 0.6
-                      // ) : 60 + 70 + 50,
                     ) : height * 0.4,
                     maxHeight: height * 0.6,
                   }
@@ -770,7 +760,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginVertical: 0,
     maxHeight: height * 0.4,
-    width: width - 20, // Ancho completo menos un pequeño margen
+    width: width - 20, 
     borderRadius: 50,
     marginHorizontal: 10,
     alignSelf: 'center',
@@ -781,7 +771,7 @@ const styles = StyleSheet.create({
     width: '95%',
   },
   vitalsCard: {
-    width: width - 20, // Ancho completo menos un pequeño margen
+    width: width - 20, 
     maxHeight: height * 0.55,
     borderRadius: 50,
     marginHorizontal: 10,
@@ -904,7 +894,6 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     textDecorationLine: 'none',
   },
-  // Estilos para el patientBox en modales de signos vitales
   patientBoxModal: {
     position: 'absolute',
     left: 16,

@@ -70,7 +70,6 @@ const styles = StyleSheet.create({
   },
   cardText: {
     fontSize: 18,
-    // color: '#555',
   },
   fabStyle: {
     position: 'absolute',

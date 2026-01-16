@@ -9,7 +9,6 @@ export default function VitalsDetails({ vitalsData }) {
     );
   }
 
-  // Formatear fecha según el diseño: "Realizado el 12/2/2025"
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -24,7 +23,6 @@ export default function VitalsDetails({ vitalsData }) {
     }
   };
 
-  // Formatear hora según el diseño: "10: 23 am"
   const formatTime = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -40,13 +38,11 @@ export default function VitalsDetails({ vitalsData }) {
     }
   };
 
-  // Usar solo createdAt según los requerimientos
   const displayDate = vitalsData.createdAt;
   const displayBy = vitalsData.createdBy || 'N/A';
 
   return (
     <View style={styles.container}>
-      {/* Realizado el */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>Realizado el</Text>
         <Text style={styles.dynamicText}>
@@ -54,7 +50,6 @@ export default function VitalsDetails({ vitalsData }) {
         </Text>
       </View>
 
-      {/* Realizado a las */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>Realizado a las:</Text>
         <Text style={styles.dynamicText}>
@@ -62,7 +57,6 @@ export default function VitalsDetails({ vitalsData }) {
         </Text>
       </View>
 
-      {/* Ingresado por */}
       <View style={styles.detailsRowWrap}>
         <Text style={styles.detailsModal}>Ingresado por:</Text>
         <Text style={styles.dynamicTextWrap}>
@@ -70,10 +64,8 @@ export default function VitalsDetails({ vitalsData }) {
         </Text>
       </View>
 
-      {/* Separador visual */}
       <View style={styles.separator} />
 
-      {/* TA Sistólica */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_TA(Sist):</Text>
         <Text style={styles.dynamicText}>
@@ -81,15 +73,13 @@ export default function VitalsDetails({ vitalsData }) {
         </Text>
       </View>
 
-      {/* TA Diastólica */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_TA(Diast):</Text>
-        <Text style={styles.dynamicText}>
+        <Text style={styles.dynamicText}> 
           {vitalsData.taDiastolic ? `${vitalsData.taDiastolic} mmHg` : 'N/A'}
         </Text>
       </View>
 
-      {/* FC */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_FC(Ipm):</Text>
         <Text style={styles.dynamicText}>
@@ -97,7 +87,6 @@ export default function VitalsDetails({ vitalsData }) {
         </Text>
       </View>
 
-      {/* FR */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_FR/min:</Text>
         <Text style={styles.dynamicText}>
@@ -105,7 +94,6 @@ export default function VitalsDetails({ vitalsData }) {
         </Text>
       </View>
 
-      {/* SpO2 */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_SpO2%:</Text>
         <Text style={styles.dynamicText}>
@@ -113,7 +101,6 @@ export default function VitalsDetails({ vitalsData }) {
         </Text>
       </View>
 
-      {/* Temp */}
       <View style={styles.detailsRow}>
         <Text style={styles.detailsModal}>_T °C:</Text>
         <Text style={styles.dynamicText}>

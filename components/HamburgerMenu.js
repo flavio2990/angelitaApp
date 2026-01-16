@@ -5,27 +5,23 @@ import { useAuth } from './UserContext';
 import { ROLE_TEXTS, AUTH_TEXTS, NAVIGATION_TEXTS } from '../constants/Strings';
 
 export default function HamburgerMenu({ 
-  position = 'top-right', // 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+  position = 'top-right',
   style,
-  showInModal = true, // Controla si se muestra en modales
-  onLogout, // Función personalizada de logout que limpia datos locales
-  onGoHome, // Función para volver a la vista principal (selección de área)
-  hasTopBar = false, // Indica si hay un TopBarHeader presente
-  showGoHomeOption = true, // Controla si se muestra la opción "Volver a inicio"
-  forceShow = false // Forzar renderización sin verificar contexto
+  onLogout,   
+  onGoHome,
+  hasTopBar = false,
+  showGoHomeOption = true,
+  forceShow = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { globalUserRole, logout } = useAuth();
 
-  // Si se fuerza la renderización, mostrar siempre
   if (forceShow) {
-    // Renderizar siempre
   } else if (!globalUserRole) {
     return null;
   }
 
-  // Función para obtener la información del rol
   const getRoleInfo = (role) => {
     switch (role) {
       case 'admin':
@@ -57,10 +53,8 @@ export default function HamburgerMenu({
 
   const roleInfo = getRoleInfo(globalUserRole);
 
-  // Función para obtener la posición del menú
   const getPositionStyle = () => {
-    // Ajustar posición basándose en si hay TopBarHeader o no
-    const topPosition = hasTopBar ? 30 : 30; // Más arriba cuando no hay TopBarHeader
+    const topPosition = hasTopBar ? 30 : 30;
     
     switch (position) {
       case 'top-left':
@@ -84,10 +78,8 @@ export default function HamburgerMenu({
     setIsOpen(false);
     
     try {
-      // Simular tiempo de procesamiento para asegurar que los datos se guarden en la base de datos
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Usar función personalizada de logout si está disponible, sino usar la del contexto
       if (onLogout) {
         onLogout();
       } else {
@@ -110,7 +102,6 @@ export default function HamburgerMenu({
   
   return (
     <>
-      {/* Overlay de loading durante logout */}
       {isLoggingOut && (
         <View style={styles.logoutOverlay}>
           <View style={styles.loadingContainer}>
@@ -120,7 +111,6 @@ export default function HamburgerMenu({
         </View>
       )}
       
-      {/* Overlay invisible para cerrar el menú al hacer clic fuera */}
       {isOpen && !isLoggingOut && (
         <TouchableOpacity 
           style={styles.overlay} 
@@ -130,7 +120,6 @@ export default function HamburgerMenu({
       )}
       
       <View style={[styles.container, getPositionStyle(), style]}>
-        {/* Botón del menú hamburguesa */}
         <TouchableOpacity 
           style={styles.hamburgerButton}
           onPress={handleToggleMenu}
@@ -143,10 +132,8 @@ export default function HamburgerMenu({
           </View>
         </TouchableOpacity>
 
-        {/* Menú desplegable */}
         {isOpen && (
           <View style={[styles.menuContainer, { backgroundColor: roleInfo.bgColor, borderColor: roleInfo.borderColor }]}>
-            {/* Header del menú con información del rol */}
             <View style={styles.menuHeader}>
               <Text style={[styles.roleIcon, { color: roleInfo.color }]}>
                 {roleInfo.icon}
@@ -156,10 +143,8 @@ export default function HamburgerMenu({
               </Text>
             </View>
 
-            {/* Separador antes de las opciones */}
             <View style={[styles.separator, { backgroundColor: roleInfo.borderColor }]} />
 
-            {/* Botón para volver a inicio */}
             {onGoHome && showGoHomeOption && (
               <TouchableOpacity 
                 style={styles.menuItem} 
@@ -172,7 +157,6 @@ export default function HamburgerMenu({
               </TouchableOpacity>
             )}
 
-            {/* Botón de logout - Limpia TODO */}
             <TouchableOpacity 
               style={[styles.menuItem, isLoggingOut && styles.disabledMenuItem]} 
               onPress={handleLogout}
@@ -213,7 +197,6 @@ const styles = StyleSheet.create({
     zIndex: 99999,
   },
   
-  // Botón del menú hamburguesa
   hamburgerButton: {
     width: 50,
     height: 50,
@@ -242,10 +225,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   
-  // Menú desplegable
   menuContainer: {
     position: 'absolute',
-    top: 60, // Debajo del botón hamburguesa
+    top: 60,
     right: 0,
     width: 200,
     borderRadius: 12,
@@ -292,8 +274,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  
-  // Estilos para el loading de logout
+      
   logoutOverlay: {
     position: 'absolute',
     top: 0,

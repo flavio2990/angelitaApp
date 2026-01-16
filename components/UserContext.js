@@ -20,28 +20,27 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Objeto custom para la app
-  const [firebaseUser, setFirebaseUser] = useState(null); // Usuario real de Firebase
+  const [user, setUser] = useState(null);
+  const [firebaseUser, setFirebaseUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [globalUserRole, setGlobalUserRole] = useState(null); // Rol global de la app
-  const [shouldLoadPersistedRole, setShouldLoadPersistedRole] = useState(true); // Controla si se debe cargar rol persistido
+  const [globalUserRole, setGlobalUserRole] = useState(null);
+  const [shouldLoadPersistedRole, setShouldLoadPersistedRole] = useState(true);
   const auth = getAuth(app);
 
   useEffect(() => {
     const initializeApp = async () => {
-      // Cargar rol persistido SOLO si no se ha hecho logout
       if (shouldLoadPersistedRole) {
         await loadPersistedRole();
       }
       
       const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
-        setFirebaseUser(fbUser); // Guarda el usuario real
+        setFirebaseUser(fbUser);
         if (fbUser) {
           const newUser = {
             uid: fbUser.uid,
             email: fbUser.email,
             emailVerified: fbUser.emailVerified,
-            role: 'admin', // Puedes obtenerlo de la DB si lo necesitas
+            role: 'admin',
           };
           setUser(newUser);
         } else {
@@ -55,33 +54,27 @@ export const AuthProvider = ({ children }) => {
     initializeApp();
   }, []);
 
-  // Registro de usuario
   const register = async (email, password, role = 'admin') => {
     try {
-      // Validar email antes de intentar crear usuario
       if (!email || !email.includes('@')) {
         throw new Error('Email inválido');
       }
       
-      // Validar contraseña
       if (!password || password.length < 6) {
         throw new Error('La contraseña debe tener al menos 6 caracteres');
       }
       
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
 
-      // Verificar que la base de datos esté disponible
       if (!database) {
         throw new Error('Base de datos no disponible');
       }
 
-      // Crear estructura base del usuario
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         role: role,
         createdAt: new Date().toISOString(),
-        // Agregar campos adicionales según el rol
         ...(role === 'admin' && {
           adminSettings: {
             nombreHospital: 'Hogar de Ancianos',
@@ -89,7 +82,6 @@ export const AuthProvider = ({ children }) => {
             fechaCreacion: new Date().toISOString()
           },
           permissions: ['create', 'read', 'update', 'delete'],
-          // El admin principal contiene todo el sistema
           empleados: {},
           pacientes: {},
           areas: {
@@ -114,18 +106,14 @@ export const AuthProvider = ({ children }) => {
           permissions: ['read', 'update'],
           areaAsignada: '',
           turno: '',
-          adminAsignado: '' // ID del admin que lo gestiona
+          adminAsignado: ''
         })
       };
       
-              // Guardar en la estructura principal según el rol
         let userRef;
         if (role === 'admin') {
-          // El admin principal se guarda en la raíz de admins
           userRef = ref(database, `admins/${firebaseUser.uid}`);
         } else if (role === 'empleado') {
-          // Los empleados se guardan dentro del admin principal
-          // Por ahora los guardamos en empleados, pero podrían estar dentro de un admin específico
           userRef = ref(database, `empleados/${firebaseUser.uid}`);
         }
       
@@ -137,7 +125,6 @@ export const AuthProvider = ({ children }) => {
 
       await sendEmailVerification(firebaseUser);
       
-      // Solo mostrar alerta de éxito si todo salió bien
       Alert.alert('Usuario creado exitosamente', 'Te enviamos un email de verificación.');
       
     } catch (e) {
@@ -145,7 +132,6 @@ export const AuthProvider = ({ children }) => {
       console.error('Mensaje de error:', e.message);
       console.error('Código de error:', e.code);
       
-      // Mostrar alerta de error específica
       let errorMessage = 'Error al crear usuario';
       
       if (e.code === 'auth/invalid-email') {
@@ -159,11 +145,10 @@ export const AuthProvider = ({ children }) => {
       }
       
       Alert.alert('Error en el registro', errorMessage);
-      throw e; // Re-lanzar el error para que se maneje en el componente
+      throw e;
     }
   };
 
-  // Login
   const login = async (email, password) => {
     try {
       if (!email || !password) {
@@ -174,36 +159,30 @@ export const AuthProvider = ({ children }) => {
       if (!user.emailVerified) {
         Alert.alert('Verifica tu correo', 'Debes verificar tu email antes de continuar.');
         await signOut(auth);
-        return false; // No permitir acceso
+        return false;
       }
       
-      // Si el email está verificado, permitir acceso
-      return true; // Permitir acceso
+      return true;
     } catch (e) {
       Alert.alert('Error', e.message || String(e));
-      return false; // No permitir acceso
+      return false;
     }
   };
   
   const logout = async () => {
     try {
-      // 1. Deshabilitar carga automática de rol persistido
       setShouldLoadPersistedRole(false);
       
-      // 2. SignOut de Firebase
       await signOut(auth);
       
-      // 3. Limpiar estado local del contexto INMEDIATAMENTE
       setUser(null);
       setFirebaseUser(null);
       setGlobalUserRole(null);
       setLoading(false);
       
-      // 4. Limpiar TODO AsyncStorage - TODOS los datos del usuario
       await AsyncStorage.clear();
       
     } catch (error) {
-      // Aún así, intentar limpiar el estado local
       setUser(null);
       setFirebaseUser(null);
       setGlobalUserRole(null);
@@ -212,36 +191,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Limpiar solo la sesión sin tocar el rol (para verificación de email)
   const clearSessionOnly = async () => {
     await signOut(auth);
-    // NO limpiar globalUserRole aquí
   };
 
 
 
-  // Establecer rol global
   const setUserRole = async (role) => {
-    // Validar que el rol no sea null o undefined
     if (!role) {
       return;
     }
     
-    // Re-habilitar carga automática de rol persistido
     setShouldLoadPersistedRole(true);
     
-    // Persistir en estado local
     setGlobalUserRole(role);
     
-    // Persistir en AsyncStorage para mantener el rol entre sesiones
     try {
       await AsyncStorage.setItem('globalUserRole', role);
     } catch (error) {
-      // Error silencioso
     }
   };
 
-  // Recuperar rol desde AsyncStorage al iniciar la app
   const loadPersistedRole = async () => {
     try {
       const persistedRole = await AsyncStorage.getItem('globalUserRole');
@@ -251,36 +221,28 @@ export const AuthProvider = ({ children }) => {
         return persistedRole;
       }
     } catch (error) {
-      // Error silencioso
     }
     return null;
   };
 
-  // Obtener rol global
   const getUserRole = () => {
     return globalUserRole;
   };
 
-  // Limpiar rol global de manera segura
   const clearUserRole = async () => {
     try {
-      // Limpiar estado local
       setGlobalUserRole(null);
       
-      // Remover de AsyncStorage
       await AsyncStorage.removeItem('globalUserRole');
       
-      // Deshabilitar carga automática
       setShouldLoadPersistedRole(false);
       
     } catch (error) {
-      // Error silencioso
     }
   };
 
 
 
-  // Reenviar verificación
   const resendVerification = async () => {
     try {
       if (!firebaseUser) {
@@ -311,19 +273,15 @@ export const AuthProvider = ({ children }) => {
   const refreshUser = async () => {
     try {
       if (firebaseUser) {
-        // Recargar el usuario de Firebase para obtener el estado más reciente
         await firebaseUser.reload();
         
-        // Intentar obtener el rol desde la base de datos
-        let userRole = 'admin'; // default
+        let userRole = 'admin';
         try {
-          // Primero buscar en admins
           const adminRef = ref(database, `admins/${firebaseUser.uid}`);
           const adminSnapshot = await get(adminRef);
           if (adminSnapshot.exists()) {
             userRole = adminSnapshot.val().role || 'admin';
           } else {
-            // Si no está en admins, buscar en empleados
             const employeeRef = ref(database, `empleados/${firebaseUser.uid}`);
             const employeeSnapshot = await get(employeeRef);
             if (employeeSnapshot.exists()) {
@@ -331,10 +289,8 @@ export const AuthProvider = ({ children }) => {
             }
           }
         } catch (dbError) {
-          // Error silencioso, usar rol por defecto
         }
         
-        // Actualizar el estado del usuario con la información más reciente
         const updatedUser = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -346,7 +302,6 @@ export const AuthProvider = ({ children }) => {
         return updatedUser;
       }
     } catch (error) {
-      // Fallback al rol por defecto
       if (firebaseUser) {
         const fallbackUser = {
           uid: firebaseUser.uid,
