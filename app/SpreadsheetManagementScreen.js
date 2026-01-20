@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 
@@ -12,7 +12,7 @@ import EditPersonForm from '../components/EditPersonForm';
 import HamburgerMenu from '../components/HamburgerMenu';
 import MedicationColumns from '../components/MedicationColumns';
 import { useAuth } from '../components/UserContext';
-import { STATUS_MESSAGES, FORM_TEXTS, MEDICATION_TEXTS } from '../constants/Strings';
+import { STATUS_MESSAGES, FORM_TEXTS, MEDICATION_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
 import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
 
@@ -45,12 +45,47 @@ export default function SpreadsheetManagementScreen() {
   const [vitalsView, setVitalsView] = useState('nuevo');
   const [previousVitalsData, setPreviousVitalsData] = useState(null);
   const [vitalsHistoryByDate, setVitalsHistoryByDate] = useState({});
+  const [personType, setPersonType] = useState(null);
 
   const modifyRef = useRef();
   const saveRef = useRef();
 
   const medicationModifyRef = useRef();
   const medicationSaveRef = useRef();
+
+  useEffect(() => {
+    const loadPersonType = async () => {
+      if (!user?.uid || !area || !personId) return;
+
+      try {
+        const subjectRef = ref(database, `admins/${user.uid}/areas/${area}/subjects/${personId}`);
+        const snapshot = await get(subjectRef);
+        
+        if (snapshot.exists()) {
+          const subject = snapshot.val();
+          setPersonType(subject?.tipo || null);
+        }
+      } catch (error) {
+        console.error('Error loading person type:', error);
+      }
+    };
+
+    loadPersonType();
+  }, [user?.uid, area, personId]);
+
+  const getPersonLabelPrefix = () => {
+    if (!personType) return `_${PERSON_TYPE_TEXTS.patient}:`;
+    
+    const tipoLower = personType.toLowerCase();
+    if (tipoLower === PERSON_TYPE_TEXTS.patient.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.patient}:`;
+    } else if (tipoLower === PERSON_TYPE_TEXTS.nursing.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.nursing}:`;
+    } else if (tipoLower === PERSON_TYPE_TEXTS.administrator.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.administrator}:`;
+    }
+    return `_${personType}:`;
+  };
 
   const handleOpenSignosVitales = () => {
     setShowSignosVitalesModal(true);
@@ -187,7 +222,7 @@ export default function SpreadsheetManagementScreen() {
 
         {!showSignosVitalesModal && !showMedicationModal && (
           <View style={styles.patientBox}>
-            <Text style={styles.patientText}>_Paciente: {patientName}</Text>
+            <Text style={styles.patientText}>{getPersonLabelPrefix()} {patientName}</Text>
           </View>
         )}
 
@@ -267,7 +302,8 @@ export default function SpreadsheetManagementScreen() {
             adminUid: user?.uid,
             area: area,
             personId: personId,
-            patientName: patientName
+            patientName: patientName,
+            personType: personType
           }}
         >
           <EditPersonForm
@@ -317,7 +353,8 @@ export default function SpreadsheetManagementScreen() {
             adminUid: user?.uid,
             area: area,
             personId: personId,
-            patientName: patientName
+            patientName: patientName,
+            personType: personType
           }}
           medicationCount={medicationCount}
         >

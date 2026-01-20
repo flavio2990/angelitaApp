@@ -24,7 +24,7 @@ import HamburgerMenu from './HamburgerMenu';
 import VitalSignsColumns from './VitalSignsColumns';
 import CustomButton from './CustomButton';
 import VitalsDetails from './VitalsDetails';
-import { VITALS_TEXTS, FORM_TEXTS, MEDICATION_TEXTS } from '../constants/Strings';
+import { VITALS_TEXTS, FORM_TEXTS, MEDICATION_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
 import { Calendar } from 'react-native-calendars';
 
 const { width, height } = Dimensions.get('window');
@@ -77,6 +77,21 @@ const CustomModal = ({
   const [historySelectedData, setHistorySelectedData] = useState(null);
   const [historySelectionAttempted, setHistorySelectionAttempted] = useState(false);
   const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : (isMedicationModal && children ? `${MEDICATION_TEXTS.columns.droga}/${MEDICATION_TEXTS.columns.hora}/${MEDICATION_TEXTS.columns.dosis}` : title);
+
+  const getPersonLabelPrefix = () => {
+    const personType = vitalsData?.personType;
+    if (!personType) return isMedicationModal ? MEDICATION_TEXTS.patientLabelPrefix : VITALS_TEXTS.patientLabelPrefix;
+    
+    const tipoLower = personType.toLowerCase();
+    if (tipoLower === PERSON_TYPE_TEXTS.patient.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.patient}:`;
+    } else if (tipoLower === PERSON_TYPE_TEXTS.nursing.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.nursing}:`;
+    } else if (tipoLower === PERSON_TYPE_TEXTS.administrator.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.administrator}:`;
+    }
+    return `_${personType}:`;
+  };
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -191,10 +206,7 @@ const CustomModal = ({
             }
           ]}>
             <Text style={styles.patientTextModal}>
-              {isMedicationModal 
-                ? `${MEDICATION_TEXTS.patientLabelPrefix} ${vitalsData.patientName}`
-                : `${VITALS_TEXTS.patientLabelPrefix} ${vitalsData.patientName}`
-              }
+              {`${getPersonLabelPrefix()} ${vitalsData.patientName}`}
             </Text>
           </View>
         )}
@@ -259,10 +271,7 @@ const CustomModal = ({
             }
           ]}>
             <Text style={styles.patientTextModal}>
-              {isMedicationModal 
-                ? `${MEDICATION_TEXTS.patientLabelPrefix} ${vitalsData.patientName}`
-                : `${VITALS_TEXTS.patientLabelPrefix} ${vitalsData.patientName}`
-              }
+              {`${getPersonLabelPrefix()} ${vitalsData.patientName}`}
             </Text>
           </View>
         )}
