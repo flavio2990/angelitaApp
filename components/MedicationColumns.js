@@ -1,15 +1,26 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, Keyboard, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { TextInput } from 'react-native-paper';
-import { ref, set, update, get } from 'firebase/database';
+import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
-import { MEDICATION_TEXTS } from '../constants/Strings';
+import { createPlanillaRecord } from '../components/services/helpers';
+import { MEDICATION_TEXTS } from '../constants/Strings.js';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const INITIAL_MEDICATION = {
-  id: Date.now(),
+  id: Date.now().toString(),
   droga: '',
+  hora: '',
   dosis: '1',
+};
+
+const formatHora = (value) => {
+  const cleaned = value.replace(/[^0-9]/g, '');
+  if (cleaned.length === 0) return '';
+  if (cleaned.length <= 2) return cleaned;
+  const hours = cleaned.slice(0, 2);
+  const minutes = cleaned.slice(2, 4);
+  return hours + ':' + minutes;
 };
 
 export default function MedicationColumns({ 
@@ -24,56 +35,102 @@ export default function MedicationColumns({
   onMedicationCountChange = null,
 }) {
   const [medications, setMedications] = useState([
-    { ...INITIAL_MEDICATION, id: Date.now() },
-    { ...INITIAL_MEDICATION, id: Date.now() + 1 },
-    { ...INITIAL_MEDICATION, id: Date.now() + 2 },
-    { ...INITIAL_MEDICATION, id: Date.now() + 3 },
+    { ...INITIAL_MEDICATION, id: Date.now().toString() },
+    { ...INITIAL_MEDICATION, id: (Date.now() + 1).toString() },
+    { ...INITIAL_MEDICATION, id: (Date.now() + 2).toString() },
+    { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [dataExists, setDataExists] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [createdBy, setCreatedBy] = useState(null);
+  
+  const medicationsRef = useRef(medications);
+  const dataExistsRef = useRef(dataExists);
+  const createdByRef = useRef(null);
 
-  const handleMedicationChange = useCallback((id, field, value) => {
+  const validateSubjectType = useCallback(async () => {
+    if (!adminUid || !area || !personId) return false;
+    
+    try {
+      const subjectRef = ref(database, `admins/${adminUid}/areas/${area}/subjects/${personId}`);
+      const snapshot = await get(subjectRef);
+      
+      if (snapshot.exists()) {
+        const subject = snapshot.val();
+        return subject?.tipo === 'Paciente';
+      }
+      return false;
+    } catch (error) {
+      console.error('Error validating subject type:', error);
+      return false;
+    }
+  }, [adminUid, area, personId]);
+
+  const handleMedicationChange = useCallback(async (id, field, value) => {
+    let processedValue = value;
+    if (field === 'hora') {
+      processedValue = formatHora(value);
+      if (processedValue.length === 5) {
+        const [hours, minutes] = processedValue.split(':');
+        const h = parseInt(hours, 10);
+        const m = parseInt(minutes, 10);
+        if (h > 23 || m > 59) {
+          return;
+        }
+      }
+    }
     setMedications((prev) =>
       prev.map((med) =>
-        med.id === id ? { ...med, [field]: value } : med
+        med.id === id ? { ...med, [field]: processedValue } : med
       )
     );
   }, []);
 
   const addMedicationLine = useCallback(() => {
-    setMedications((prev) => [
-      ...prev,
-      { ...INITIAL_MEDICATION, id: Date.now() + Math.random() },
-    ]);
+    const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const newMedication = { ...INITIAL_MEDICATION, id: newId };
+    setMedications((prev) => [...prev, newMedication]);
   }, []);
 
   const removeMedicationLine = useCallback((id) => {
     setMedications((prev) => {
       const filtered = prev.filter((med) => med.id !== id);
       return filtered.length > 0 ? filtered : [
-        { ...INITIAL_MEDICATION, id: Date.now() },
-        { ...INITIAL_MEDICATION, id: Date.now() + 1 },
-        { ...INITIAL_MEDICATION, id: Date.now() + 2 },
-        { ...INITIAL_MEDICATION, id: Date.now() + 3 },
+        { ...INITIAL_MEDICATION, id: Date.now().toString() },
+        { ...INITIAL_MEDICATION, id: (Date.now() + 1).toString() },
+        { ...INITIAL_MEDICATION, id: (Date.now() + 2).toString() },
+        { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
       ];
     });
   }, []);
 
   const resetForm = useCallback(() => {
     setMedications([
-      { ...INITIAL_MEDICATION, id: Date.now() },
-      { ...INITIAL_MEDICATION, id: Date.now() + 1 },
-      { ...INITIAL_MEDICATION, id: Date.now() + 2 },
-      { ...INITIAL_MEDICATION, id: Date.now() + 3 },
+      { ...INITIAL_MEDICATION, id: Date.now().toString() },
+      { ...INITIAL_MEDICATION, id: (Date.now() + 1).toString() },
+      { ...INITIAL_MEDICATION, id: (Date.now() + 2).toString() },
+      { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
     ]);
     setDataExists(false);
+    setCreatedBy(null);
+    createdByRef.current = null;
     setIsEditing(true);
   }, []);
 
   const loadMedication = useCallback(async () => {
     if (!adminUid || !area || !personId) return;
+    
+    const isValidSubject = await validateSubjectType();
+    if (!isValidSubject) {
+      console.warn('MedicationColumns: Subject is not a Paciente. Medication cannot be loaded.');
+      resetForm();
+      if (onDataExistsChange) {
+        onDataExistsChange(false);
+      }
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -84,26 +141,55 @@ export default function MedicationColumns({
       const snapshot = await get(medicationRef);
       
       if (snapshot.exists()) {
-        const data = snapshot.val();
-        const medicationsList = data.medications || [];
-        if (medicationsList.length > 0) {
-          setMedications(medicationsList.map((med, index) => ({
-            id: med.id || Date.now() + index,
-            droga: med.droga || '',
-            dosis: med.dosis || '1',
-          })));
+        const records = snapshot.val();
+        const recordKeys = Object.keys(records);
+        
+        if (recordKeys.length > 0) {
+          const latestRecordKey = recordKeys.reduce((latest, key) => {
+            const latestDate = records[latest]?.createdAt || '';
+            const currentDate = records[key]?.createdAt || '';
+            return currentDate > latestDate ? key : latest;
+          }, recordKeys[0]);
+          
+          const latestRecord = records[latestRecordKey];
+          const planillaCreatedBy = latestRecord?.createdBy || null;
+          
+          setCreatedBy(planillaCreatedBy);
+          createdByRef.current = planillaCreatedBy;
+          
+          const medicationsArray = [];
+          recordKeys.forEach((key) => {
+            const record = records[key];
+            if (record?.medications) {
+              medicationsArray.push({
+                id: key,
+                droga: record.medications.droga || '',
+                hora: record.medications.hora || '',
+                dosis: record.medications.dosis || '1',
+              });
+            }
+          });
+          
+          if (medicationsArray.length > 0) {
+            setMedications(medicationsArray);
+          } else {
+            setMedications([
+              { ...INITIAL_MEDICATION, id: Date.now().toString() },
+              { ...INITIAL_MEDICATION, id: (Date.now() + 1).toString() },
+              { ...INITIAL_MEDICATION, id: (Date.now() + 2).toString() },
+              { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
+            ]);
+          }
+          setDataExists(true);
+          setIsEditing(false);
+          if (onDataExistsChange) {
+            onDataExistsChange(true);
+          }
         } else {
-          setMedications([
-            { ...INITIAL_MEDICATION, id: Date.now() },
-            { ...INITIAL_MEDICATION, id: Date.now() + 1 },
-            { ...INITIAL_MEDICATION, id: Date.now() + 2 },
-            { ...INITIAL_MEDICATION, id: Date.now() + 3 },
-          ]);
-        }
-        setDataExists(true);
-        setIsEditing(false);
-        if (onDataExistsChange) {
-          onDataExistsChange(true);
+          resetForm();
+          if (onDataExistsChange) {
+            onDataExistsChange(false);
+          }
         }
       } else {
         resetForm();
@@ -119,54 +205,124 @@ export default function MedicationColumns({
     } finally {
       setIsLoading(false);
     }
-  }, [adminUid, area, personId, resetForm, onDataExistsChange]);
+  }, [adminUid, area, personId, resetForm, onDataExistsChange, validateSubjectType]);
+
+  useEffect(() => {
+    medicationsRef.current = medications;
+  }, [medications]);
+
+  useEffect(() => {
+    dataExistsRef.current = dataExists;
+  }, [dataExists]);
+
+  useEffect(() => {
+    createdByRef.current = createdBy;
+  }, [createdBy]);
 
   const saveMedication = useCallback(async () => {
-    if (!adminUid || !area || !personId) return;
+    if (!adminUid || !area || !personId) {
+      console.log({
+        location: 'MedicationColumns.saveMedication - MISSING PARAMS',
+        adminUid: !!adminUid,
+        area: !!area,
+        personId: !!personId,
+      });
+      return false;
+    }
+    
+    let subject = null;
+    try {
+      const subjectRef = ref(database, `admins/${adminUid}/areas/${area}/subjects/${personId}`);
+      const snapshot = await get(subjectRef);
+      if (snapshot.exists()) {
+        subject = snapshot.val();
+      }
+    } catch (error) {
+      console.log({
+        location: 'MedicationColumns.saveMedication - ERROR LOADING SUBJECT',
+        error: error.message,
+      });
+    }
+    
+    const isValidSubject = await validateSubjectType();
+    if (!isValidSubject) {
+      console.log({
+        location: 'MedicationColumns.saveMedication - INVALID SUBJECT TYPE',
+        subjectTipo: subject?.tipo,
+        expectedTipo: 'Paciente',
+      });
+      console.warn('MedicationColumns: Subject is not a Paciente. Medication cannot be saved.');
+      return false;
+    }
     
     setIsSaving(true);
     try {
-      const medicationRef = ref(
-        database,
-        `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/medicacion`
-      );
-      
-      const validMedications = medications.filter(
+      const currentMedications = medicationsRef.current;
+      const validMedications = currentMedications.filter(
         (med) => med.droga && med.droga.trim() !== ''
       );
       
-      const dataToSave = {
-        medications: validMedications.length > 0 
-          ? validMedications 
-          : [{ ...INITIAL_MEDICATION, id: Date.now() }],
-        updatedAt: new Date().toISOString(),
-        updatedBy: adminUid,
-      };
-
-      if (!dataExists) {
-        await set(medicationRef, {
-          ...dataToSave,
-          createdAt: new Date().toISOString(),
-          createdBy: adminUid,
+      if (validMedications.length === 0) {
+        console.log({
+          location: 'MedicationColumns.saveMedication - NO VALID MEDICATIONS',
         });
-        setDataExists(true);
-        if (onDataExistsChange) {
-          onDataExistsChange(true);
-        }
-      } else {
-        await update(medicationRef, dataToSave);
+        return false;
+      }
+
+      const firebasePath = `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/medicacion`;
+
+      for (const med of validMedications) {
+        console.log({
+          location: 'MedicationColumns.saveMedication - BEFORE createPlanillaRecord',
+          ownerUid: adminUid,
+          authUid: adminUid,
+          area,
+          subjectId: personId,
+          personId,
+          subjectTipo: subject?.tipo,
+          subjectArea: subject?.area,
+          planillaType: 'medicacion',
+          firebasePath,
+        });
+
+        await createPlanillaRecord(
+          adminUid,
+          adminUid,
+          area,
+          personId,
+          'medicacion',
+          {
+            droga: med.droga || '',
+            hora: med.hora || '',
+            dosis: med.dosis || '1',
+          }
+        );
+      }
+
+      setDataExists(true);
+      setCreatedBy(adminUid);
+      dataExistsRef.current = true;
+      createdByRef.current = adminUid;
+      if (onDataExistsChange) {
+        onDataExistsChange(true);
       }
 
       setIsEditing(false);
       Keyboard.dismiss();
       return true;
     } catch (error) {
+        console.log({
+        location: 'MedicationColumns.saveMedication - CATCH ERROR',
+        error: error.message,
+        errorCode: error.code,
+        errorStack: error.stack,
+      });
       console.error('Error saving medication:', error);
       return false;
     } finally {
       setIsSaving(false);
     }
-  }, [adminUid, area, personId, medications, dataExists, onDataExistsChange]);
+  }, [adminUid, area, personId, onDataExistsChange, validateSubjectType]);
 
   useEffect(() => {
     if (adminUid && area && personId) {
@@ -179,10 +335,10 @@ export default function MedicationColumns({
   useEffect(() => {
     if (!visible) {
       setIsEditing(false);
-    } else if (!dataExists) {
+    } else {
       setIsEditing(true);
     }
-  }, [visible, dataExists]);
+  }, [visible]);
 
   useEffect(() => {
     if (onMedicationCountChange) {
@@ -192,7 +348,9 @@ export default function MedicationColumns({
 
   useEffect(() => {
     if (onModify) {
-      onModify.current = () => setIsEditing(true);
+      onModify.current = () => {
+        setIsEditing(true);
+      };
     }
     if (onSave) {
       onSave.current = async () => {
@@ -231,7 +389,7 @@ export default function MedicationColumns({
                   style={styles.input}
                   editable={inputEditable}
                   contentStyle={[
-                    styles.inputContent,
+                    styles.inputContentDroga,
                     isFirstLine && { fontWeight: 'bold' },
                     !isFirstLine && { fontWeight: 'normal' },
                   ]}
@@ -239,6 +397,23 @@ export default function MedicationColumns({
                 {inputEditable && (
                   <Icon name="keyboard-arrow-up" size={16} color="#666" style={styles.arrowIcon} />
                 )}
+              </View>
+              <View style={styles.horaColumn}>
+                <TextInput
+                  mode="outlined"
+                  placeholder="HH:MM"
+                  value={medication.hora}
+                  onChangeText={(value) => handleMedicationChange(medication.id, 'hora', value)}
+                  keyboardType="numeric"
+                  maxLength={5}
+                  style={styles.input}
+                  editable={inputEditable}
+                  contentStyle={[
+                    styles.inputContent,
+                    isFirstLine && { fontWeight: 'bold' },
+                    !isFirstLine && { fontWeight: 'normal' },
+                  ]}
+                />
               </View>
               <View style={styles.dosisColumn}>
                 <TextInput
@@ -304,7 +479,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E0E0E0',
   },
   drogaColumn: {
-    flex: 2,
+    flex: 1.5,
+    marginRight: 8,
+    position: 'relative',
+  },
+  horaColumn: {
+    flex: 1,
     marginRight: 8,
     position: 'relative',
   },
@@ -319,6 +499,11 @@ const styles = StyleSheet.create({
   },
   inputContent: {
     paddingVertical: 8,
+  },
+  inputContentDroga: {
+    paddingVertical: 8,
+    paddingLeft: 8,
+    paddingRight: 8,
   },
   arrowIcon: {
     position: 'absolute',

@@ -1063,7 +1063,7 @@ export default function MasterScreen() {
             setSaveSuccess(false);
             setIsCreatingNewPerson(false);
           }}
-          title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
+          title={saveSuccess ? STATUS_MESSAGES.success : FORM_TEXTS.confirmationModal}
           centerCard={true}
           showHamburgerMenu={false}
         >

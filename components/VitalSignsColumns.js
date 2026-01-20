@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Keyboard, ScrollView } from 'react-native';
 import { TextInput } from 'react-native-paper';
-import { ref, set, update, get } from 'firebase/database';
+import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
+import { createPlanillaRecord } from './services/helpers';
 import { VITALS_TEXTS } from '../constants/Strings';
 
 const INITIAL_VALUES = {
@@ -67,17 +68,31 @@ export default function VitalSignsColumns({
       const snapshot = await get(signosRef);
       
       if (snapshot.exists()) {
-        const data = snapshot.val();
-        setFormValues({
-          taSystolic: data.taSystolic || '',
-          taDiastolic: data.taDiastolic || '',
-          heartRate: data.heartRate || '',
-          spo2: data.spo2 || '',
-          temperature: data.temperature || '',
-          glucose: data.glucose || '',
-        });
-        setDataExists(true);
-        setIsEditing(false);
+        const records = snapshot.val();
+        const recordKeys = Object.keys(records);
+        
+        if (recordKeys.length > 0) {
+          const latestRecordKey = recordKeys.reduce((latest, key) => {
+            const latestDate = records[latest]?.createdAt || '';
+            const currentDate = records[key]?.createdAt || '';
+            return currentDate > latestDate ? key : latest;
+          }, recordKeys[0]);
+          
+          const latestRecord = records[latestRecordKey];
+          setFormValues({
+            taSystolic: latestRecord.taSystolic || '',
+            taDiastolic: latestRecord.taDiastolic || '',
+            heartRate: latestRecord.heartRate || '',
+            respiratoryRate: latestRecord.respiratoryRate || '',
+            spo2: latestRecord.spo2 || '',
+            temperature: latestRecord.temperature || '',
+            glucose: latestRecord.glucose || '',
+          });
+          setDataExists(true);
+          setIsEditing(false);
+        } else {
+          resetForm();
+        }
       } else {
         resetForm();
       }
@@ -89,45 +104,85 @@ export default function VitalSignsColumns({
   }, [adminUid, area, personId, resetForm]);
 
   const saveSignosVitales = useCallback(async () => {
-    if (!adminUid || !area || !personId) return;
+    if (!adminUid || !area || !personId) {
+      console.log({
+        location: 'VitalSignsColumns.saveSignosVitales - MISSING PARAMS',
+        adminUid: !!adminUid,
+        area: !!area,
+        personId: !!personId,
+      });
+      return;
+    }
+    
+    let subject = null;
+    try {
+      const subjectRef = ref(database, `admins/${adminUid}/areas/${area}/subjects/${personId}`);
+      const snapshot = await get(subjectRef);
+      if (snapshot.exists()) {
+        subject = snapshot.val();
+      }
+    } catch (error) {
+      console.log({
+        location: 'VitalSignsColumns.saveSignosVitales - ERROR LOADING SUBJECT',
+        error: error.message,
+      });
+    }
+
+    if (!area) {
+      console.log({
+        location: 'VitalSignsColumns.saveSignosVitales - MISSING AREA',
+        area,
+      });
+    }
     
     setIsSaving(true);
     try {
-      const signosRef = ref(
-        database,
-        `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
+      const firebasePath = `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`;
+
+      console.log({
+        location: 'VitalSignsColumns.saveSignosVitales - BEFORE createPlanillaRecord',
+        ownerUid: adminUid,
+        authUid: adminUid,
+        area,
+        subjectId: personId,
+        personId,
+        subjectTipo: subject?.tipo,
+        subjectArea: subject?.area,
+        planillaType: 'signosVitales',
+        firebasePath,
+      });
+
+      await createPlanillaRecord(
+        adminUid,
+        adminUid,
+        area,
+        personId,
+        'signosVitales',
+        {
+          taSystolic: formValues.taSystolic || '',
+          taDiastolic: formValues.taDiastolic || '',
+          heartRate: formValues.heartRate || '',
+          respiratoryRate: formValues.respiratoryRate || '',
+          spo2: formValues.spo2 || '',
+          temperature: formValues.temperature || '',
+        }
       );
-      
-      const dataToSave = {
-        taSystolic: formValues.taSystolic,
-        taDiastolic: formValues.taDiastolic,
-        heartRate: formValues.heartRate,
-        spo2: formValues.spo2,
-        temperature: formValues.temperature,
-        glucose: formValues.glucose,
-        updatedAt: new Date().toISOString(),
-        updatedBy: adminUid,
-      };
 
-      if (!dataExists) {
-        await set(signosRef, {
-          ...dataToSave,
-          createdAt: new Date().toISOString(),
-          createdBy: adminUid,
-        });
-        setDataExists(true);
-      } else {
-        await update(signosRef, dataToSave);
-      }
-
+      setDataExists(true);
       setIsEditing(false);
       Keyboard.dismiss();
     } catch (error) {
+        console.log({
+        location: 'VitalSignsColumns.saveSignosVitales - CATCH ERROR',
+        error: error.message,
+        errorCode: error.code,
+        errorStack: error.stack,
+      });
       console.error('Error saving vital signs:', error);
     } finally {
       setIsSaving(false);
     }
-  }, [adminUid, area, personId, formValues, dataExists]);
+  }, [adminUid, area, personId, formValues]);
 
   useEffect(() => {
     if (adminUid && area && personId) {

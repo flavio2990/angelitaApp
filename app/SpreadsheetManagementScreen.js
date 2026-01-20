@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -38,6 +38,7 @@ export default function SpreadsheetManagementScreen() {
   const [showMedicationModal, setShowMedicationModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [savingType, setSavingType] = useState(null);
   const [hasVitalsData, setHasVitalsData] = useState(false);
   const [hasMedicationData, setHasMedicationData] = useState(false);
   const [medicationCount, setMedicationCount] = useState(1);
@@ -135,12 +136,13 @@ export default function SpreadsheetManagementScreen() {
     if (saveRef.current) {
       const success = await saveRef.current();
       if (success) {
-        setSaveSuccess(true);
         setTimeout(async () => {
           await loadPreviousVitals();
         }, 300);
+        return true;
       }
     }
+    return false;
   };
 
   const handleOpenMedication = () => {
@@ -152,10 +154,11 @@ export default function SpreadsheetManagementScreen() {
     if (medicationSaveRef.current) {
       const success = await medicationSaveRef.current();
       if (success) {
-        setSaveSuccess(true);
         setHasMedicationData(true);
+        return true;
       }
     }
+    return false;
   };
 
   return (
@@ -239,6 +242,7 @@ export default function SpreadsheetManagementScreen() {
           topbarMarginTop={80}
           vitalsInfoExtraMargin={20}
           onSavePress={() => {
+            setSavingType('vitals');
             setShowSignosVitalesModal(false);
             setShowConfirmModal(true);
           }}
@@ -293,6 +297,7 @@ export default function SpreadsheetManagementScreen() {
           topbarMarginTop={80}
           vitalsInfoExtraMargin={20}
           onSavePress={() => {
+            setSavingType('medication');
             setShowMedicationModal(false);
             setShowConfirmModal(true);
           }}
@@ -334,8 +339,9 @@ export default function SpreadsheetManagementScreen() {
           onDismiss={() => {
             setShowConfirmModal(false);
             setSaveSuccess(false);
+            setSavingType(null);
           }}
-          title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
+          title={saveSuccess ? STATUS_MESSAGES.success : FORM_TEXTS.confirmationModal}
           centerCard={true}
           showHamburgerMenu={false}
         >
@@ -343,16 +349,15 @@ export default function SpreadsheetManagementScreen() {
             {saveSuccess ? (
               <CustomButton
                 label="OK"
-                onPress={async () => {
+                onPress={() => {
                   setShowConfirmModal(false);
                   setSaveSuccess(false);
-                  if (showSignosVitalesModal) {
-                    setShowSignosVitalesModal(false);
+                  const currentSavingType = savingType;
+                  setSavingType(null);
+                  if (currentSavingType === 'vitals') {
                     setTimeout(async () => {
                       await loadPreviousVitals();
                     }, 500);
-                  } else if (showMedicationModal) {
-                    setShowMedicationModal(false);
                   }
                 }}
               />
@@ -361,10 +366,27 @@ export default function SpreadsheetManagementScreen() {
                 <CustomButton
                   label="Sí"
                   onPress={async () => {
-                    if (showSignosVitalesModal) {
-                      await handleSaveVitals();
-                    } else if (showMedicationModal) {
-                      await handleSaveMedication();
+                    let success = false;
+                    if (savingType === 'vitals') {
+                      success = await handleSaveVitals();
+                    } else if (savingType === 'medication') {
+                      success = await handleSaveMedication();
+                    }
+                    if (success) {
+                      setShowConfirmModal(false);
+                      setSaveSuccess(false);
+                      setTimeout(() => {
+                        setSaveSuccess(true);
+                        setShowConfirmModal(true);
+                      }, 300);
+                    } else {
+                      if (savingType === 'medication') {
+                        Alert.alert(
+                          'Error',
+                          'No se puede guardar medicación. Solo se puede guardar medicación para sujetos de tipo Paciente.',
+                          [{ text: 'OK' }]
+                        );
+                      }
                     }
                   }}
                   style={{ marginBottom: 16 }}
@@ -373,6 +395,7 @@ export default function SpreadsheetManagementScreen() {
                   label="No"
                   onPress={() => {
                     setShowConfirmModal(false);
+                    setSavingType(null);
                   }}
                   buttonColor="#FF6B6B"
                 />

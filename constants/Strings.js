@@ -87,6 +87,7 @@ export const FORM_TEXTS = {
   editButton: "Modificar",
   deleteButton: "Eliminar",
   addNewButton: "Agregar nuevo",
+  confirmationModal: "¿Guardar todo?",
   
   // Validaciones
   requiredField: "Este campo es requerido",
@@ -180,13 +181,14 @@ export const VITALS_TEXTS = {
 export const MEDICATION_TEXTS = {
   patientLabelPrefix: "_Paciente:",
   addLineItem: "Añadir Otra Línea",
-  addMore: "Agregar más",
+  addMore: "Agregar más:",
   columns: {
     droga: "Droga",
+    hora: "Hora",
     dosis: "Dosis",
   },
   placeholders: {
-    droga: "Ingrése Medicamento",
+    droga: "Ingrésar Aquí:",
     dosis: "1",
   },
 };

@@ -14,8 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DatePicker from 'react-native-date-picker';
 import { FORM_TEXTS, PERSON_TYPE_TEXTS, VITALS_TEXTS } from '../constants/Strings';
-import { ref, set, update, get, push } from 'firebase/database';
+import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
+import { createPlanillaRecord } from '../components/services/helpers';
 
 const VITALS_INITIAL_VALUES = {
   taSystolic: '',
@@ -196,6 +197,13 @@ export default function EditPersonForm({
 
   const saveSignosVitales = React.useCallback(async () => {
     if (!isVitalsMode || !adminUid || !area || !personId) {
+      console.log({
+        location: 'EditPersonForm.saveSignosVitales - MISSING PARAMS',
+        isVitalsMode: !!isVitalsMode,
+        adminUid: !!adminUid,
+        area: !!area,
+        personId: !!personId,
+      });
       return false;
     }
 
@@ -207,30 +215,64 @@ export default function EditPersonForm({
                     (vitalsFormValues.temperature && vitalsFormValues.temperature.trim() !== '');
     
     if (!hasData) {
+      console.log( {
+        location: 'EditPersonForm.saveSignosVitales - NO DATA',
+      });
       return false;
     }
 
+    let subject = null;
     try {
-      const signosRef = ref(
-        database,
-        `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
+      const subjectRef = ref(database, `admins/${adminUid}/areas/${area}/subjects/${personId}`);
+      const snapshot = await get(subjectRef);
+      if (snapshot.exists()) {
+        subject = snapshot.val();
+      }
+    } catch (error) {
+      console.log( {
+        location: 'EditPersonForm.saveSignosVitales - ERROR LOADING SUBJECT',
+        error: error.message,
+      });
+    }
+
+    if (!area) {
+      console.log( {
+        location: 'EditPersonForm.saveSignosVitales - MISSING AREA',
+        area,
+      });
+    }
+
+    try {
+      const firebasePath = `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`;
+
+      console.log({
+        location: 'EditPersonForm.saveSignosVitales - BEFORE createPlanillaRecord',
+        ownerUid: adminUid,
+        authUid: adminUid,
+        area,
+        subjectId: personId,
+        personId,
+        subjectTipo: subject?.tipo,
+        subjectArea: subject?.area,
+        planillaType: 'signosVitales',
+        firebasePath,
+      });
+
+      await createPlanillaRecord(
+        adminUid,   // authUid
+        adminUid,   // ownerUid
+        area,
+        personId,
+        'signosVitales',
+        {
+          taSystolic: vitalsFormValues.taSystolic || '',
+          taDiastolic: vitalsFormValues.taDiastolic || '',
+          heartRate: vitalsFormValues.heartRate || '',
+          respiratoryRate: vitalsFormValues.respiratoryRate || '',
+          spo2: vitalsFormValues.spo2 || '',
+          temperature: vitalsFormValues.temperature || '',
+        }
       );
-
-      const newRecord = {
-        taSystolic: vitalsFormValues.taSystolic || '',
-        taDiastolic: vitalsFormValues.taDiastolic || '',
-        heartRate: vitalsFormValues.heartRate || '',
-        respiratoryRate: vitalsFormValues.respiratoryRate || '',
-        spo2: vitalsFormValues.spo2 || '',
-        temperature: vitalsFormValues.temperature || '',
-        createdAt: new Date().toISOString(),
-        createdBy: adminUid,
-        updatedAt: new Date().toISOString(),
-        updatedBy: adminUid,
-        personId: personId, 
-      };
-
-      await push(signosRef, newRecord);
 
       setVitalsDataExists(true); 
       setIsVitalsEditing(false);
@@ -238,6 +280,12 @@ export default function EditPersonForm({
       
       return true;
     } catch (error) {
+      console.log({
+        location: 'EditPersonForm.saveSignosVitales - CATCH ERROR',
+        error: error.message,
+        errorCode: error.code,
+        errorStack: error.stack,
+      });
       console.error('Error saving vital signs:', error);
       return false;
     }

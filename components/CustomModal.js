@@ -76,7 +76,7 @@ const CustomModal = ({
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [historySelectedData, setHistorySelectedData] = useState(null);
   const [historySelectionAttempted, setHistorySelectionAttempted] = useState(false);
-  const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : (isMedicationModal && children ? `${MEDICATION_TEXTS.columns.droga}/${MEDICATION_TEXTS.columns.dosis}` : title);
+  const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : (isMedicationModal && children ? `${MEDICATION_TEXTS.columns.droga}/${MEDICATION_TEXTS.columns.hora}/${MEDICATION_TEXTS.columns.dosis}` : title);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -330,6 +330,9 @@ const CustomModal = ({
                           <Text style={[styles.title, styles.medicationTitleDroga]}>
                             {MEDICATION_TEXTS.columns.droga}
                           </Text>
+                          <Text style={[styles.title, styles.medicationTitleHora]}>
+                            {MEDICATION_TEXTS.columns.hora}
+                          </Text>
                           <Text style={[styles.title, styles.medicationTitleDosis]}>
                             {MEDICATION_TEXTS.columns.dosis}
                           </Text>
@@ -543,6 +546,9 @@ const CustomModal = ({
                         <View style={styles.medicationTitleRow}>
                           <Text style={[styles.title, styles.medicationTitleDroga]}>
                             {MEDICATION_TEXTS.columns.droga}
+                          </Text>
+                          <Text style={[styles.title, styles.medicationTitleHora]}>
+                            {MEDICATION_TEXTS.columns.hora}
                           </Text>
                           <Text style={[styles.title, styles.medicationTitleDosis]}>
                             {MEDICATION_TEXTS.columns.dosis}
@@ -973,6 +979,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 48,
   },
   medicationTitleDroga: {
+    textAlign: 'center',
+    marginRight: 8,
+  },
+  medicationTitleHora: {
     textAlign: 'center',
     marginRight: 8,
   },
