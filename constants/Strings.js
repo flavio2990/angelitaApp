@@ -182,6 +182,7 @@ export const MEDICATION_TEXTS = {
   patientLabelPrefix: "_Paciente:",
   addLineItem: "Añadir Otra Línea",
   addMore: "Agregar más:",
+  headerTitle: "Medicamentos administrados",
   columns: {
     droga: "Droga",
     hora: "Hora",

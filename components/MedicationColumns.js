@@ -33,6 +33,7 @@ export default function MedicationColumns({
   onSave,
   onDataExistsChange = null,
   onMedicationCountChange = null,
+  vitalsView = 'nuevo',
 }) {
   const [medications, setMedications] = useState([
     { ...INITIAL_MEDICATION, id: Date.now().toString() },
@@ -325,12 +326,17 @@ export default function MedicationColumns({
   }, [adminUid, area, personId, onDataExistsChange, validateSubjectType]);
 
   useEffect(() => {
-    if (adminUid && area && personId) {
+    if (adminUid && area && personId && vitalsView === 'anterior') {
       loadMedication();
+    } else if (adminUid && area && personId && vitalsView === 'nuevo') {
+      resetForm();
+      if (onDataExistsChange) {
+        onDataExistsChange(false);
+      }
     } else {
       resetForm();
     }
-  }, [adminUid, area, personId, loadMedication, resetForm]);
+  }, [adminUid, area, personId, vitalsView, loadMedication, resetForm, onDataExistsChange]);
 
   useEffect(() => {
     if (!visible) {

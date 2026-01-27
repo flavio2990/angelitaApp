@@ -45,8 +45,11 @@ export default function SpreadsheetManagementScreen() {
   const [vitalsView, setVitalsView] = useState('nuevo');
   const [previousVitalsData, setPreviousVitalsData] = useState(null);
   const [vitalsHistoryByDate, setVitalsHistoryByDate] = useState({});
+  const [medicationView, setMedicationView] = useState('nuevo');
+  const [previousMedicationData, setPreviousMedicationData] = useState(null);
+  const [medicationHistoryByDate, setMedicationHistoryByDate] = useState({});
   const [personType, setPersonType] = useState(null);
-
+  
   const modifyRef = useRef();
   const saveRef = useRef();
 
@@ -106,7 +109,7 @@ export default function SpreadsheetManagementScreen() {
 
       if (snapshot.exists()) {
         const allVitals = snapshot.val();
-
+        
         const records = Object.keys(allVitals).map(key => {
           const record = allVitals[key];
           return {
@@ -115,13 +118,13 @@ export default function SpreadsheetManagementScreen() {
             firebaseKey: key
           };
         });
-
+        
         const validRecords = records.filter(r => {
           const hasCreatedAt = r.createdAt && r.createdAt.trim() !== '';
           const hasPersonId = r.personId === personId;
           return hasCreatedAt && hasPersonId;
         });
-
+        
         if (validRecords.length > 0) {
           const historyMap = {};
           validRecords.forEach(record => {
@@ -130,15 +133,15 @@ export default function SpreadsheetManagementScreen() {
               historyMap[dateKey] = record;
             }
           });
-
+          
           const sortedRecords = [...validRecords].sort((a, b) => {
             const dateA = new Date(a.createdAt || 0);
             const dateB = new Date(b.createdAt || 0);
             return dateB.getTime() - dateA.getTime(); 
           });
-
+          
           const latestRecord = sortedRecords[0];
-
+          
           setVitalsHistoryByDate(historyMap);
           setPreviousVitalsData(latestRecord);
           setHasVitalsData(true);
@@ -180,9 +183,96 @@ export default function SpreadsheetManagementScreen() {
     return false;
   };
 
+  const loadPreviousMedication = async () => {
+    if (!user?.uid || !area || !personId) return;
+
+    try {
+      const medicationRef = ref(
+        database,
+        `admins/${user.uid}/areas/${area}/subjects/${personId}/planillas/medicacion`
+      );
+      const snapshot = await get(medicationRef);
+
+      if (snapshot.exists()) {
+        const allMedications = snapshot.val();
+
+        const records = Object.keys(allMedications).map(key => {
+          const record = allMedications[key];
+          return {
+            ...record,
+            personId: personId,
+            firebaseKey: key
+          };
+        });
+
+        const validRecords = records.filter(r => {
+          const hasCreatedAt = r.createdAt && r.createdAt.trim() !== '';
+          const hasMedications = r.medications && Object.keys(r.medications).length > 0;
+          return hasCreatedAt && hasMedications;
+        });
+
+        if (validRecords.length > 0) {
+          const historyMap = {};
+          validRecords.forEach(record => {
+            const dateKey = record.createdAt.split('T')[0];
+            if (!historyMap[dateKey] || new Date(record.createdAt) > new Date(historyMap[dateKey].createdAt)) {
+              historyMap[dateKey] = record;
+            }
+          });
+
+          const sortedRecords = [...validRecords].sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0);
+            const dateB = new Date(b.createdAt || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          const latestRecord = sortedRecords[0];
+          
+          // Group medications from the same day
+          const latestDate = latestRecord?.createdAt ? latestRecord.createdAt.split('T')[0] : null;
+          const sameDayRecords = latestDate 
+            ? validRecords.filter(r => r.createdAt && r.createdAt.split('T')[0] === latestDate)
+            : [];
+          
+          // Create a grouped record with all medications from the same day
+          const groupedRecord = latestRecord ? {
+            ...latestRecord,
+            medicationsList: sameDayRecords.map(r => r.medications || {}).filter(m => m.droga)
+          } : null;
+
+          setMedicationHistoryByDate(historyMap);
+          setPreviousMedicationData(groupedRecord);
+          setHasMedicationData(true);
+        } else {
+          setMedicationHistoryByDate({});
+          setPreviousMedicationData(null);
+          setHasMedicationData(false);
+        }
+      } else {
+        setMedicationHistoryByDate({});
+        setPreviousMedicationData(null);
+        setHasMedicationData(false);
+      }
+    } catch (error) {
+      console.error('Error loading previous medication:', error);
+      setMedicationHistoryByDate({});
+      setPreviousMedicationData(null);
+      setHasMedicationData(false);
+    }
+  };
+
+  const handleMedicationViewChange = async (view) => {
+    setMedicationView(view);
+    if (view === 'anterior') {
+      await loadPreviousMedication();
+    }
+  };
+
   const handleOpenMedication = () => {
     setShowMedicationModal(true);
     setHasMedicationData(false);
+    setMedicationView('nuevo');
+    setPreviousMedicationData(null);
   };
 
   const handleSaveMedication = async () => {
@@ -200,75 +290,75 @@ export default function SpreadsheetManagementScreen() {
     <PaperProvider theme={theme}>
       <View style={styles.container}>
         {!showSignosVitalesModal && !showMedicationModal && (
-          <TopBarHeader
-            showTopBar={true}
-            topBarTitle="Planilla"
-            onBack={() => router.back()}
-            centerTopbarTitle={true}
-          />
-        )}
-
+        <TopBarHeader
+          showTopBar={true}
+          topBarTitle="Planilla"
+          onBack={() => router.back()}
+          centerTopbarTitle={true}
+        />
+      )}
+      
         {!showSignosVitalesModal && !showMedicationModal && (
-          <HamburgerMenu
-            position="top-right"
-            hasTopBar={true}
-            onGoHome={() => {
-              router.push('/');
-            }}
-            showGoHomeOption={true}
-            showInModal={false}
-          />
-        )}
-
+        <HamburgerMenu 
+          position="top-right" 
+          hasTopBar={true}
+          onGoHome={() => {
+            router.push('/');
+          }}
+          showGoHomeOption={true}
+          showInModal={false}
+        />
+      )}
+      
         {!showSignosVitalesModal && !showMedicationModal && (
-          <View style={styles.patientBox}>
+        <View style={styles.patientBox}>
             <Text style={styles.patientText}>{getPersonLabelPrefix()} {patientName}</Text>
-          </View>
-        )}
-
+        </View>
+      )}
+      
         {!showSignosVitalesModal && !showMedicationModal && (
-          <>
-            <View style={styles.buttonsGrid}>
-              <CustomLogButton
-                icon={require('../assets/imageLogButtons/SV.png')}
-                label="Signos Vitales"
-                color="#e85158"
-                onPress={handleOpenSignosVitales}
-              />
-              <CustomLogButton
-                icon={require('../assets/imageLogButtons/MED.png')}
-                label="Medicación"
-                color="#4a9cbb"
+        <>
+          <View style={styles.buttonsGrid}>
+        <CustomLogButton
+          icon={require('../assets/imageLogButtons/SV.png')}
+          label="Signos Vitales"
+          color="#e85158"
+          onPress={handleOpenSignosVitales}
+        />
+        <CustomLogButton
+          icon={require('../assets/imageLogButtons/MED.png')}
+          label="Medicación"
+          color="#4a9cbb"
                 onPress={handleOpenMedication}
-              />
-              <CustomLogButton
-                icon={require('../assets/imageLogButtons/ALIM.png')}
-                label="Alimentación"
-                color="#f1a137"
+        />
+        <CustomLogButton
+          icon={require('../assets/imageLogButtons/ALIM.png')}
+          label="Alimentación"
+          color="#f1a137"
                 onPress={() => { }}
-              />
-              <CustomLogButton
-                icon={require('../assets/imageLogButtons/DEPO.png')}
-                label="Deposiciones"
-                color="#549f82"
+        />
+        <CustomLogButton
+          icon={require('../assets/imageLogButtons/DEPO.png')}
+          label="Deposiciones"
+          color="#549f82"
                 onPress={() => { }}
-              />
-              <CustomLogButton
-                icon={require('../assets/imageLogButtons/OBS.png')}
-                label="Observaciones"
-                color="#7d76b3"
+        />
+        <CustomLogButton
+          icon={require('../assets/imageLogButtons/OBS.png')}
+          label="Observaciones"
+          color="#7d76b3"
                 onPress={() => { }}
-              />
-            </View>
-          </>
-        )}
+        />
+          </View>
+        </>
+      )}
 
-        <CustomModal
-          visible={showSignosVitalesModal}
+      <CustomModal
+        visible={showSignosVitalesModal}
           onRequestClose={() => setShowSignosVitalesModal(false)}
           showTopbar={true}
-          topbarTitle="Signos Vitales"
-          centerCard={true}
+        topbarTitle="Signos Vitales"
+        centerCard={true}
           scrollable={true}
           title="Ingresar Aquí:"
           isEditModal={true}
@@ -286,25 +376,25 @@ export default function SpreadsheetManagementScreen() {
               modifyRef.current();
             }
           }}
-          onBack={() => setShowSignosVitalesModal(false)}
+        onBack={() => setShowSignosVitalesModal(false)}
           onGoHome={() => {
             router.push('/');
           }}
           showGoHomeOption={true}
           cardMarginTop={height * 0.07}
-          isVitalsModal={true}
+        isVitalsModal={true}
           hasVitalsData={hasVitalsData}
           vitalsView={vitalsView}
           onVitalsViewChange={handleViewChange}
           previousVitalsData={previousVitalsData}
           vitalsHistoryByDate={vitalsHistoryByDate}
-          vitalsData={{
-            adminUid: user?.uid,
-            area: area,
-            personId: personId,
+        vitalsData={{
+          adminUid: user?.uid,
+          area: area,
+          personId: personId,
             patientName: patientName,
             personType: personType
-          }}
+        }}
         >
           <EditPersonForm
             isVitalsMode={true}
@@ -325,7 +415,7 @@ export default function SpreadsheetManagementScreen() {
           topbarTitle="Medicación"
           centerCard={true}
           scrollable={true}
-          title={MEDICATION_TEXTS.formTitle}
+          title={medicationView === 'anterior' ? MEDICATION_TEXTS.headerTitle : MEDICATION_TEXTS.formTitle}
           isEditModal={true}
           canEdit={true}
           isMedicationModal={true}
@@ -349,6 +439,9 @@ export default function SpreadsheetManagementScreen() {
           showGoHomeOption={true}
           cardMarginTop={height * 0.07}
           hasVitalsData={hasMedicationData}
+          vitalsView={medicationView}
+          onVitalsViewChange={handleMedicationViewChange}
+          previousVitalsData={previousMedicationData}
           vitalsData={{
             adminUid: user?.uid,
             area: area,
@@ -368,6 +461,7 @@ export default function SpreadsheetManagementScreen() {
             onSave={medicationSaveRef}
             onDataExistsChange={setHasMedicationData}
             onMedicationCountChange={setMedicationCount}
+            vitalsView={medicationView}
           />
         </CustomModal>
 
@@ -377,7 +471,7 @@ export default function SpreadsheetManagementScreen() {
             setShowConfirmModal(false);
             setSaveSuccess(false);
             setSavingType(null);
-          }}
+        }}
           title={saveSuccess ? STATUS_MESSAGES.success : FORM_TEXTS.confirmationModal}
           centerCard={true}
           showHamburgerMenu={false}
@@ -392,9 +486,9 @@ export default function SpreadsheetManagementScreen() {
                   const currentSavingType = savingType;
                   setSavingType(null);
                   if (currentSavingType === 'vitals') {
-                    setTimeout(async () => {
-                      await loadPreviousVitals();
-                    }, 500);
+                  setTimeout(async () => {
+                    await loadPreviousVitals();
+                  }, 500);
                   }
                 }}
               />

@@ -29,11 +29,14 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeApp = async () => {
+      
       if (shouldLoadPersistedRole) {
         await loadPersistedRole();
       }
       
       const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+       
+        
         setFirebaseUser(fbUser);
         if (fbUser) {
           const newUser = {
@@ -43,6 +46,7 @@ export const AuthProvider = ({ children }) => {
             role: 'admin',
           };
           setUser(newUser);
+         
         } else {
           setUser(null);
         }
@@ -151,11 +155,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      
       if (!email || !password) {
         throw new Error('Debe ingresar email y contraseña');
       }
       
       const { user } = await signInWithEmailAndPassword(auth, email, password);
+      
+      
       if (!user.emailVerified) {
         Alert.alert('Verifica tu correo', 'Debes verificar tu email antes de continuar.');
         await signOut(auth);
@@ -198,6 +205,7 @@ export const AuthProvider = ({ children }) => {
 
 
   const setUserRole = async (role) => {
+    
     if (!role) {
       return;
     }
@@ -272,20 +280,31 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     try {
+      
       if (firebaseUser) {
         await firebaseUser.reload();
         
         let userRole = 'admin';
+        let isAdminInDB = false;
+        let isEmployeeInDB = false;
+        
         try {
           const adminRef = ref(database, `admins/${firebaseUser.uid}`);
           const adminSnapshot = await get(adminRef);
-          if (adminSnapshot.exists()) {
-            userRole = adminSnapshot.val().role || 'admin';
+          isAdminInDB = adminSnapshot.exists();
+          
+          if (isAdminInDB) {
+            const adminData = adminSnapshot.val();
+            userRole = adminData.role || 'admin';
           } else {
             const employeeRef = ref(database, `empleados/${firebaseUser.uid}`);
             const employeeSnapshot = await get(employeeRef);
-            if (employeeSnapshot.exists()) {
-              userRole = employeeSnapshot.val().role || 'empleado';
+            isEmployeeInDB = employeeSnapshot.exists();
+            
+            if (isEmployeeInDB) {
+              const employeeData = employeeSnapshot.val();
+              userRole = employeeData.role || 'empleado';
+            } else {
             }
           }
         } catch (dbError) {
@@ -298,8 +317,10 @@ export const AuthProvider = ({ children }) => {
           role: userRole,
         };
         
+        
         setUser(updatedUser);
         return updatedUser;
+      } else {
       }
     } catch (error) {
       if (firebaseUser) {
@@ -345,6 +366,7 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
   };
+
 
   return (
     <AuthContext.Provider value={{
