@@ -214,17 +214,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   headerCellDroga: {
-    // flex: 1.5,
+    flex: 1.5,
     marginRight: 8,
     justifyContent: 'center',
   },
   headerCellHora: {
-    // flex: 1,
+    flex: 1,
     marginRight: 8,
     justifyContent: 'center',
   },
   headerCellDosis: {
-    // flex: 1,
+    flex: 1,
     justifyContent: 'center',
   },
   headerText: {

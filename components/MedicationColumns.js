@@ -14,13 +14,108 @@ const INITIAL_MEDICATION = {
   dosis: '1',
 };
 
-const formatHora = (value) => {
+// Normaliza la hora desde cualquier formato (HH:MM, HH: MM, etc.) a formato estándar HH: MM
+const normalizeHora = (value) => {
+  if (!value) return '';
+  // Si ya tiene el formato correcto HH: MM, retornarlo
+  if (/^\d{2}: \d{2}$/.test(value)) {
+    return value;
+  }
+  // Si tiene formato HH:MM (sin espacio), convertirlo a HH: MM
+  if (/^\d{2}:\d{2}$/.test(value)) {
+    const [hours, minutes] = value.split(':');
+    return hours.padStart(2, '0') + ': ' + minutes.padStart(2, '0');
+  }
+  // Si tiene formato HH:MM con espacios extra, limpiarlo
   const cleaned = value.replace(/[^0-9]/g, '');
+  if (cleaned.length >= 4) {
+    const hours = cleaned.slice(0, 2);
+    const minutes = cleaned.slice(2, 4);
+    return hours.padStart(2, '0') + ': ' + minutes.padStart(2, '0');
+  }
+  return value;
+};
+
+const formatHora = (value) => {
+  // Si el valor está vacío, permitir borrar
+  if (value === '') return '';
+  
+  // Remover todo excepto números
+  const cleaned = value.replace(/[^0-9]/g, '');
+  
   if (cleaned.length === 0) return '';
-  if (cleaned.length <= 2) return cleaned;
-  const hours = cleaned.slice(0, 2);
-  const minutes = cleaned.slice(2, 4);
-  return hours + ':' + minutes;
+  
+  // Si solo hay 1 dígito, permitir escribirlo sin formatear
+  if (cleaned.length === 1) {
+    return cleaned;
+  }
+  
+  // Si hay 2 dígitos, son las horas - permitir escribirlos sin formatear todavía
+  if (cleaned.length === 2) {
+    return cleaned;
+  }
+  
+  // Si hay 3 dígitos, formatear como HH: M (sin completar con ceros todavía)
+  if (cleaned.length === 3) {
+    const hours = cleaned.slice(0, 2);
+    const minutes = cleaned.slice(2, 3);
+    
+    // Validar horas (00-23)
+    const h = parseInt(hours, 10);
+    if (h > 23) {
+      // Si las horas son inválidas, mantener solo el primer dígito de las horas
+      return hours.slice(0, 1) + ': ' + minutes;
+    }
+    
+    // Mostrar sin completar con ceros mientras escribe
+    return hours + ': ' + minutes;
+  }
+  
+  // Si hay 4 dígitos, formatear como HH: MM (sin completar con ceros todavía)
+  if (cleaned.length === 4) {
+    const hours = cleaned.slice(0, 2);
+    const minutes = cleaned.slice(2, 4);
+    
+    // Validar horas (00-23)
+    const h = parseInt(hours, 10);
+    if (h > 23) {
+      // Si las horas son inválidas, mantener solo el primer dígito de las horas
+      return hours.slice(0, 1) + ': ' + minutes;
+    }
+    
+    // Validar minutos (00-59)
+    const m = parseInt(minutes, 10);
+    if (m > 59) {
+      // Si los minutos son inválidos, mantener solo el primer dígito de los minutos
+      return hours + ': ' + minutes.slice(0, 1);
+    }
+    
+    // Mostrar sin completar con ceros mientras escribe
+    return hours + ': ' + minutes;
+  }
+  
+  // Si hay más de 4 dígitos, mantener solo los primeros 4 y formatear
+  if (cleaned.length > 4) {
+    const hours = cleaned.slice(0, 2);
+    const minutes = cleaned.slice(2, 4);
+    
+    // Validar horas (00-23)
+    const h = parseInt(hours, 10);
+    if (h > 23) {
+      return hours.slice(0, 1) + ': ' + minutes;
+    }
+    
+    // Validar minutos (00-59)
+    const m = parseInt(minutes, 10);
+    if (m > 59) {
+      return hours + ': ' + minutes.slice(0, 1);
+    }
+    
+    // Mostrar sin completar con ceros
+    return hours + ': ' + minutes;
+  }
+  
+  return cleaned;
 };
 
 export default function MedicationColumns({ 
@@ -69,16 +164,72 @@ export default function MedicationColumns({
     }
   }, [adminUid, area, personId]);
 
+  // Función para completar con ceros cuando se pierde el foco
+  const completeHoraFormat = useCallback((value) => {
+    if (!value || value === '') return '';
+    
+    const cleaned = value.replace(/[^0-9]/g, '');
+    if (cleaned.length === 0) return '';
+    
+    if (cleaned.length === 1) {
+      return '0' + cleaned + ': 00';
+    }
+    
+    if (cleaned.length === 2) {
+      const h = parseInt(cleaned, 10);
+      if (h > 23) {
+        return cleaned.slice(0, 1).padStart(2, '0') + ': 00';
+      }
+      return cleaned.padStart(2, '0') + ': 00';
+    }
+    
+    if (cleaned.length === 3) {
+      const hours = cleaned.slice(0, 2);
+      const minutes = cleaned.slice(2, 3);
+      const h = parseInt(hours, 10);
+      if (h > 23) {
+        return cleaned.slice(0, 1).padStart(2, '0') + ': ' + minutes.padStart(2, '0');
+      }
+      return hours.padStart(2, '0') + ': ' + minutes.padStart(2, '0');
+    }
+    
+    if (cleaned.length >= 4) {
+      const hours = cleaned.slice(0, 2);
+      const minutes = cleaned.slice(2, 4);
+      const h = parseInt(hours, 10);
+      const m = parseInt(minutes, 10);
+      
+      if (h > 23) {
+        return cleaned.slice(0, 1).padStart(2, '0') + ': ' + minutes.padStart(2, '0');
+      }
+      if (m > 59) {
+        return hours.padStart(2, '0') + ': ' + minutes.slice(0, 1).padStart(2, '0');
+      }
+      
+      return hours.padStart(2, '0') + ': ' + minutes.padStart(2, '0');
+    }
+    
+    return value;
+  }, []);
+
   const handleMedicationChange = useCallback(async (id, field, value) => {
     let processedValue = value;
     if (field === 'hora') {
-      processedValue = formatHora(value);
-      if (processedValue.length === 5) {
-        const [hours, minutes] = processedValue.split(':');
-        const h = parseInt(hours, 10);
-        const m = parseInt(minutes, 10);
-        if (h > 23 || m > 59) {
-          return;
+      // Permitir borrar completamente
+      if (value === '') {
+        processedValue = '';
+      } else {
+        processedValue = formatHora(value);
+        // Validar formato completo (HH: MM = 6 caracteres)
+        if (processedValue.length === 6) {
+          const [hours, minutes] = processedValue.split(': ');
+          const h = parseInt(hours, 10);
+          const m = parseInt(minutes, 10);
+          // Validar rango 24 horas: horas 00-23, minutos 00-59
+          if (h > 23 || m > 59) {
+            // Si es inválido, mantener el valor anterior (no actualizar)
+            return;
+          }
         }
       }
     }
@@ -88,6 +239,17 @@ export default function MedicationColumns({
       )
     );
   }, []);
+
+  const handleHoraBlur = useCallback((id, value) => {
+    if (!value || value === '') return;
+    
+    const completed = completeHoraFormat(value);
+    setMedications((prev) =>
+      prev.map((med) =>
+        med.id === id ? { ...med, hora: completed } : med
+      )
+    );
+  }, [completeHoraFormat]);
 
   const addMedicationLine = useCallback(() => {
     const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -165,7 +327,7 @@ export default function MedicationColumns({
               medicationsArray.push({
                 id: key,
                 droga: record.medications.droga || '',
-                hora: record.medications.hora || '',
+                hora: normalizeHora(record.medications.hora || ''),
                 dosis: record.medications.dosis || '1',
               });
             }
@@ -410,8 +572,9 @@ export default function MedicationColumns({
                   placeholder="HH:MM"
                   value={medication.hora}
                   onChangeText={(value) => handleMedicationChange(medication.id, 'hora', value)}
+                  onBlur={() => handleHoraBlur(medication.id, medication.hora)}
                   keyboardType="numeric"
-                  maxLength={5}
+                  maxLength={6}
                   style={styles.input}
                   editable={inputEditable}
                   contentStyle={[

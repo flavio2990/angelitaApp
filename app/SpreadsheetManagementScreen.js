@@ -1,5 +1,5 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, Alert } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -39,6 +39,7 @@ export default function SpreadsheetManagementScreen() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [savingType, setSavingType] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [hasVitalsData, setHasVitalsData] = useState(false);
   const [hasMedicationData, setHasMedicationData] = useState(false);
   const [medicationCount, setMedicationCount] = useState(1);
@@ -171,16 +172,21 @@ export default function SpreadsheetManagementScreen() {
   };
 
   const handleSaveVitals = async () => {
-    if (saveRef.current) {
-      const success = await saveRef.current();
-      if (success) {
-        setTimeout(async () => {
-          await loadPreviousVitals();
-        }, 300);
-        return true;
+    setIsSaving(true);
+    try {
+      if (saveRef.current) {
+        const success = await saveRef.current();
+        if (success) {
+          setTimeout(async () => {
+            await loadPreviousVitals();
+          }, 300);
+          return true;
+        }
       }
+      return false;
+    } finally {
+      setIsSaving(false);
     }
-    return false;
   };
 
   const loadPreviousMedication = async () => {
@@ -276,14 +282,19 @@ export default function SpreadsheetManagementScreen() {
   };
 
   const handleSaveMedication = async () => {
-    if (medicationSaveRef.current) {
-      const success = await medicationSaveRef.current();
-      if (success) {
-        setHasMedicationData(true);
-        return true;
+    setIsSaving(true);
+    try {
+      if (medicationSaveRef.current) {
+        const success = await medicationSaveRef.current();
+        if (success) {
+          setHasMedicationData(true);
+          return true;
+        }
       }
+      return false;
+    } finally {
+      setIsSaving(false);
     }
-    return false;
   };
 
   return (
@@ -468,16 +479,26 @@ export default function SpreadsheetManagementScreen() {
         <CustomModal
           visible={showConfirmModal}
           onDismiss={() => {
-            setShowConfirmModal(false);
-            setSaveSuccess(false);
-            setSavingType(null);
+            if (!isSaving) {
+              setShowConfirmModal(false);
+              setSaveSuccess(false);
+              setSavingType(null);
+              setIsSaving(false);
+            }
         }}
           title={saveSuccess ? STATUS_MESSAGES.success : FORM_TEXTS.confirmationModal}
           centerCard={true}
           showHamburgerMenu={false}
         >
           <View style={{ alignItems: 'center', padding: 20 }}>
-            {saveSuccess ? (
+            {isSaving ? (
+              <View style={{ alignItems: 'center', justifyContent: 'center', minHeight: 100 }}>
+                <ActivityIndicator size="large" color="#5124A5" />
+                <Text style={{ marginTop: 16, fontSize: 16, color: '#666' }}>
+                  Guardando...
+                </Text>
+              </View>
+            ) : saveSuccess ? (
               <CustomButton
                 label="OK"
                 onPress={() => {
