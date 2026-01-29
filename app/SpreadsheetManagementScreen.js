@@ -218,14 +218,7 @@ export default function SpreadsheetManagementScreen() {
         });
 
         if (validRecords.length > 0) {
-          const historyMap = {};
-          validRecords.forEach(record => {
-            const dateKey = record.createdAt.split('T')[0];
-            if (!historyMap[dateKey] || new Date(record.createdAt) > new Date(historyMap[dateKey].createdAt)) {
-              historyMap[dateKey] = record;
-            }
-          });
-
+          // Ordenar por createdAt descendente para encontrar el más reciente
           const sortedRecords = [...validRecords].sort((a, b) => {
             const dateA = new Date(a.createdAt || 0);
             const dateB = new Date(b.createdAt || 0);
@@ -233,18 +226,54 @@ export default function SpreadsheetManagementScreen() {
           });
 
           const latestRecord = sortedRecords[0];
+          const latestCreatedAt = latestRecord?.createdAt || '';
+          const latestCreatedAtTime = new Date(latestCreatedAt).getTime();
           
-          // Group medications from the same day
-          const latestDate = latestRecord?.createdAt ? latestRecord.createdAt.split('T')[0] : null;
-          const sameDayRecords = latestDate 
-            ? validRecords.filter(r => r.createdAt && r.createdAt.split('T')[0] === latestDate)
-            : [];
+          // Agrupar por batch de guardado (ventana de 10 segundos)
+          // Todos los registros guardados dentro de 10 segundos se consideran del mismo batch
+          const BATCH_TIME_WINDOW_MS = 10000; // 10 segundos
+          const latestBatchRecords = validRecords.filter(record => {
+            const createdAt = record.createdAt || '';
+            const createdAtTime = new Date(createdAt).getTime();
+            const timeDiff = latestCreatedAtTime - createdAtTime;
+            // Si el registro está dentro de la ventana de tiempo del más reciente, es del mismo batch
+            return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
+          });
           
-          // Create a grouped record with all medications from the same day
+          console.log('📦 SpreadsheetManagementScreen - loadPreviousMedication: Batch filtering', {
+            totalRecords: validRecords.length,
+            latestCreatedAt,
+            batchWindowMs: BATCH_TIME_WINDOW_MS,
+            batchRecordsCount: latestBatchRecords.length,
+            batchRecords: latestBatchRecords.map(r => ({
+              key: r.firebaseKey,
+              createdAt: r.createdAt,
+              medications: r.medications
+            }))
+          });
+          
+          // Crear mapa de historial por fecha (para el calendario)
+          const historyMap = {};
+          validRecords.forEach(record => {
+            const dateKey = record.createdAt.split('T')[0];
+            if (!historyMap[dateKey] || new Date(record.createdAt) > new Date(historyMap[dateKey].createdAt)) {
+              historyMap[dateKey] = record;
+            }
+          });
+          
+          // Crear registro agrupado solo con los medicamentos del último batch
           const groupedRecord = latestRecord ? {
             ...latestRecord,
-            medicationsList: sameDayRecords.map(r => r.medications || {}).filter(m => m.droga)
+            medicationsList: latestBatchRecords.map(r => r.medications || {}).filter(m => m.droga)
           } : null;
+
+          console.log('✅ SpreadsheetManagementScreen - loadPreviousMedication: Final grouped record', {
+            groupedRecord: groupedRecord ? {
+              createdAt: groupedRecord.createdAt,
+              medicationsCount: groupedRecord.medicationsList?.length || 0,
+              medications: groupedRecord.medicationsList
+            } : null
+          });
 
           setMedicationHistoryByDate(historyMap);
           setPreviousMedicationData(groupedRecord);

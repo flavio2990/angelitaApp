@@ -307,7 +307,13 @@ export default function MedicationColumns({
         const records = snapshot.val();
         const recordKeys = Object.keys(records);
         
+        console.log('📦 MedicationColumns - loadMedication: Total records found', {
+          totalRecords: recordKeys.length,
+          recordKeys: recordKeys
+        });
+        
         if (recordKeys.length > 0) {
+          // Encontrar el createdAt más reciente
           const latestRecordKey = recordKeys.reduce((latest, key) => {
             const latestDate = records[latest]?.createdAt || '';
             const currentDate = records[key]?.createdAt || '';
@@ -315,14 +321,69 @@ export default function MedicationColumns({
           }, recordKeys[0]);
           
           const latestRecord = records[latestRecordKey];
+          const latestCreatedAt = latestRecord?.createdAt || '';
+          const latestCreatedAtTime = new Date(latestCreatedAt).getTime();
+          
+          console.log('🔍 MedicationColumns - loadMedication: Latest record found', {
+            latestRecordKey,
+            latestCreatedAt,
+            latestCreatedAtTime,
+            latestRecord: latestRecord
+          });
+          
+          // Agrupar registros por "batch" de guardado (ventana de 10 segundos)
+          // Todos los registros guardados dentro de 10 segundos se consideran del mismo batch
+          const BATCH_TIME_WINDOW_MS = 10000; // 10 segundos
+          const latestBatchRecords = [];
+          
+          recordKeys.forEach((key) => {
+            const record = records[key];
+            const createdAt = record?.createdAt || '';
+            const createdAtTime = new Date(createdAt).getTime();
+            const timeDiff = latestCreatedAtTime - createdAtTime;
+            
+            // Si el registro está dentro de la ventana de tiempo del más reciente, es del mismo batch
+            if (timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS) {
+              latestBatchRecords.push({ key, record, createdAt, timeDiff });
+            }
+          });
+          
+          // Ordenar por createdAt descendente para tener los más recientes primero
+          latestBatchRecords.sort((a, b) => {
+            const timeA = new Date(a.createdAt).getTime();
+            const timeB = new Date(b.createdAt).getTime();
+            return timeB - timeA;
+          });
+          
+          console.log('📊 MedicationColumns - loadMedication: All records with timestamps', {
+            totalRecords: recordKeys.length,
+            allRecords: recordKeys.map(key => ({
+              key,
+              createdAt: records[key]?.createdAt,
+              timeDiff: new Date(records[key]?.createdAt).getTime() - latestCreatedAtTime
+            })).sort((a, b) => b.timeDiff - a.timeDiff)
+          });
+          
+          console.log('✅ MedicationColumns - loadMedication: Latest batch records (within 10s window)', {
+            latestCreatedAt,
+            batchWindowMs: BATCH_TIME_WINDOW_MS,
+            recordsCount: latestBatchRecords.length,
+            records: latestBatchRecords.map(r => ({
+              key: r.key,
+              createdAt: r.createdAt,
+              timeDiff: r.timeDiff,
+              medications: r.record.medications
+            }))
+          });
+          
           const planillaCreatedBy = latestRecord?.createdBy || null;
           
           setCreatedBy(planillaCreatedBy);
           createdByRef.current = planillaCreatedBy;
           
+          // Solo cargar los registros del batch más reciente (último guardado)
           const medicationsArray = [];
-          recordKeys.forEach((key) => {
-            const record = records[key];
+          latestBatchRecords.forEach(({ key, record }) => {
             if (record?.medications) {
               medicationsArray.push({
                 id: key,
@@ -333,9 +394,15 @@ export default function MedicationColumns({
             }
           });
           
+          console.log('💾 MedicationColumns - loadMedication: Final medications array to set', {
+            medicationsCount: medicationsArray.length,
+            medications: medicationsArray
+          });
+          
           if (medicationsArray.length > 0) {
             setMedications(medicationsArray);
           } else {
+            console.warn('⚠️ MedicationColumns - loadMedication: No medications found in latest records, resetting form');
             setMedications([
               { ...INITIAL_MEDICATION, id: Date.now().toString() },
               { ...INITIAL_MEDICATION, id: (Date.now() + 1).toString() },
@@ -349,12 +416,14 @@ export default function MedicationColumns({
             onDataExistsChange(true);
           }
         } else {
+          console.log('📭 MedicationColumns - loadMedication: No records found, resetting form');
           resetForm();
           if (onDataExistsChange) {
             onDataExistsChange(false);
           }
         }
       } else {
+        console.log('📭 MedicationColumns - loadMedication: Snapshot does not exist, resetting form');
         resetForm();
         if (onDataExistsChange) {
           onDataExistsChange(false);
