@@ -15,6 +15,8 @@ import { useAuth } from '../components/UserContext';
 import { STATUS_MESSAGES, FORM_TEXTS, MEDICATION_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
 import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
+import { filterMedicationByRole, filterHistoryByRole } from '../utils/medicationFilters';
+import AuthorRoleSelector from '../components/AuthorRoleSelector';
 
 const { height } = Dimensions.get('window');
 
@@ -50,6 +52,8 @@ export default function SpreadsheetManagementScreen() {
   const [previousMedicationData, setPreviousMedicationData] = useState(null);
   const [medicationHistoryByDate, setMedicationHistoryByDate] = useState({});
   const [personType, setPersonType] = useState(null);
+  const [selectedAuthorRole, setSelectedAuthorRole] = useState('employee'); // Default: Empleados
+  const [isLoadingMedication, setIsLoadingMedication] = useState(false);
   
   const modifyRef = useRef();
   const saveRef = useRef();
@@ -190,8 +194,12 @@ export default function SpreadsheetManagementScreen() {
   };
 
   const loadPreviousMedication = async () => {
-    if (!user?.uid || !area || !personId) return;
+    if (!user?.uid || !area || !personId) {
+      setIsLoadingMedication(false);
+      return;
+    }
 
+    setIsLoadingMedication(true);
     try {
       const medicationRef = ref(
         database,
@@ -217,9 +225,12 @@ export default function SpreadsheetManagementScreen() {
           return hasCreatedAt && hasMedications;
         });
 
-        if (validRecords.length > 0) {
+        // Aplicar filtro por autoría
+        const filteredRecords = await filterMedicationByRole(validRecords, selectedAuthorRole);
+
+        if (filteredRecords.length > 0) {
           // Ordenar por createdAt descendente para encontrar el más reciente
-          const sortedRecords = [...validRecords].sort((a, b) => {
+          const sortedRecords = [...filteredRecords].sort((a, b) => {
             const dateA = new Date(a.createdAt || 0);
             const dateB = new Date(b.createdAt || 0);
             return dateB.getTime() - dateA.getTime();
@@ -232,7 +243,7 @@ export default function SpreadsheetManagementScreen() {
           // Agrupar por batch de guardado (ventana de 10 segundos)
           // Todos los registros guardados dentro de 10 segundos se consideran del mismo batch
           const BATCH_TIME_WINDOW_MS = 10000; // 10 segundos
-          const latestBatchRecords = validRecords.filter(record => {
+          const latestBatchRecords = filteredRecords.filter(record => {
             const createdAt = record.createdAt || '';
             const createdAtTime = new Date(createdAt).getTime();
             const timeDiff = latestCreatedAtTime - createdAtTime;
@@ -240,25 +251,48 @@ export default function SpreadsheetManagementScreen() {
             return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
           });
           
-          console.log('📦 SpreadsheetManagementScreen - loadPreviousMedication: Batch filtering', {
-            totalRecords: validRecords.length,
-            latestCreatedAt,
-            batchWindowMs: BATCH_TIME_WINDOW_MS,
-            batchRecordsCount: latestBatchRecords.length,
-            batchRecords: latestBatchRecords.map(r => ({
-              key: r.firebaseKey,
-              createdAt: r.createdAt,
-              medications: r.medications
-            }))
+          // Crear mapa de historial por fecha (para el calendario)
+          // Agrupar medicamentos por fecha, agrupando por batch de guardado (ventana de 10 segundos)
+          const historyMap = {};
+          const recordsByDate = {};
+          
+          // Primero agrupar todos los registros filtrados por fecha
+          filteredRecords.forEach(record => {
+            const dateKey = record.createdAt.split('T')[0];
+            if (!recordsByDate[dateKey]) {
+              recordsByDate[dateKey] = [];
+            }
+            recordsByDate[dateKey].push(record);
           });
           
-          // Crear mapa de historial por fecha (para el calendario)
-          const historyMap = {};
-          validRecords.forEach(record => {
-            const dateKey = record.createdAt.split('T')[0];
-            if (!historyMap[dateKey] || new Date(record.createdAt) > new Date(historyMap[dateKey].createdAt)) {
-              historyMap[dateKey] = record;
-            }
+          // Para cada fecha, agrupar por batch y crear un registro agrupado
+          Object.keys(recordsByDate).forEach(dateKey => {
+            const dateRecords = recordsByDate[dateKey];
+            
+            // Encontrar el batch más reciente para esta fecha
+            const sortedByTime = [...dateRecords].sort((a, b) => {
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
+            
+            const latestRecordForDate = sortedByTime[0];
+            const latestCreatedAtTime = new Date(latestRecordForDate.createdAt).getTime();
+            
+            // Agrupar registros del mismo batch (ventana de 10 segundos)
+            const BATCH_TIME_WINDOW_MS = 10000;
+            const batchRecords = dateRecords.filter(record => {
+              const createdAtTime = new Date(record.createdAt).getTime();
+              const timeDiff = latestCreatedAtTime - createdAtTime;
+              return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
+            });
+            
+            // Crear registro agrupado para esta fecha
+            const groupedRecordForDate = {
+              ...latestRecordForDate,
+              medicationsList: batchRecords.map(r => r.medications || {}).filter(m => m.droga),
+              personId: latestRecordForDate.personId || personId,
+            };
+            
+            historyMap[dateKey] = groupedRecordForDate;
           });
           
           // Crear registro agrupado solo con los medicamentos del último batch
@@ -266,14 +300,6 @@ export default function SpreadsheetManagementScreen() {
             ...latestRecord,
             medicationsList: latestBatchRecords.map(r => r.medications || {}).filter(m => m.droga)
           } : null;
-
-          console.log('✅ SpreadsheetManagementScreen - loadPreviousMedication: Final grouped record', {
-            groupedRecord: groupedRecord ? {
-              createdAt: groupedRecord.createdAt,
-              medicationsCount: groupedRecord.medicationsList?.length || 0,
-              medications: groupedRecord.medicationsList
-            } : null
-          });
 
           setMedicationHistoryByDate(historyMap);
           setPreviousMedicationData(groupedRecord);
@@ -293,6 +319,8 @@ export default function SpreadsheetManagementScreen() {
       setMedicationHistoryByDate({});
       setPreviousMedicationData(null);
       setHasMedicationData(false);
+    } finally {
+      setIsLoadingMedication(false);
     }
   };
 
@@ -302,6 +330,13 @@ export default function SpreadsheetManagementScreen() {
       await loadPreviousMedication();
     }
   };
+
+  // Recargar medicación cuando cambia el filtro de autoría
+  useEffect(() => {
+    if (medicationView === 'anterior' && showMedicationModal) {
+      loadPreviousMedication();
+    }
+  }, [selectedAuthorRole]);
 
   const handleOpenMedication = () => {
     setShowMedicationModal(true);
@@ -482,6 +517,7 @@ export default function SpreadsheetManagementScreen() {
           vitalsView={medicationView}
           onVitalsViewChange={handleMedicationViewChange}
           previousVitalsData={previousMedicationData}
+          vitalsHistoryByDate={medicationHistoryByDate}
           vitalsData={{
             adminUid: user?.uid,
             area: area,
@@ -490,6 +526,10 @@ export default function SpreadsheetManagementScreen() {
             personType: personType
           }}
           medicationCount={medicationCount}
+          medicationHistoryByDate={medicationHistoryByDate}
+          selectedAuthorRole={selectedAuthorRole}
+          onAuthorRoleChange={setSelectedAuthorRole}
+          isLoadingMedication={isLoadingMedication}
         >
           <MedicationColumns
             adminUid={user?.uid}

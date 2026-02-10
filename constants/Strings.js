@@ -1,4 +1,4 @@
-﻿// ===== TÍTULOS DE TARJETAS =====
+// ===== TÍTULOS DE TARJETAS =====
 export const CARD_TITLES = {
   selectArea: "Seleccione Área",
   selectTipe: "Seleccionar de ",
@@ -183,6 +183,7 @@ export const MEDICATION_TEXTS = {
   addLineItem: "Añadir Otra Línea",
   addMore: "Agregar más:",
   headerTitle: "Medicamentos administrados",
+  authorRoleLabel: "Mostrando medicación registrada por:",
   columns: {
     droga: "Droga",
     hora: "Hora",

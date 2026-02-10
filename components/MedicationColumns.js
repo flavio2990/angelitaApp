@@ -307,11 +307,6 @@ export default function MedicationColumns({
         const records = snapshot.val();
         const recordKeys = Object.keys(records);
         
-        console.log('📦 MedicationColumns - loadMedication: Total records found', {
-          totalRecords: recordKeys.length,
-          recordKeys: recordKeys
-        });
-        
         if (recordKeys.length > 0) {
           // Encontrar el createdAt más reciente
           const latestRecordKey = recordKeys.reduce((latest, key) => {
@@ -323,13 +318,6 @@ export default function MedicationColumns({
           const latestRecord = records[latestRecordKey];
           const latestCreatedAt = latestRecord?.createdAt || '';
           const latestCreatedAtTime = new Date(latestCreatedAt).getTime();
-          
-          console.log('🔍 MedicationColumns - loadMedication: Latest record found', {
-            latestRecordKey,
-            latestCreatedAt,
-            latestCreatedAtTime,
-            latestRecord: latestRecord
-          });
           
           // Agrupar registros por "batch" de guardado (ventana de 10 segundos)
           // Todos los registros guardados dentro de 10 segundos se consideran del mismo batch
@@ -355,26 +343,6 @@ export default function MedicationColumns({
             return timeB - timeA;
           });
           
-          console.log('📊 MedicationColumns - loadMedication: All records with timestamps', {
-            totalRecords: recordKeys.length,
-            allRecords: recordKeys.map(key => ({
-              key,
-              createdAt: records[key]?.createdAt,
-              timeDiff: new Date(records[key]?.createdAt).getTime() - latestCreatedAtTime
-            })).sort((a, b) => b.timeDiff - a.timeDiff)
-          });
-          
-          console.log('✅ MedicationColumns - loadMedication: Latest batch records (within 10s window)', {
-            latestCreatedAt,
-            batchWindowMs: BATCH_TIME_WINDOW_MS,
-            recordsCount: latestBatchRecords.length,
-            records: latestBatchRecords.map(r => ({
-              key: r.key,
-              createdAt: r.createdAt,
-              timeDiff: r.timeDiff,
-              medications: r.record.medications
-            }))
-          });
           
           const planillaCreatedBy = latestRecord?.createdBy || null;
           
@@ -394,11 +362,6 @@ export default function MedicationColumns({
             }
           });
           
-          console.log('💾 MedicationColumns - loadMedication: Final medications array to set', {
-            medicationsCount: medicationsArray.length,
-            medications: medicationsArray
-          });
-          
           if (medicationsArray.length > 0) {
             setMedications(medicationsArray);
           } else {
@@ -416,14 +379,12 @@ export default function MedicationColumns({
             onDataExistsChange(true);
           }
         } else {
-          console.log('📭 MedicationColumns - loadMedication: No records found, resetting form');
           resetForm();
           if (onDataExistsChange) {
             onDataExistsChange(false);
           }
         }
       } else {
-        console.log('📭 MedicationColumns - loadMedication: Snapshot does not exist, resetting form');
         resetForm();
         if (onDataExistsChange) {
           onDataExistsChange(false);
@@ -453,12 +414,6 @@ export default function MedicationColumns({
 
   const saveMedication = useCallback(async () => {
     if (!adminUid || !area || !personId) {
-      console.log({
-        location: 'MedicationColumns.saveMedication - MISSING PARAMS',
-        adminUid: !!adminUid,
-        area: !!area,
-        personId: !!personId,
-      });
       return false;
     }
     
@@ -470,19 +425,11 @@ export default function MedicationColumns({
         subject = snapshot.val();
       }
     } catch (error) {
-      console.log({
-        location: 'MedicationColumns.saveMedication - ERROR LOADING SUBJECT',
-        error: error.message,
-      });
+      // Error loading subject
     }
     
     const isValidSubject = await validateSubjectType();
     if (!isValidSubject) {
-      console.log({
-        location: 'MedicationColumns.saveMedication - INVALID SUBJECT TYPE',
-        subjectTipo: subject?.tipo,
-        expectedTipo: 'Paciente',
-      });
       console.warn('MedicationColumns: Subject is not a Paciente. Medication cannot be saved.');
       return false;
     }
@@ -495,28 +442,12 @@ export default function MedicationColumns({
       );
       
       if (validMedications.length === 0) {
-        console.log({
-          location: 'MedicationColumns.saveMedication - NO VALID MEDICATIONS',
-        });
         return false;
       }
 
       const firebasePath = `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/medicacion`;
 
       for (const med of validMedications) {
-        console.log({
-          location: 'MedicationColumns.saveMedication - BEFORE createPlanillaRecord',
-          ownerUid: adminUid,
-          authUid: adminUid,
-          area,
-          subjectId: personId,
-          personId,
-          subjectTipo: subject?.tipo,
-          subjectArea: subject?.area,
-          planillaType: 'medicacion',
-          firebasePath,
-        });
-
         await createPlanillaRecord(
           adminUid,
           adminUid,
@@ -543,12 +474,6 @@ export default function MedicationColumns({
       Keyboard.dismiss();
       return true;
     } catch (error) {
-        console.log({
-        location: 'MedicationColumns.saveMedication - CATCH ERROR',
-        error: error.message,
-        errorCode: error.code,
-        errorStack: error.stack,
-      });
       console.error('Error saving medication:', error);
       return false;
     } finally {
