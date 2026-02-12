@@ -121,7 +121,7 @@ const CustomModal = ({
 
   // Helper booleans for footer logic
   const isAnteriorView = vitalsView === 'anterior';
-  const isHistoryMode = isAnteriorView && (isVitalsModal || isMedicationModal);
+  const isHistoryMode = isAnteriorView && (isVitalsModal || (isMedicationModal && !showMedicationAdmin));
 
   const getPersonLabelPrefix = () => {
     const personType = vitalsData?.personType;
@@ -157,8 +157,8 @@ const CustomModal = ({
 
   // Render edit/detail footer (Guardar, Modificar, etc.)
   const renderEditFooter = () => {
-    if (isHistoryMode) {
-      return null; // Never show edit footer in history mode
+    if (isHistoryMode || showMedicationAdmin) {
+      return null; // Never show edit footer in history mode or admin mode
     }
 
     if (!isDetailModal && !isEditModal) {
@@ -500,8 +500,8 @@ const CustomModal = ({
     return (
       <>
         {/* Selector de autoría para vista anterior de medicación */}
-        {/* No se muestra cuando está visible el calendario histórico */}
-        {isMedicationModal && vitalsView === 'anterior' && onAuthorRoleChange && !showHistoryCalendar && (
+        {/* No se muestra cuando está visible el calendario histórico o en modo administración */}
+        {isMedicationModal && vitalsView === 'anterior' && onAuthorRoleChange && !showHistoryCalendar && !showMedicationAdmin && (
           <View style={styles.authorSelectorContainer}>
             <AuthorRoleSelector
               selectedRole={selectedAuthorRole}
@@ -509,10 +509,10 @@ const CustomModal = ({
             />
           </View>
         )}
-        <View style={isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar ? { marginTop: 0 } : {}}>
+        <View style={isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && !showMedicationAdmin ? { marginTop: 0 } : {}}>
           {cardElement}
         </View>
-        {isHistoryMode ? renderHistoryFooter() : renderEditFooter()}
+        {isHistoryMode && !showMedicationAdmin ? renderHistoryFooter() : (!showMedicationAdmin ? renderEditFooter() : null)}
       </>
     );
   };
@@ -556,7 +556,7 @@ const CustomModal = ({
           </View>
         )}
 
-        {(isVitalsModal || isMedicationModal) && showTopbar && (
+        {(isVitalsModal || (isMedicationModal && !showMedicationAdmin)) && showTopbar && (
           <View style={[
             styles.vitalsViewButtons,
             {
