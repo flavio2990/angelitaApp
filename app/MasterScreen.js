@@ -16,7 +16,7 @@ import EditPersonForm from '@/components/EditPersonForm';
 import PersonDetails from '@/components/PersonDetails';
 import RegisterAdminForm from '../components/RegisterAdminForm';
 import { useAuth } from '../components/UserContext';
-import HamburgerMenu from '../components/HamburgerMenu';
+import TopBarHeader from '../components/TopBarHeader';
 // import GlobalUserDebugger from '../components/GlobalUserDebugger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -924,7 +924,15 @@ export default function MasterScreen() {
       <StatusBar />
 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <HamburgerMenu position="top-right" onLogout={handleLogout} onGoHome={handleGoHome} showGoHomeOption={true} />
+        <TopBarHeader
+          showTopBar={false}
+          showMenu={true}
+          menuPosition="top-right"
+          onLogout={handleLogout}
+          onGoHome={handleGoHome}
+          showGoHomeOption={true}
+          respectSafeArea={false}
+        />
 
 
         {/* LISTA DE EMPLEADOS/PACIENTES */}

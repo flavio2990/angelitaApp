@@ -20,7 +20,6 @@ import {
 } from 'react-native';
 
 import TopBarHeader from '@/components/TopBarHeader';
-import HamburgerMenu from './HamburgerMenu';
 import VitalSignsColumns from './VitalSignsColumns';
 import CustomButton from './CustomButton';
 import VitalsDetails from './VitalsDetails';
@@ -170,13 +169,20 @@ const CustomModal = ({
           centerCard && { justifyContent: 'center', alignItems: 'center' }
         ]}
       >
-        {showTopbar && (
+        {(showTopbar || showHamburgerMenu) && (
           <View style={styles.topBarOverlay} pointerEvents="box-none">
             <TopBarHeader
-              showTopBar={true}
+              showTopBar={showTopbar}
               topBarTitle={topbarTitle}
               onBack={onBack}
               centerTopbarTitle={centerTopbarTitle}
+              showMenu={showHamburgerMenu}
+              menuPosition="top-right"
+              onLogout={onLogout}
+              onGoHome={onGoHome}
+              showGoHomeOption={showGoHomeOption}
+              forceShowMenu={true}
+              respectSafeArea={false}
               style={styles.topBarFloating}
             />
           </View>
@@ -235,19 +241,6 @@ const CustomModal = ({
               </Text>
             </TouchableOpacity>
           </View>
-        )}
-        
-        {/* MENÚ HAMBURGUESA */}
-        {showHamburgerMenu && (
-          <HamburgerMenu 
-            position="top-right" 
-            hasTopBar={showTopbar}
-            onLogout={onLogout}
-            onGoHome={onGoHome}
-            showGoHomeOption={showGoHomeOption}
-            showInModal={true}
-            forceShow={true}
-          />
         )}
         
         {/* Información del paciente para modales de signos vitales */}
