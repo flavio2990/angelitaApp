@@ -9,7 +9,6 @@ import CustomLogButton from '../components/CustomLogButton';
 import CustomModal from '../components/CustomModal';
 import CustomButton from '../components/CustomButton';
 import EditPersonForm from '../components/EditPersonForm';
-import HamburgerMenu from '../components/HamburgerMenu';
 import { useAuth } from '../components/UserContext';
 import { STATUS_MESSAGES, FORM_TEXTS } from '../constants/Strings';
 import { ref, get } from 'firebase/database';
@@ -160,19 +159,12 @@ export default function SpreadsheetManagementScreen() {
           topBarTitle="Planilla"
           onBack={() => router.back()}
           centerTopbarTitle={true}
-        />
-      )}
-      
-      {/* HamburgerMenu para la pantalla principal */}
-      {!showSignosVitalesModal && (
-        <HamburgerMenu 
-          position="top-right" 
-          hasTopBar={true}
+          showMenu={true}
+          menuPosition="top-right"
           onGoHome={() => {
             router.push('/');
           }}
           showGoHomeOption={true}
-          showInModal={false}
         />
       )}
       

@@ -28,15 +28,24 @@ export const AuthProvider = ({ children }) => {
   const auth = getAuth(app);
 
   useEffect(() => {
+    console.log('[Auth] Initializing AuthContext...');
+
     const initializeApp = async () => {
       // Cargar rol persistido SOLO si no se ha hecho logout
       if (shouldLoadPersistedRole) {
+        console.log('[Auth] Loading persisted role...');
         await loadPersistedRole();
       }
-      
+
       const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+        console.log('[Auth] Auth state changed');
+        console.log('[Auth] Firebase user:', fbUser ? fbUser.uid : 'null');
+
         setFirebaseUser(fbUser); // Guarda el usuario real
         if (fbUser) {
+          console.log('[Auth] User authenticated:', fbUser.email);
+          console.log('[Auth] Email verified:', fbUser.emailVerified);
+
           const newUser = {
             uid: fbUser.uid,
             email: fbUser.email,
@@ -45,13 +54,15 @@ export const AuthProvider = ({ children }) => {
           };
           setUser(newUser);
         } else {
+          console.log('[Auth] No user authenticated');
           setUser(null);
         }
         setLoading(false);
+        console.log('[Auth] Loading complete');
       });
       return unsubscribe;
     };
-    
+
     initializeApp();
   }, []);
 
@@ -165,45 +176,110 @@ export const AuthProvider = ({ children }) => {
 
   // Login
   const login = async (email, password) => {
+    console.log('[Login] Starting login process...');
+    console.log('[Login] Raw email:', email);
+    console.log('[Login] Password length:', password?.length);
+    console.log('[Login] Auth object exists:', !!auth);
+    console.log('[Login] Firebase config - projectId:', app?.options?.projectId);
+
     try {
       if (!email || !password) {
+        console.error('[Login] Missing credentials');
         throw new Error('Debe ingresar email y contraseña');
       }
-      
-      const { user } = await signInWithEmailAndPassword(auth, email, password);
+
+      // Trim whitespace from credentials
+      const trimmedEmail = email.trim().toLowerCase();
+      const trimmedPassword = password.trim();
+
+      console.log('[Login] Trimmed email:', trimmedEmail);
+      console.log('[Login] Attempting Firebase signIn...');
+      const { user } = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
+      console.log('[Login] Firebase signIn successful');
+      console.log('[Login] User UID:', user.uid);
+      console.log('[Login] Email verified:', user.emailVerified);
+
+      // TEMPORALMENTE DESHABILITADO PARA TESTING - DESCOMENTAR DESPUÉS
+      /*
       if (!user.emailVerified) {
+        console.warn('[Login] Email not verified, signing out');
         Alert.alert('Verifica tu correo', 'Debes verificar tu email antes de continuar.');
         await signOut(auth);
         return false; // No permitir acceso
       }
-      
-      // Si el email está verificado, permitir acceso
-      return true; // Permitir acceso
+      */
+
+      if (!user.emailVerified) {
+        console.warn('[Login] ⚠️ Email not verified, but allowing login for testing');
+        Alert.alert(
+          'Email no verificado',
+          'Tu email no está verificado, pero puedes continuar por ahora. Por favor verifica tu email pronto.',
+          [{ text: 'OK' }]
+        );
+      }
+
+      console.log('[Login] Login successful, user authenticated');
+      // Permitir acceso incluso si email no está verificado (temporal)
+      return true;
     } catch (e) {
-      Alert.alert('Error', e.message || String(e));
+      console.error('[Login] Login failed');
+      console.error('[Login] Error code:', e.code);
+      console.error('[Login] Error message:', e.message);
+      console.error('[Login] Full error:', e);
+
+      let errorMessage = 'Error al iniciar sesión';
+      if (e.code === 'auth/user-not-found') {
+        errorMessage = 'Usuario no encontrado. Verifica el email o regístrate.';
+      } else if (e.code === 'auth/wrong-password') {
+        errorMessage = 'Contraseña incorrecta';
+      } else if (e.code === 'auth/invalid-email') {
+        errorMessage = 'Email inválido';
+      } else if (e.code === 'auth/user-disabled') {
+        errorMessage = 'Usuario deshabilitado';
+      } else if (e.code === 'auth/too-many-requests') {
+        errorMessage = 'Demasiados intentos. Intenta más tarde';
+      } else if (e.code === 'auth/invalid-credential') {
+        errorMessage = 'Email o contraseña incorrectos. Verifica tus credenciales.\n\n⚠️ Asegúrate de que:\n• El email sea correcto\n• La contraseña sea correcta\n• Hayas verificado tu email';
+      } else if (e.message) {
+        errorMessage = e.message;
+      }
+
+      Alert.alert('Error de Login', errorMessage);
       return false; // No permitir acceso
     }
   };
   
   const logout = async () => {
+    console.log('[Logout] Starting logout process...');
+
     try {
       // 1. Deshabilitar carga automática de rol persistido
+      console.log('[Logout] Disabling persisted role loading');
       setShouldLoadPersistedRole(false);
-      
+
       // 2. SignOut de Firebase
+      console.log('[Logout] Signing out from Firebase...');
       await signOut(auth);
-      
+      console.log('[Logout] Firebase signOut successful');
+
       // 3. Limpiar estado local del contexto INMEDIATAMENTE
+      console.log('[Logout] Clearing local state...');
       setUser(null);
       setFirebaseUser(null);
       setGlobalUserRole(null);
       setLoading(false);
-      
+
       // 4. Limpiar TODO AsyncStorage - TODOS los datos del usuario
+      console.log('[Logout] Clearing AsyncStorage...');
       await AsyncStorage.clear();
-      
+      console.log('[Logout] Logout complete');
+
     } catch (error) {
+      console.error('[Logout] Error during logout:', error);
+      console.error('[Logout] Error message:', error.message);
+
       // Aún así, intentar limpiar el estado local
+      console.log('[Logout] Clearing state despite error...');
       setUser(null);
       setFirebaseUser(null);
       setGlobalUserRole(null);
@@ -222,36 +298,49 @@ export const AuthProvider = ({ children }) => {
 
   // Establecer rol global
   const setUserRole = async (role) => {
+    console.log('[Role] Setting user role:', role);
+
     // Validar que el rol no sea null o undefined
     if (!role) {
+      console.warn('[Role] Attempted to set null/undefined role');
       return;
     }
-    
+
     // Re-habilitar carga automática de rol persistido
+    console.log('[Role] Re-enabling persisted role loading');
     setShouldLoadPersistedRole(true);
-    
+
     // Persistir en estado local
+    console.log('[Role] Updating global role state');
     setGlobalUserRole(role);
-    
+
     // Persistir en AsyncStorage para mantener el rol entre sesiones
     try {
+      console.log('[Role] Saving role to AsyncStorage...');
       await AsyncStorage.setItem('globalUserRole', role);
+      console.log('[Role] Role saved successfully');
     } catch (error) {
-      // Error silencioso
+      console.error('[Role] Error saving role to AsyncStorage:', error);
     }
   };
 
   // Recuperar rol desde AsyncStorage al iniciar la app
   const loadPersistedRole = async () => {
+    console.log('[Role] Loading persisted role from AsyncStorage...');
+
     try {
       const persistedRole = await AsyncStorage.getItem('globalUserRole');
-      
+      console.log('[Role] Persisted role found:', persistedRole);
+
       if (persistedRole) {
+        console.log('[Role] Setting global role to:', persistedRole);
         setGlobalUserRole(persistedRole);
         return persistedRole;
+      } else {
+        console.log('[Role] No persisted role found');
       }
     } catch (error) {
-      // Error silencioso
+      console.error('[Role] Error loading persisted role:', error);
     }
     return null;
   };
