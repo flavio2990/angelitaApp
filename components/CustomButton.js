@@ -1,7 +1,8 @@
 ﻿import React from 'react';
 import { Button } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
-
+//start comment
+//end comment
 export default function CustomButton({ onPress, label, disabled, style, ...props }) {
   return (
     <Button
