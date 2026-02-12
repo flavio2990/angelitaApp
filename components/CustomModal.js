@@ -1,30 +1,35 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { 
-  Modal as PaperModal, 
-  Portal, 
-  Button, 
-  Card 
+import {
+  Modal as PaperModal,
+  Portal,
+  Button,
+  Card
 } from 'react-native-paper';
-import { 
-  View, 
-  StyleSheet, 
-  Dimensions, 
-  Platform, 
-  ScrollView, 
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  Platform,
+  ScrollView,
   KeyboardAvoidingView,
   Keyboard,
   Text,
   TouchableWithoutFeedback,
   TouchableOpacity,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 
 import TopBarHeader from '@/components/TopBarHeader';
+import HamburgerMenu from './HamburgerMenu';
 import VitalSignsColumns from './VitalSignsColumns';
 import CustomButton from './CustomButton';
 import VitalsDetails from './VitalsDetails';
-import { VITALS_TEXTS, FORM_TEXTS } from '../constants/Strings';
+import MedicationDetails from './MedicationDetails';
+import { VITALS_TEXTS, FORM_TEXTS, MEDICATION_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
 import { Calendar } from 'react-native-calendars';
+import { useHistoryCalendar } from './hooks/useHistoryCalendar';
+import AuthorRoleSelector from './AuthorRoleSelector';
 
 const { width, height } = Dimensions.get('window');
 
@@ -46,7 +51,7 @@ const CustomModal = ({
   centerTopbarTitle = false,
   cardMarginTop = 0,
   centerCard = false,
-  showHamburgerMenu = true, 
+  showHamburgerMenu = true,
   canEdit = false,
   onLogout,
   onGoHome,
@@ -55,6 +60,7 @@ const CustomModal = ({
   outsideActions = [],
   topbarMarginTop = 50,
   isVitalsModal = false,
+  isMedicationModal = false,
   vitalsData = null,
   onVitalsSave = null,
   onVitalsModify = null,
@@ -67,13 +73,165 @@ const CustomModal = ({
   previousVitalsData = null,
   vitalsHistoryByDate = {},
   onViewHistory = null,
+  medicationCount = 1,
+  medicationHistoryByDate = {},
+  selectedAuthorRole = 'employee',
+  onAuthorRoleChange = null,
+  isLoadingMedication = false,
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [showHistoryCalendar, setShowHistoryCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [historySelectedData, setHistorySelectedData] = useState(null);
-  const [historySelectionAttempted, setHistorySelectionAttempted] = useState(false);
-  const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : title;
+  const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : (isMedicationModal && children ? `${MEDICATION_TEXTS.columns.droga}/${MEDICATION_TEXTS.columns.hora}/${MEDICATION_TEXTS.columns.dosis}` : title);
+
+  // Use the history calendar hook for vitals history management
+  const vitalsHistoryCalendar = useHistoryCalendar({
+    historyByDate: vitalsHistoryByDate,
+    currentPersonId: vitalsData?.personId,
+    onSelect: onViewHistory,
+    initialSelectedRecord: isVitalsModal ? previousVitalsData : null,
+    alertTitle: 'Signos y Constantes',
+    noDataMessage: 'No hay datos de signos vitales disponibles para la fecha seleccionada.',
+    futureDateMessage: 'No se pueden seleccionar fechas futuras.',
+  });
+
+  // Use the history calendar hook for medication history management
+  const medicationHistoryCalendar = useHistoryCalendar({
+    historyByDate: medicationHistoryByDate,
+    currentPersonId: vitalsData?.personId,
+    initialSelectedRecord: isMedicationModal ? previousVitalsData : null,
+    alertTitle: 'Medicación',
+    noDataMessage: 'No hay datos de medicación disponibles para la fecha seleccionada.',
+    futureDateMessage: 'No se pueden seleccionar fechas futuras.',
+  });
+
+  // Select the appropriate hook based on modal type
+  const historyCalendar = isMedicationModal ? medicationHistoryCalendar : vitalsHistoryCalendar;
+  const {
+    showCalendar: showHistoryCalendar,
+    selectedDate,
+    selectedRecord: historySelectedData,
+    selectionAttempted: historySelectionAttempted,
+    openCalendar: handleViewHistory,
+    closeCalendar: handleCancelHistory,
+    handleDayPress,
+  } = historyCalendar;
+
+  // Helper booleans for footer logic
+  const isAnteriorView = vitalsView === 'anterior';
+  const isHistoryMode = isAnteriorView && (isVitalsModal || isMedicationModal);
+
+  const getPersonLabelPrefix = () => {
+    const personType = vitalsData?.personType;
+    if (!personType) return isMedicationModal ? MEDICATION_TEXTS.patientLabelPrefix : VITALS_TEXTS.patientLabelPrefix;
+    
+    const tipoLower = personType.toLowerCase();
+    if (tipoLower === PERSON_TYPE_TEXTS.patient.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.patient}:`;
+    } else if (tipoLower === PERSON_TYPE_TEXTS.nursing.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.nursing}:`;
+    } else if (tipoLower === PERSON_TYPE_TEXTS.administrator.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.administrator}:`;
+    }
+    return `_${personType}:`;
+  };
+
+  // Render history footer (Ver historial / Cancelar)
+  const renderHistoryFooter = () => {
+    if (!isHistoryMode || isKeyboardVisible || !(previousVitalsData || hasVitalsData)) {
+      return null;
+    }
+
+    return (
+      <View style={[styles.buttonContainer, styles.vitalsButtonContainer, styles.viewHistoryWrapper]}>
+        <CustomButton
+          onPress={showHistoryCalendar ? handleCancelHistory : handleViewHistory}
+          label={showHistoryCalendar ? VITALS_TEXTS.cancelHistoryButton : VITALS_TEXTS.viewHistoryButton}
+          // style={{ width: '95%' }}
+        />
+      </View>
+    );
+  };
+
+  // Render edit/detail footer (Guardar, Modificar, etc.)
+  const renderEditFooter = () => {
+    if (isHistoryMode) {
+      return null; // Never show edit footer in history mode
+    }
+
+    if (!isDetailModal && !isEditModal) {
+      return null;
+    }
+
+    // Skip if keyboard is visible for vitals modal
+    if (isVitalsModal && isKeyboardVisible) {
+      return null;
+    }
+
+    const buttonStyle = [
+      styles.buttonContainer,
+      isVitalsModal && styles.vitalsButtonContainer,
+      isVitalsModal && { position: 'absolute', bottom: 0, left: 0, right: 0 },
+      isMedicationModal && styles.medicationButtonContainer
+    ];
+
+    return (
+      <View style={buttonStyle}>
+        {isDetailModal && (
+          <>
+            {canEdit && (
+              <Button
+                mode="contained"
+                onPress={onModifyPress}
+                style={styles.detailButton}
+                labelStyle={styles.detailButtonLabel}
+                buttonColor="#5124A5"
+              >
+                Modificar
+              </Button>
+            )}
+            <Button
+              mode="contained"
+              onPress={onGoToPlanPress}
+              style={styles.detailButton}
+              labelStyle={styles.detailButtonLabel}
+              buttonColor="#5124A5"
+            >
+              Ir a planilla
+            </Button>
+          </>
+        )}
+        {isEditModal && canEdit && (
+          <>
+            {(isVitalsModal || isMedicationModal) ? (
+              <>
+                {onModifyPress && hasVitalsData && !isMedicationModal && (
+                  <CustomButton
+                    onPress={onModifyPress}
+                    label={FORM_TEXTS.editButton}
+                    style={{ marginBottom: 15 }}
+                  />
+                )}
+                <CustomButton
+                  onPress={onSavePress}
+                  label={FORM_TEXTS.saveButton}
+                  style={isMedicationModal ? { width: '100%', maxWidth: 400 } : {}}
+                />
+              </>
+            ) : (
+              <Button
+                mode="contained"
+                onPress={onSavePress}
+                style={styles.detailButton}
+                labelStyle={styles.detailButtonLabel}
+                buttonColor="#5124A5"
+              >
+                {FORM_TEXTS.saveButton}
+              </Button>
+            )}
+          </>
+        )}
+      </View>
+    );
+  };
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -95,70 +253,235 @@ const CustomModal = ({
     };
   }, []);
 
-  // Reset calendario al cerrar o cambiar de vista
   useEffect(() => {
     if (!visible || vitalsView !== 'anterior') {
-      setShowHistoryCalendar(false);
-      setHistorySelectedData(null);
-      setHistorySelectionAttempted(false);
+      // Clear selection when modal closes or view changes (reset state)
+      handleCancelHistory(true);
     }
-  }, [visible, vitalsView]);
+  }, [visible, vitalsView, handleCancelHistory]);
 
-  const handleViewHistory = () => {
-    setShowHistoryCalendar(true);
-    setSelectedDate(previousVitalsData?.createdAt ? new Date(previousVitalsData.createdAt) : new Date());
-    setHistorySelectedData(null);
-    setHistorySelectionAttempted(false);
-    if (onViewHistory) onViewHistory();
-  };
-
-  const handleCancelHistory = () => {
-    setShowHistoryCalendar(false);
-    setHistorySelectedData(null);
-    setHistorySelectionAttempted(false);
-  };
-
-  const handleDayPress = (day) => {
-    const pickedKey = day.dateString; // YYYY-MM-DD
-    const picked = new Date(pickedKey);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const pickedDate = new Date(picked);
-    pickedDate.setHours(0, 0, 0, 0);
-
-    // Validar que la fecha seleccionada no sea futura
-    if (pickedDate > today) {
-      Alert.alert(
-        'Signos y Constantes',
-        'No se pueden seleccionar fechas futuras.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    setSelectedDate(picked);
-    setHistorySelectionAttempted(true);
-
-    // Buscar en el mapa de histórico usando la fecha como clave
-    const recordForDate = vitalsHistoryByDate[pickedKey];
-
-    if (recordForDate && vitalsData?.personId) {
-      // Validar que el registro pertenezca al subject actual
-      if (recordForDate.personId === vitalsData.personId) {
-        setHistorySelectedData(recordForDate);
-        setShowHistoryCalendar(false); // Cerrar calendario y mostrar los datos
-        return;
+  const renderCardContent = () => {
+    // Si es modal de vitals y vista anterior
+    if (isVitalsModal && vitalsView === 'anterior') {
+      if (showHistoryCalendar) {
+        return (
+          <View style={{ width: '100%', gap: 12 }}>
+            <Calendar
+              current={selectedDate.toISOString().split('T')[0]}
+              maxDate={new Date().toISOString().split('T')[0]}
+              onDayPress={handleDayPress}
+              markedDates={{
+                [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#5124A5' }
+              }}
+              theme={{
+                selectedDayBackgroundColor: '#5124A5',
+                todayTextColor: '#5124A5',
+                arrowColor: '#5124A5',
+                textDisabledColor: '#d3d3d3',
+              }}
+            />
+          </View>
+        );
       }
+      return <VitalsDetails vitalsData={historySelectedData || previousVitalsData} />;
     }
 
-    // No se encontró data para esta fecha
-    setHistorySelectedData(null);
-    Alert.alert(
-      'Signos y Constantes',
-      'No hay datos de signos vitales disponibles para la fecha seleccionada.',
-      [{ text: 'OK' }]
+    // Si es modal de medicación y vista anterior
+    if (isMedicationModal && vitalsView === 'anterior') {
+      if (showHistoryCalendar) {
+        return (
+          <View style={{ width: '100%', gap: 12 }}>
+            <Calendar
+              current={selectedDate.toISOString().split('T')[0]}
+              maxDate={new Date().toISOString().split('T')[0]}
+              onDayPress={handleDayPress}
+              markedDates={{
+                [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#5124A5' }
+              }}
+              theme={{
+                selectedDayBackgroundColor: '#5124A5',
+                todayTextColor: '#5124A5',
+                arrowColor: '#5124A5',
+                textDisabledColor: '#d3d3d3',
+              }}
+            />
+          </View>
+        );
+      }
+      
+      // Mostrar spinner mientras carga dentro del card
+      if (isLoadingMedication) {
+        return (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#5124A5" />
+            <Text style={styles.loadingText}>Cargando medicación...</Text>
+          </View>
+        );
+      }
+      
+      return <MedicationDetails medicationData={historySelectedData || previousVitalsData} />;
+    }
+
+    // Si es modal de vitals y no hay children
+    if (isVitalsModal && !children) {
+      return (
+        <VitalSignsColumns
+          adminUid={vitalsData?.adminUid}
+          area={vitalsData?.area}
+          personId={vitalsData?.personId}
+          patientName={vitalsData?.patientName}
+          visible={visible}
+          onDismiss={onDismiss}
+          onModify={onVitalsModify}
+          onSave={onVitalsSave}
+        />
+      );
+    }
+
+    // Si es modal de medicación
+    if (isMedicationModal) {
+      return children;
+    }
+
+    // Caso default: contenido genérico con scroll o sin scroll
+    const defaultContent = (
+      <>
+        {content}
+        {children}
+        {actions.map((action, index) => (
+          <Button
+            key={index}
+            mode={action.mode || "outlined"}
+            onPress={action.onPress}
+            style={[styles.button, action.style]}
+            labelStyle={styles.buttonLabel}
+            icon={action.icon}
+            textColor={action.textColor || "#5124A5"}
+            buttonColor={action.buttonColor || "white"}
+          >
+            {action.label}
+          </Button>
+        ))}
+      </>
+    );
+
+    if (scrollable) {
+      return (
+        <ScrollView
+          style={{ width: '100%' }}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={true}
+        >
+          {defaultContent}
+        </ScrollView>
+      );
+    }
+
+    return <View style={{ width: '100%' }}>{defaultContent}</View>;
+  };
+
+  const renderCardWithButtons = () => {
+    const cardElement = (
+      <Card 
+        style={[
+          // Para medicación vista anterior, siempre usar vitalsCard para mantener ancho consistente
+          isMedicationModal && vitalsView === 'anterior' ? styles.vitalsCard : (isMedicationModal ? styles.medicationCard : styles.theCard),
+          !(isVitalsModal && vitalsView === 'anterior') && !isMedicationModal && styles.centerCard,
+          !isMedicationModal && cardMarginTop !== undefined && { marginTop: cardMarginTop },
+          !isMedicationModal && cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
+          isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
+          isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
+          isVitalsModal && { marginTop: 0 },
+          isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: '20%' },
+          isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { marginTop: 0 },
+          isMedicationModal && vitalsView !== 'anterior' && { marginTop: 0 },
+          isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && {
+            maxHeight: height * 0.6,
+            minHeight: 350,
+          },
+          isMedicationModal && vitalsView !== 'anterior' && {
+            maxHeight: height * 0.6,
+            ...(cardMarginTop === undefined && {
+              height: medicationCount ? (
+                medicationCount <= 3
+                  ? 60 + (medicationCount * 70) + 50
+                  : height * 0.6
+              ) : height * 0.4,
+            })
+          }
+        ]}
+        pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'auto' : undefined}
+      >
+        {resolvedTitle && (
+          <View style={[
+            styles.titleWrapper,
+            cardMarginTop === 0 && styles.fullScreenTitleWrapper,
+            isMedicationModal && vitalsView !== 'anterior' && styles.medicationTitleWrapper
+          ]}>
+            {isMedicationModal && vitalsView === 'anterior' ? (
+              <Text style={styles.title}>
+                {title}
+              </Text>
+            ) : isMedicationModal ? (
+              <View style={styles.medicationTitleRow}>
+                <Text style={[styles.title, styles.medicationTitleDroga]}>
+                  {MEDICATION_TEXTS.columns.droga}
+                </Text>
+                <Text style={[styles.title, styles.medicationTitleHora]}>
+                  {MEDICATION_TEXTS.columns.hora}
+                </Text>
+                <Text style={[styles.title, styles.medicationTitleDosis]}>
+                  {MEDICATION_TEXTS.columns.dosis}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.title}>
+                {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
+              </Text>
+            )}
+          </View>
+        )}
+        <Card.Content 
+          style={[
+            !(isMedicationModal && vitalsView === 'anterior') && styles.cardContent, 
+            isMedicationModal && vitalsView !== 'anterior' && styles.medicationCardContent,
+            isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { padding: 0, width: '100%' },
+            isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { 
+              width: '100%',
+              minHeight: 300,
+              padding: 0,
+              flexGrow: 1,
+            }
+          ]}
+          pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
+          onStartShouldSetResponder={() => false}
+        >
+          {renderCardContent()}
+        </Card.Content>
+      </Card>
+    );
+
+    return (
+      <>
+        {/* Selector de autoría para vista anterior de medicación */}
+        {/* No se muestra cuando está visible el calendario histórico */}
+        {isMedicationModal && vitalsView === 'anterior' && onAuthorRoleChange && !showHistoryCalendar && (
+          <View style={styles.authorSelectorContainer}>
+            <AuthorRoleSelector
+              selectedRole={selectedAuthorRole}
+              onRoleChange={onAuthorRoleChange}
+            />
+          </View>
+        )}
+        <View style={isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar ? { marginTop: 0 } : {}}>
+          {cardElement}
+        </View>
+        {isHistoryMode ? renderHistoryFooter() : renderEditFooter()}
+      </>
     );
   };
+
   return (
     <Portal>
       <PaperModal
@@ -169,52 +492,43 @@ const CustomModal = ({
           centerCard && { justifyContent: 'center', alignItems: 'center' }
         ]}
       >
-        {(showTopbar || showHamburgerMenu) && (
+        {showTopbar && (
           <View style={styles.topBarOverlay} pointerEvents="box-none">
             <TopBarHeader
-              showTopBar={showTopbar}
+              showTopBar={true}
               topBarTitle={topbarTitle}
               onBack={onBack}
               centerTopbarTitle={centerTopbarTitle}
-              showMenu={showHamburgerMenu}
-              menuPosition="top-right"
-              onLogout={onLogout}
-              onGoHome={onGoHome}
-              showGoHomeOption={showGoHomeOption}
-              forceShowMenu={true}
-              respectSafeArea={false}
               style={styles.topBarFloating}
             />
           </View>
         )}
 
-        {/* Información del paciente para modales de signos vitales */}
-        {isVitalsModal && vitalsData?.patientName && (
+        {((isVitalsModal || isMedicationModal) && vitalsData?.patientName) && (
           <View style={[
             styles.patientBoxModal,
             {
               top: showTopbar
                 ? (offsetWithTopbar
-                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
-                    : vitalsInfoMarginTop)
+                  ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
+                  : vitalsInfoMarginTop)
                 : 16
             }
           ]}>
             <Text style={styles.patientTextModal}>
-              {VITALS_TEXTS.patientLabelPrefix} {vitalsData.patientName}
+              {`${getPersonLabelPrefix()} ${vitalsData.patientName}`}
             </Text>
           </View>
         )}
 
-        {/* Botones Anterior/Nuevo para modal de signos vitales */}
-        {isVitalsModal && showTopbar && (
+        {(isVitalsModal || isMedicationModal) && showTopbar && (
           <View style={[
             styles.vitalsViewButtons,
             {
               top: showTopbar
                 ? (offsetWithTopbar
-                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin - 50
-                    : vitalsInfoMarginTop - 50)
+                  ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin - 50
+                  : vitalsInfoMarginTop - 50)
                 : 16
             }
           ]}>
@@ -242,25 +556,36 @@ const CustomModal = ({
             </TouchableOpacity>
           </View>
         )}
-        
-        {/* Información del paciente para modales de signos vitales */}
-        {isVitalsModal && vitalsData?.patientName && (
+
+        {showHamburgerMenu && (
+          <HamburgerMenu
+            position="top-right"
+            hasTopBar={showTopbar}
+            onLogout={onLogout}
+            onGoHome={onGoHome}
+            showGoHomeOption={showGoHomeOption}
+            showInModal={true}
+            forceShow={true}
+          />
+        )}
+
+        {((isVitalsModal || isMedicationModal) && vitalsData?.patientName) && (
           <View style={[
             styles.patientBoxModal,
             {
               top: showTopbar
                 ? (offsetWithTopbar
-                    ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
-                    : vitalsInfoMarginTop)
+                  ? (topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin
+                  : vitalsInfoMarginTop)
                 : 16
             }
           ]}>
             <Text style={styles.patientTextModal}>
-              {VITALS_TEXTS.patientLabelPrefix} {vitalsData.patientName}
+              {`${getPersonLabelPrefix()} ${vitalsData.patientName}`}
             </Text>
           </View>
         )}
-        
+
         {outsideActions.length > 0 && (
           <View style={[
             styles.outsideActionsContainer,
@@ -282,341 +607,258 @@ const CustomModal = ({
           </View>
         )}
 
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        {isMedicationModal && vitalsView === 'anterior' ? (
+          // Para medication anterior, no usar TouchableWithoutFeedback para permitir scroll
+          <View style={styles.flex}>
+            {centerCard ? (
+              <View style={styles.flex}>
+                <View 
+                  style={[
+                    styles.modalContent,
+                    !isMedicationModal && styles.centerModalContent,
+                    isVitalsModal && {
+                      justifyContent: 'flex-start',
+                      paddingBottom: 0,
+                      paddingTop: showTopbar
+                        ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
+                        : 110
+                    },
+                    isMedicationModal && {
+                      justifyContent: 'flex-start',
+                      alignItems: 'stretch',
+                      paddingTop: showTopbar
+                        ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 30)
+                        : 50
+                    }
+                  ]}
+                  pointerEvents="box-none"
+                >
+                  {renderCardWithButtons()}
+                </View>
+              </View>
+            ) : (
+              <KeyboardAvoidingView
+                style={styles.flex}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={showTopbar ? 120 : 80}
+              >
+                <View 
+                  style={[
+                    styles.modalContent,
+                    cardMarginTop === 0 && !showTopbar && styles.fullScreenModalContent,
+                    showTopbar && offsetWithTopbar && topbarMarginTop !== undefined && { paddingTop: topbarMarginTop },
+                    isVitalsModal && { paddingBottom: 20 },
+                    isMedicationModal && {
+                      justifyContent: 'flex-start',
+                      alignItems: 'stretch',
+                      paddingTop: showTopbar
+                        ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 30)
+                        : 50
+                    }
+                  ]}
+                  pointerEvents="box-none"
+                >
+                  {renderCardWithButtons()}
+                </View>
+              </KeyboardAvoidingView>
+            )}
+          </View>
+        ) : (
+              <TouchableWithoutFeedback 
+            onPress={() => {
+              Keyboard.dismiss();
+            }} 
+            accessible={false}
+            onStartShouldSetResponder={() => false}
+            onMoveShouldSetResponder={() => {
+              return false;
+            }}
+          >
           {centerCard ? (
             <View style={styles.flex}>
-              <View style={[
-                styles.modalContent, 
-                styles.centerModalContent,
-                isVitalsModal && { 
-                  justifyContent: 'flex-start',
-                  paddingBottom: 0,
-                  paddingTop: showTopbar 
-                    ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
-                    : 110
-                }
-              ]}>
-                <Card style={[
-                  styles.theCard, 
-                  !(isVitalsModal && vitalsView === 'anterior') && styles.centerCard,
-                  isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
-                  isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
-                  isVitalsModal && { marginTop: 0 }
-                ]}>
+              <View 
+                style={[
+                  styles.modalContent,
+                  !isMedicationModal && styles.centerModalContent,
+                  isVitalsModal && {
+                    justifyContent: 'flex-start',
+                    paddingBottom: 0,
+                    paddingTop: showTopbar
+                      ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
+                      : 110
+                  },
+                  isMedicationModal && {
+                    justifyContent: 'flex-start',
+                    alignItems: 'stretch',
+                    paddingTop: showTopbar
+                      ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
+                      : 110
+                  }
+                ]}
+                pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
+              >
+                <Card 
+                  style={[
+                    // Para medicación vista anterior, siempre usar vitalsCard para mantener ancho consistente
+                    isMedicationModal && vitalsView === 'anterior' ? styles.vitalsCard : (isMedicationModal ? styles.medicationCard : styles.theCard),
+                    !(isVitalsModal && vitalsView === 'anterior') && !isMedicationModal && styles.centerCard,
+                    isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
+                    isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
+                    isVitalsModal && { marginTop: 0 },
+                    isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: 24 },
+                    isMedicationModal && vitalsView !== 'anterior' && { marginTop: 0 },
+                    isMedicationModal && {
+                      maxHeight: height * 0.6,
+                    }
+                  ]}
+                  pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'auto' : undefined}
+                >
                   {resolvedTitle && (
-                    <View style={styles.titleWrapper}>
-                      <Text style={styles.title}>
-                        {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
-                      </Text>
-                    </View>
-                  )}
-                  <Card.Content style={styles.cardContent}>
-                    {isVitalsModal && vitalsView === 'anterior' ? (
-                      showHistoryCalendar ? (
-                        <View style={{ width: '100%', gap: 12 }}>
-                          <Calendar
-                            current={selectedDate.toISOString().split('T')[0]}
-                            maxDate={new Date().toISOString().split('T')[0]}
-                            onDayPress={handleDayPress}
-                            markedDates={{
-                              [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#5124A5' }
-                            }}
-                            style={styles.calendar}
-                            theme={{
-                              selectedDayBackgroundColor: '#5124A5',
-                              todayTextColor: '#5124A5',
-                              arrowColor: '#5124A5',
-                              textDisabledColor: '#d3d3d3',
-                            }}
-                          />
+                    <View style={[
+                      styles.titleWrapper,
+                      isMedicationModal && vitalsView !== 'anterior' && styles.medicationTitleWrapper
+                    ]}>
+                      {isMedicationModal && vitalsView === 'anterior' ? (
+                        <Text style={styles.title}>
+                          {title}
+                        </Text>
+                      ) : isMedicationModal ? (
+                        <View style={styles.medicationTitleRow}>
+                          <Text style={[styles.title, styles.medicationTitleDroga]}>
+                            {MEDICATION_TEXTS.columns.droga}
+                          </Text>
+                          <Text style={[styles.title, styles.medicationTitleHora]}>
+                            {MEDICATION_TEXTS.columns.hora}
+                          </Text>
+                          <Text style={[styles.title, styles.medicationTitleDosis]}>
+                            {MEDICATION_TEXTS.columns.dosis}
+                          </Text>
                         </View>
                       ) : (
-                        <VitalsDetails vitalsData={historySelectedData || previousVitalsData} />
-                      )
-                    ) : isVitalsModal && !children ? (
-                      <VitalSignsColumns
-                        adminUid={vitalsData?.adminUid}
-                        area={vitalsData?.area}
-                        personId={vitalsData?.personId}
-                        patientName={vitalsData?.patientName}
-                        visible={visible}
-                        onDismiss={onDismiss}
-                        onModify={onVitalsModify}
-                        onSave={onVitalsSave}
-                      />
-                    ) : scrollable ? (
-                      <ScrollView
-                        style={{ width: '100%' }}
-                        contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
-                        showsVerticalScrollIndicator={true}
-                      >
-                        {content}
-                        {children}
-                        {actions.map((action, index) => (
-                          <Button
-                            key={index}
-                            mode={action.mode || "outlined"}
-                            onPress={action.onPress}
-                            style={[styles.button, action.style]}
-                            labelStyle={styles.buttonLabel}
-                            icon={action.icon}
-                            textColor={action.textColor || "#5124A5"}
-                            buttonColor={action.buttonColor || "white"}
-                          >
-                            {action.label}
-                          </Button>
-                        ))}
-                      </ScrollView>
-                    ) : (
-                      <View style={{ width: '100%' }}>
-                        {content}
-                        {children}
-                        {actions.map((action, index) => (
-                          <Button
-                            key={index}
-                            mode={action.mode || "outlined"}
-                            onPress={action.onPress}
-                            style={[styles.button, action.style]}
-                            labelStyle={styles.buttonLabel}
-                            icon={action.icon}
-                            textColor={action.textColor || "#5124A5"}
-                            buttonColor={action.buttonColor || "white"}
-                          >
-                            {action.label}
-                          </Button>
-                        ))}
-                      </View>
-                    )}
+                        <Text style={styles.title}>
+                          {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                  <Card.Content 
+                    style={[
+                      !(isMedicationModal && vitalsView === 'anterior') && styles.cardContent, 
+                      isMedicationModal && vitalsView !== 'anterior' && styles.medicationCardContent,
+                      isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { padding: 0, width: '100%' },
+                      isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { 
+                        width: '100%',
+                        minHeight: 300,
+                        padding: 0,
+                        flexGrow: 1,
+                      }
+                    ]}
+                    pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
+                  >
+                    {renderCardContent()}
                   </Card.Content>
                 </Card>
 
-              {isVitalsModal && vitalsView === 'anterior' && !isKeyboardVisible && (previousVitalsData || hasVitalsData) && (
-                <View style={[styles.buttonContainer, styles.vitalsButtonContainer, styles.viewHistoryWrapper]}>
-                  <CustomButton
-                    onPress={showHistoryCalendar ? handleCancelHistory : handleViewHistory}
-                    label={showHistoryCalendar ? VITALS_TEXTS.cancelHistoryButton : VITALS_TEXTS.viewHistoryButton}
-                  />
-                </View>
-              )}
-
-                {(isDetailModal || (isEditModal && !(isVitalsModal && vitalsView === 'anterior'))) && !(isVitalsModal && isKeyboardVisible) && (
-                  <View style={[
-                    styles.buttonContainer,
-                    isVitalsModal && styles.vitalsButtonContainer,
-                    isVitalsModal && { position: 'absolute', bottom: 0, left: 0, right: 0 }
-                  ]}>
-                    {isDetailModal && (
-                      <>
-                        {canEdit && (
-                          <Button
-                            mode="contained"
-                            onPress={onModifyPress}
-                            style={styles.detailButton}
-                            labelStyle={styles.detailButtonLabel}
-                            buttonColor="#5124A5"
-                          >
-                            Modificar
-                          </Button>
-                        )}
-                        <Button
-                          mode="contained"
-                          onPress={onGoToPlanPress}
-                          style={styles.detailButton}
-                          labelStyle={styles.detailButtonLabel}
-                          buttonColor="#5124A5"
-                        >
-                          Ir a planilla
-                        </Button>
-                      </>
-                    )}
-                    {isEditModal && canEdit && (
-                      <>
-                        {isVitalsModal ? (
-                          <>
-                            {onModifyPress && hasVitalsData && (
-                              <CustomButton
-                                onPress={onModifyPress}
-                                label={FORM_TEXTS.editButton}
-                                style={{ marginBottom: 15 }}
-                              />
-                            )}
-                            <CustomButton
-                              onPress={onSavePress}
-                              label={FORM_TEXTS.saveButton}
-                            />
-                          </>
-                        ) : (
-                          <Button
-                            mode="contained"
-                            onPress={onSavePress}
-                            style={styles.detailButton}
-                            labelStyle={styles.detailButtonLabel}
-                            buttonColor="#5124A5"
-                          >
-                            {FORM_TEXTS.saveButton}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </View>
-                )}
+                {isHistoryMode ? renderHistoryFooter() : renderEditFooter()}
               </View>
             </View>
           ) : (
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
               style={styles.flex}
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               keyboardVerticalOffset={showTopbar ? 120 : 80}
             >
-              <View style={[
-                styles.modalContent,
-                cardMarginTop === 0 && !showTopbar && styles.fullScreenModalContent,
-                showTopbar && offsetWithTopbar && topbarMarginTop !== undefined && { paddingTop: topbarMarginTop },
-                isVitalsModal && { paddingBottom: 20 }
-              ]}>
-                <Card style={[
-                  styles.theCard, 
-                  cardMarginTop !== undefined && { marginTop: cardMarginTop },
-                  cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
-                  isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
-                  isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew
-                ]}>
+              <View 
+                style={[
+                  styles.modalContent,
+                  cardMarginTop === 0 && !showTopbar && styles.fullScreenModalContent,
+                  showTopbar && offsetWithTopbar && topbarMarginTop !== undefined && { paddingTop: topbarMarginTop },
+                  isVitalsModal && { paddingBottom: 20 },
+                  isMedicationModal && {
+                    justifyContent: 'flex-start',
+                    alignItems: 'stretch',
+                    paddingTop: showTopbar
+                      ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
+                      : 110
+                  }
+                ]}
+                pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
+              >
+                <Card 
+                  style={[
+                    // Para medicación vista anterior, siempre usar vitalsCard para mantener ancho consistente
+                    isMedicationModal && vitalsView === 'anterior' ? styles.vitalsCard : (isMedicationModal ? styles.medicationCard : styles.theCard),
+                    !isMedicationModal && cardMarginTop !== undefined && { marginTop: cardMarginTop },
+                    !isMedicationModal && cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
+                    isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
+                    isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
+                    isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: 24 },
+                    isMedicationModal && vitalsView !== 'anterior' && { marginTop: 0 },
+                    isMedicationModal && {
+                      height: medicationCount ? (
+                        medicationCount <= 3
+                          ? 60 + (medicationCount * 70) + 50
+                          : height * 0.6
+                      ) : height * 0.4,
+                      maxHeight: height * 0.6,
+                    }
+                  ]}
+                  pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'auto' : undefined}
+                >
                   {resolvedTitle && (
                     <View style={[
                       styles.titleWrapper,
-                      cardMarginTop === 0 && styles.fullScreenTitleWrapper
+                      cardMarginTop === 0 && styles.fullScreenTitleWrapper,
+                      isMedicationModal && vitalsView !== 'anterior' && styles.medicationTitleWrapper
                     ]}>
-                      <Text style={styles.title}>
-                        {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
-                      </Text>
+                      {isMedicationModal && vitalsView === 'anterior' ? (
+                        <Text style={styles.title}>
+                          {title}
+                        </Text>
+                      ) : isMedicationModal ? (
+                        <View style={styles.medicationTitleRow}>
+                          <Text style={[styles.title, styles.medicationTitleDroga]}>
+                            {MEDICATION_TEXTS.columns.droga}
+                          </Text>
+                          <Text style={[styles.title, styles.medicationTitleHora]}>
+                            {MEDICATION_TEXTS.columns.hora}
+                          </Text>
+                          <Text style={[styles.title, styles.medicationTitleDosis]}>
+                            {MEDICATION_TEXTS.columns.dosis}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.title}>
+                          {isVitalsModal && vitalsView === 'anterior' ? 'Signos y Constantes' : resolvedTitle}
+                        </Text>
+                      )}
                     </View>
                   )}
-                  <Card.Content style={styles.cardContent}>
-                    {isVitalsModal && vitalsView === 'anterior' ? (
-                      <VitalsDetails vitalsData={previousVitalsData} />
-                    ) : isVitalsModal && !children ? (
-                      <VitalSignsColumns
-                        adminUid={vitalsData?.adminUid}
-                        area={vitalsData?.area}
-                        personId={vitalsData?.personId}
-                        patientName={vitalsData?.patientName}
-                        visible={visible}
-                        onDismiss={onDismiss}
-                        onModify={onVitalsModify}
-                        onSave={onVitalsSave}
-                      />
-                    ) : scrollable ? (
-                      <ScrollView
-                        style={{ width: '100%' }}
-                        contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
-                        showsVerticalScrollIndicator={true}
-                      >
-                        {content}
-                        {children}
-                        {actions.map((action, index) => (
-                          <Button
-                            key={index}
-                            mode={action.mode || "outlined"}
-                            onPress={action.onPress}
-                            style={[styles.button, action.style]}
-                            labelStyle={styles.buttonLabel}
-                            icon={action.icon}
-                            textColor={action.textColor || "#5124A5"}
-                            buttonColor={action.buttonColor || "white"}
-                          >
-                            {action.label}
-                          </Button>
-                        ))}
-                      </ScrollView>
-                    ) : (
-                      <View style={{ width: '100%' }}>
-                        {content}
-                        {children}
-                        {actions.map((action, index) => (
-                          <Button
-                            key={index}
-                            mode={action.mode || "outlined"}
-                            onPress={action.onPress}
-                            style={[styles.button, action.style]}
-                            labelStyle={styles.buttonLabel}
-                            icon={action.icon}
-                            textColor={action.textColor || "#5124A5"}
-                            buttonColor={action.buttonColor || "white"}
-                          >
-                            {action.label}
-                          </Button>
-                        ))}
-                      </View>
-                    )}
+                  <Card.Content 
+                    style={[
+                      !(isMedicationModal && vitalsView === 'anterior') && styles.cardContent, 
+                      isMedicationModal && vitalsView !== 'anterior' && styles.medicationCardContent,
+                      isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { padding: 0, width: '100%' },
+                      isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { 
+                        width: '100%',
+                        minHeight: 300,
+                        padding: 0,
+                        flexGrow: 1,
+                      }
+                    ]}
+                    pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
+                    onStartShouldSetResponder={() => false}
+                  >
+                    {renderCardContent()}
                   </Card.Content>
                 </Card>
 
-                {(isDetailModal || isEditModal) && (
-                  <View style={[
-                    styles.buttonContainer,
-                    isVitalsModal && styles.vitalsButtonContainer
-                  ]}>
-                    {isDetailModal && (
-                      <>
-                        {canEdit && (
-                          <Button
-                            mode="contained"
-                            onPress={onModifyPress}
-                            style={styles.detailButton}
-                            labelStyle={styles.detailButtonLabel}
-                            buttonColor="#5124A5"
-                          >
-                            Modificar
-                          </Button>
-                        )}
-                        <Button
-                          mode="contained"
-                          onPress={onGoToPlanPress}
-                          style={styles.detailButton}
-                          labelStyle={styles.detailButtonLabel}
-                          buttonColor="#5124A5"
-                        >
-                          Ir a planilla
-                        </Button>
-                      </>
-                    )}
-                    {isEditModal && canEdit && (
-                      <>
-                        {isVitalsModal ? (
-                          <>
-                            {onModifyPress && hasVitalsData && (
-                              <CustomButton
-                                onPress={onModifyPress}
-                                label={FORM_TEXTS.editButton}
-                                style={{ marginBottom: 15 }}
-                              />
-                            )}
-                            <CustomButton
-                              onPress={onSavePress}
-                              label={FORM_TEXTS.saveButton}
-                            />
-                          </>
-                        ) : (
-                          <Button
-                            mode="contained"
-                            onPress={onSavePress}
-                            style={styles.detailButton}
-                            labelStyle={styles.detailButtonLabel}
-                            buttonColor="#5124A5"
-                          >
-                            {FORM_TEXTS.saveButton}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </View>
-                )}
+                {isHistoryMode ? renderHistoryFooter() : renderEditFooter()}
               </View>
             </KeyboardAvoidingView>
           )}
         </TouchableWithoutFeedback>
+        )}
       </PaperModal>
     </Portal>
   );
@@ -652,7 +894,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 0,
   },
-  titleWrapper: { 
+  titleWrapper: {
     backgroundColor: '#5124A5',
     width: '100%',
     paddingVertical: 12,
@@ -667,9 +909,9 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: 'white',
+    color: '#ffffff',
   },
-  theCard: { 
+  theCard: {
     backgroundColor: '#ffffff',
     width: '95%',
     borderRadius: 50,
@@ -690,11 +932,11 @@ const styles = StyleSheet.create({
     maxHeight: '100%',
     alignSelf: 'stretch',
   },
-  centerCard: { 
+  centerCard: {
     marginTop: 0,
     marginVertical: 0,
     maxHeight: height * 0.4,
-    width: width - 20, // Ancho completo menos un pequeño margen
+    width: width - 20, 
     borderRadius: 50,
     marginHorizontal: 10,
     alignSelf: 'center',
@@ -705,7 +947,8 @@ const styles = StyleSheet.create({
     width: '95%',
   },
   vitalsCard: {
-    width: width - 20, // Ancho completo menos un pequeño margen
+    backgroundColor: '#ffffff',
+    width: width - 20, 
     maxHeight: height * 0.55,
     borderRadius: 50,
     marginHorizontal: 10,
@@ -788,9 +1031,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'white',
   },
-  calendar: {
-    width: '100%',
-  },
   noDataContainer: {
     width: '100%',
     paddingVertical: 16,
@@ -828,7 +1068,6 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     textDecorationLine: 'none',
   },
-  // Estilos para el patientBox en modales de signos vitales
   patientBoxModal: {
     position: 'absolute',
     left: 16,
@@ -871,6 +1110,66 @@ const styles = StyleSheet.create({
   vitalsViewButtonTextActive: {
     color: '#5124A5',
     fontWeight: 'normal',
+  },
+  medicationCard: {
+    backgroundColor: '#ffffff',
+    maxWidth: '97%',
+    overflow: 'hidden',
+    borderRadius: 50,
+    marginHorizontal: 'auto',
+    marginBottom: 'auto',
+    marginTop: height * 0.25,
+    alignSelf: 'center',
+  },
+  medicationCardContent: {
+    flex: 1,
+  },
+  medicationButtonContainer: {
+    marginTop: 20,
+    paddingTop: 0,
+    paddingBottom: 20,
+    width: '95%',
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  medicationTitleWrapper: {
+    flexDirection: 'row'
+  },
+  medicationTitleRow: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    paddingHorizontal: 48,
+  },
+  medicationTitleDroga: {
+    textAlign: 'center',
+    marginRight: 8,
+  },
+  medicationTitleHora: {
+    textAlign: 'center',
+    marginRight: 8,
+  },
+  medicationTitleDosis: {
+    textAlign: 'center',
+  },
+  authorSelectorContainer: {
+    width: '100%',
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    minHeight: 200,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
   },
 });
 

@@ -14,8 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DatePicker from 'react-native-date-picker';
 import { FORM_TEXTS, PERSON_TYPE_TEXTS, VITALS_TEXTS } from '../constants/Strings';
-import { ref, set, update, get, push } from 'firebase/database';
+import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
+import { createPlanillaRecord } from '../components/services/helpers';
 
 const VITALS_INITIAL_VALUES = {
   taSystolic: '',
@@ -63,7 +64,6 @@ export default function EditPersonForm({
   const insets = useSafeAreaInsets();
   const scrollViewRef = React.useRef(null);
   
-  // Estados para modo signos vitales
   const [vitalsFormValues, setVitalsFormValues] = React.useState(VITALS_INITIAL_VALUES);
   const [vitalsDataExists, setVitalsDataExists] = React.useState(false);
   const [isVitalsEditing, setIsVitalsEditing] = React.useState(false);
@@ -82,7 +82,6 @@ export default function EditPersonForm({
     return cleaned;
   };
 
-  // formatNumericInput ya está definido arriba, se usa para ambos modos
 
   const formatDateForDisplay = (date) => {
     const day = date.getDate().toString().padStart(2, '0');
@@ -93,12 +92,11 @@ export default function EditPersonForm({
 
   const handleDatePickerChange = (event, date) => {
     if (Platform.OS === 'android') {
-      setShowDatePicker(false); // Cierra el picker después de la interacción
-      if (event.type === 'set' && date) { // Si el usuario presionó OK
+      setShowDatePicker(false);
+      if (event.type === 'set' && date) { 
         setSelectedDate(date);
         onChange({ ...person, ingreso: formatDateForDisplay(date) });
       }
-      // Si event.type es 'dismissed', no hacemos nada (el usuario canceló)
     } else {
       setSelectedDate(date || new Date());
     }
@@ -113,15 +111,13 @@ export default function EditPersonForm({
     setShowDatePicker(false);
   };
 
-  // Funciones para el DatePicker de nacimiento
-  const handleBirthDatePickerChange = (event, date) => {
+    const handleBirthDatePickerChange = (event, date) => {
     if (Platform.OS === 'android') {
-      setShowBirthDatePicker(false); // Cierra el picker después de la interacción
-      if (event.type === 'set' && date) { // Si el usuario presionó OK
+      setShowBirthDatePicker(false); 
+      if (event.type === 'set' && date) { 
         setSelectedBirthDate(date);
         onChange({ ...person, nacimiento: formatDateForDisplay(date) });
       }
-      // Si event.type es 'dismissed', no hacemos nada (el usuario canceló)
     } else {
       setSelectedBirthDate(date || new Date());
     }
@@ -140,23 +136,18 @@ export default function EditPersonForm({
     person?.tipo &&
     person.tipo !== 'Administrador';
 
-  // Determinar si es empleado para ocultar campos específicos
   const isEmployee = person?.tipo && 
     (person.tipo.toLowerCase() === 'enfermería' || person.tipo.toLowerCase() === 'administrador');
 
-  // Filtrar opciones según el userType
   const getTypeOptions = () => {
     if (userType && userType.toLowerCase() === 'enfermería') {
-      // Si estamos en empleados, solo mostrar opciones de empleados
       return [
         { label: PERSON_TYPE_TEXTS.nursing, value: PERSON_TYPE_TEXTS.nursing },
         { label: PERSON_TYPE_TEXTS.administrator, value: PERSON_TYPE_TEXTS.administrator },
       ];
     } else if (userType && userType.toLowerCase() === 'paciente') {
-      // Si estamos en pacientes, no mostrar opciones (el dropdown no se muestra)
       return [];
     } else {
-      // Si no hay userType específico, mostrar todas las opciones
       return [
         { label: PERSON_TYPE_TEXTS.patient, value: PERSON_TYPE_TEXTS.patient },
         { label: PERSON_TYPE_TEXTS.nursing, value: PERSON_TYPE_TEXTS.nursing },
@@ -165,7 +156,6 @@ export default function EditPersonForm({
     }
   };
 
-  // Funciones para modo signos vitales
   const handleVitalsChange = React.useCallback((field, allowDecimal = false) => (text) => {
     const sanitized = allowDecimal ? formatDecimalInput(text) : formatNumericInput(text);
     setVitalsFormValues((prev) => ({
@@ -190,15 +180,12 @@ export default function EditPersonForm({
       );
       const snapshot = await get(signosRef);
 
-      // Solo verificar si existen datos para saber si debemos actualizar o crear
-      // Pero siempre empezar con el formulario vacío
       if (snapshot.exists()) {
         setVitalsDataExists(true);
       } else {
         setVitalsDataExists(false);
       }
       
-      // Siempre resetear el formulario para que empiece vacío (solo los valores, no vitalsDataExists)
       setVitalsFormValues(VITALS_INITIAL_VALUES);
       setIsVitalsEditing(true);
     } catch (error) {
@@ -210,10 +197,16 @@ export default function EditPersonForm({
 
   const saveSignosVitales = React.useCallback(async () => {
     if (!isVitalsMode || !adminUid || !area || !personId) {
+      console.log({
+        location: 'EditPersonForm.saveSignosVitales - MISSING PARAMS',
+        isVitalsMode: !!isVitalsMode,
+        adminUid: !!adminUid,
+        area: !!area,
+        personId: !!personId,
+      });
       return false;
     }
 
-    // Validar que al menos un campo tenga datos (verificar que no esté vacío o solo espacios)
     const hasData = (vitalsFormValues.taSystolic && vitalsFormValues.taSystolic.trim() !== '') || 
                     (vitalsFormValues.taDiastolic && vitalsFormValues.taDiastolic.trim() !== '') || 
                     (vitalsFormValues.heartRate && vitalsFormValues.heartRate.trim() !== '') || 
@@ -222,41 +215,77 @@ export default function EditPersonForm({
                     (vitalsFormValues.temperature && vitalsFormValues.temperature.trim() !== '');
     
     if (!hasData) {
+      console.log( {
+        location: 'EditPersonForm.saveSignosVitales - NO DATA',
+      });
       return false;
     }
 
+    let subject = null;
     try {
-      const signosRef = ref(
-        database,
-        `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`
+      const subjectRef = ref(database, `admins/${adminUid}/areas/${area}/subjects/${personId}`);
+      const snapshot = await get(subjectRef);
+      if (snapshot.exists()) {
+        subject = snapshot.val();
+      }
+    } catch (error) {
+      console.log( {
+        location: 'EditPersonForm.saveSignosVitales - ERROR LOADING SUBJECT',
+        error: error.message,
+      });
+    }
+
+    if (!area) {
+      console.log( {
+        location: 'EditPersonForm.saveSignosVitales - MISSING AREA',
+        area,
+      });
+    }
+
+    try {
+      const firebasePath = `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/signosVitales`;
+
+      console.log({
+        location: 'EditPersonForm.saveSignosVitales - BEFORE createPlanillaRecord',
+        ownerUid: adminUid,
+        authUid: adminUid,
+        area,
+        subjectId: personId,
+        personId,
+        subjectTipo: subject?.tipo,
+        subjectArea: subject?.area,
+        planillaType: 'signosVitales',
+        firebasePath,
+      });
+
+      await createPlanillaRecord(
+        adminUid,   // authUid
+        adminUid,   // ownerUid
+        area,
+        personId,
+        'signosVitales',
+        {
+          taSystolic: vitalsFormValues.taSystolic || '',
+          taDiastolic: vitalsFormValues.taDiastolic || '',
+          heartRate: vitalsFormValues.heartRate || '',
+          respiratoryRate: vitalsFormValues.respiratoryRate || '',
+          spo2: vitalsFormValues.spo2 || '',
+          temperature: vitalsFormValues.temperature || '',
+        }
       );
 
-      // Siempre crear un NUEVO registro usando push() para mantener el historial
-      const newRecord = {
-        taSystolic: vitalsFormValues.taSystolic || '',
-        taDiastolic: vitalsFormValues.taDiastolic || '',
-        heartRate: vitalsFormValues.heartRate || '',
-        respiratoryRate: vitalsFormValues.respiratoryRate || '',
-        spo2: vitalsFormValues.spo2 || '',
-        temperature: vitalsFormValues.temperature || '',
-        createdAt: new Date().toISOString(),
-        createdBy: adminUid,
-        updatedAt: new Date().toISOString(),
-        updatedBy: adminUid,
-        personId: personId, // Agregar personId al registro
-      };
-
-      // Usar push() para crear un nuevo registro sin sobrescribir los anteriores
-      await push(signosRef, newRecord);
-
-      // NO resetear el formulario aquí - se reseteará cuando se cierre el modal
-      // Esto permite que el usuario vea lo que guardó antes de cerrar
-      setVitalsDataExists(true); // Ahora hay datos guardados
+      setVitalsDataExists(true); 
       setIsVitalsEditing(false);
       Keyboard.dismiss();
       
       return true;
     } catch (error) {
+      console.log({
+        location: 'EditPersonForm.saveSignosVitales - CATCH ERROR',
+        error: error.message,
+        errorCode: error.code,
+        errorStack: error.stack,
+      });
       console.error('Error saving vital signs:', error);
       return false;
     }
@@ -268,20 +297,16 @@ export default function EditPersonForm({
     }
   }, [isAdding, selectedArea, person, onChange]);
 
-  // Establecer automáticamente el tipo según el userType cuando se está agregando
   React.useEffect(() => {
     if (isAdding && userType && !person?.tipo) {
       if (userType.toLowerCase() === 'enfermería') {
-        // Para empleados, establecer enfermería por defecto
         onChange({ ...person, tipo: PERSON_TYPE_TEXTS.nursing });
       } else if (userType.toLowerCase() === 'paciente') {
-        // Para pacientes, establecer paciente por defecto
         onChange({ ...person, tipo: PERSON_TYPE_TEXTS.patient });
       }
     }
   }, [isAdding, userType, person, onChange]);
 
-  // Cargar datos de signos vitales cuando se abre el modal
   React.useEffect(() => {
     if (isVitalsMode && adminUid && area && personId) {
       loadSignosVitales();
@@ -290,35 +315,26 @@ export default function EditPersonForm({
     }
   }, [isVitalsMode, adminUid, area, personId, loadSignosVitales, resetVitalsForm]);
 
-  // Notificar cambios en vitalsDataExists
-  // Solo notificar como true si hay datos Y el formulario no está vacío (es decir, está en modo visualización)
   React.useEffect(() => {
     if (isVitalsMode && onVitalsDataExistsChange) {
-      // El botón "Modificar" solo debe aparecer si hay datos cargados y visibles
-      // Como siempre empezamos con formulario vacío, nunca debería aparecer
       onVitalsDataExistsChange(false);
     }
   }, [isVitalsMode, onVitalsDataExistsChange]);
 
-  // Manejar estado de edición de signos vitales
   React.useEffect(() => {
     if (isVitalsMode) {
       if (!visible) {
         setIsVitalsEditing(false);
-        // Resetear solo los valores del formulario cuando se cierra el modal completamente
-        // Usar un pequeño delay para asegurar que el guardado se complete primero
         const resetTimer = setTimeout(() => {
           setVitalsFormValues(VITALS_INITIAL_VALUES);
         }, 500);
         return () => clearTimeout(resetTimer);
       } else {
-        // Siempre empezar en modo edición cuando se abre el modal
         setIsVitalsEditing(true);
       }
     }
   }, [isVitalsMode, visible]);
 
-  // Exponer funciones para refs en modo signos vitales
   React.useEffect(() => {
     if (isVitalsMode) {
       if (onModify) {
@@ -347,7 +363,6 @@ export default function EditPersonForm({
     };
   }, []);
 
-  // Si está en modo signos vitales, mostrar solo campos de signos vitales
   if (isVitalsMode) {
     if (!adminUid || !area || !personId) {
       return null;
@@ -429,7 +444,6 @@ export default function EditPersonForm({
     );
   }
 
-  // Modo normal (edición de persona)
   return (
     <>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -557,7 +571,6 @@ export default function EditPersonForm({
                 />
               }
             />
-            {/* Campos específicos para pacientes - ocultos para empleados */}
             {!isEmployee && (
               <>
                 <TextInput
@@ -587,7 +600,6 @@ export default function EditPersonForm({
                 />
               </>
             )}
-            {/* Campo de nacionalidad - visible para todos */}
             <TextInput
               label={FORM_TEXTS.nationalityLabel}
               value={person?.nacionalidad || ''}
@@ -600,19 +612,17 @@ export default function EditPersonForm({
         </View>
       </TouchableWithoutFeedback>
 
-      {/* DatePicker para Ingreso (Android) */}
       {showDatePicker && Platform.OS === 'android' && (
         <DateTimePicker
           value={selectedDate}
           mode="date"
-          display="default" // Abre el diálogo nativo de Android
+          display="default" 
           onChange={handleDatePickerChange}
           maximumDate={new Date()}
           minimumDate={new Date(1900, 0, 1)}
         />
       )}
 
-      {/* Modal con DatePicker para Ingreso (iOS) */}
       {showDatePicker && Platform.OS === 'ios' && (
         <Modal
           visible={showDatePicker}
@@ -647,19 +657,17 @@ export default function EditPersonForm({
         </Modal>
       )}
 
-      {/* DatePicker para Nacimiento (Android) */}
       {showBirthDatePicker && Platform.OS === 'android' && (
         <DateTimePicker
           value={selectedBirthDate}
           mode="date"
-          display="spinner" // Abre el diálogo nativo de Android con spinner
+          display="spinner" 
           onChange={handleBirthDatePickerChange}
           maximumDate={new Date()}
           minimumDate={new Date(1900, 0, 1)}
         />
       )}
 
-      {/* Modal con DatePicker para Nacimiento (iOS) */}
       {showBirthDatePicker && Platform.OS === 'ios' && (
         <Modal
           visible={showBirthDatePicker}

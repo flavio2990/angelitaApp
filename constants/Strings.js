@@ -1,4 +1,4 @@
-﻿// ===== TÍTULOS DE TARJETAS =====
+// ===== TÍTULOS DE TARJETAS =====
 export const CARD_TITLES = {
   selectArea: "Seleccione Área",
   selectTipe: "Seleccionar de ",
@@ -87,6 +87,7 @@ export const FORM_TEXTS = {
   editButton: "Modificar",
   deleteButton: "Eliminar",
   addNewButton: "Agregar nuevo",
+  confirmationModal: "¿Guardar todo?",
   
   // Validaciones
   requiredField: "Este campo es requerido",
@@ -173,5 +174,23 @@ export const VITALS_TEXTS = {
     respiratoryRate: "FR/min",
     spo2: "SpO₂ %",
     temperature: "T°C",
+  },
+};
+
+// ===== TEXTO DE MEDICACIÓN =====
+export const MEDICATION_TEXTS = {
+  patientLabelPrefix: "_Paciente:",
+  addLineItem: "Añadir Otra Línea",
+  addMore: "Agregar más:",
+  headerTitle: "Medicamentos administrados",
+  authorRoleLabel: "Mostrando medicación registrada por:",
+  columns: {
+    droga: "Droga",
+    hora: "Hora",
+    dosis: "Dosis",
+  },
+  placeholders: {
+    droga: "Ingrésar Aquí:",
+    dosis: "1",
   },
 };

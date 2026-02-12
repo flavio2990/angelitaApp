@@ -1,5 +1,5 @@
-﻿import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -9,10 +9,14 @@ import CustomLogButton from '../components/CustomLogButton';
 import CustomModal from '../components/CustomModal';
 import CustomButton from '../components/CustomButton';
 import EditPersonForm from '../components/EditPersonForm';
+import HamburgerMenu from '../components/HamburgerMenu';
+import MedicationColumns from '../components/MedicationColumns';
 import { useAuth } from '../components/UserContext';
-import { STATUS_MESSAGES, FORM_TEXTS } from '../constants/Strings';
+import { STATUS_MESSAGES, FORM_TEXTS, MEDICATION_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
 import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
+import { filterMedicationByRole, filterHistoryByRole } from '../utils/medicationFilters';
+import AuthorRoleSelector from '../components/AuthorRoleSelector';
 
 const { height } = Dimensions.get('window');
 
@@ -33,27 +37,71 @@ export default function SpreadsheetManagementScreen() {
   const { patientName, area, personId } = useLocalSearchParams();
   const { user, globalUserRole } = useAuth();
   const [showSignosVitalesModal, setShowSignosVitalesModal] = useState(false);
+  const [showMedicationModal, setShowMedicationModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [savingType, setSavingType] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [hasVitalsData, setHasVitalsData] = useState(false);
-  const [vitalsView, setVitalsView] = useState('nuevo'); // 'nuevo' o 'anterior'
+  const [hasMedicationData, setHasMedicationData] = useState(false);
+  const [medicationCount, setMedicationCount] = useState(1);
+  const [vitalsView, setVitalsView] = useState('nuevo');
   const [previousVitalsData, setPreviousVitalsData] = useState(null);
   const [vitalsHistoryByDate, setVitalsHistoryByDate] = useState({});
+  const [medicationView, setMedicationView] = useState('nuevo');
+  const [previousMedicationData, setPreviousMedicationData] = useState(null);
+  const [medicationHistoryByDate, setMedicationHistoryByDate] = useState({});
+  const [personType, setPersonType] = useState(null);
+  const [selectedAuthorRole, setSelectedAuthorRole] = useState('employee'); // Default: Empleados
+  const [isLoadingMedication, setIsLoadingMedication] = useState(false);
   
-  // Refs para conectar con VitalSignsColumns
   const modifyRef = useRef();
   const saveRef = useRef();
 
-  // Función para abrir modal de signos vitales
+  const medicationModifyRef = useRef();
+  const medicationSaveRef = useRef();
+
+  useEffect(() => {
+    const loadPersonType = async () => {
+      if (!user?.uid || !area || !personId) return;
+
+      try {
+        const subjectRef = ref(database, `admins/${user.uid}/areas/${area}/subjects/${personId}`);
+        const snapshot = await get(subjectRef);
+        
+        if (snapshot.exists()) {
+          const subject = snapshot.val();
+          setPersonType(subject?.tipo || null);
+        }
+      } catch (error) {
+        console.error('Error loading person type:', error);
+      }
+    };
+
+    loadPersonType();
+  }, [user?.uid, area, personId]);
+
+  const getPersonLabelPrefix = () => {
+    if (!personType) return `_${PERSON_TYPE_TEXTS.patient}:`;
+    
+    const tipoLower = personType.toLowerCase();
+    if (tipoLower === PERSON_TYPE_TEXTS.patient.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.patient}:`;
+    } else if (tipoLower === PERSON_TYPE_TEXTS.nursing.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.nursing}:`;
+    } else if (tipoLower === PERSON_TYPE_TEXTS.administrator.toLowerCase()) {
+      return `_${PERSON_TYPE_TEXTS.administrator}:`;
+    }
+    return `_${personType}:`;
+  };
+
   const handleOpenSignosVitales = () => {
     setShowSignosVitalesModal(true);
-    // Resetear el estado cuando se abre el modal para asegurar que el botón Modificar no aparezca
     setHasVitalsData(false);
     setVitalsView('nuevo');
     setPreviousVitalsData(null);
   };
 
-  // Función para cargar datos anteriores de signos vitales
   const loadPreviousVitals = async () => {
     if (!user?.uid || !area || !personId) return;
 
@@ -67,18 +115,15 @@ export default function SpreadsheetManagementScreen() {
       if (snapshot.exists()) {
         const allVitals = snapshot.val();
         
-        // Con push(), siempre será un objeto con múltiples keys (cada key es un ID único de Firebase)
-        // Convertir a array de registros
         const records = Object.keys(allVitals).map(key => {
           const record = allVitals[key];
           return {
             ...record,
-            personId: record.personId || personId, // Asegurar personId
-            firebaseKey: key // Guardar la key de Firebase
+            personId: record.personId || personId, 
+            firebaseKey: key
           };
         });
         
-        // Filtrar solo registros válidos que tengan createdAt
         const validRecords = records.filter(r => {
           const hasCreatedAt = r.createdAt && r.createdAt.trim() !== '';
           const hasPersonId = r.personId === personId;
@@ -86,21 +131,18 @@ export default function SpreadsheetManagementScreen() {
         });
         
         if (validRecords.length > 0) {
-          // Construir mapa vitalsHistoryByDate: clave YYYY-MM-DD -> registro más reciente de ese día
           const historyMap = {};
           validRecords.forEach(record => {
-            const dateKey = record.createdAt.split('T')[0]; // YYYY-MM-DD
-            // Si ya existe un registro para esta fecha, mantener el más reciente
+            const dateKey = record.createdAt.split('T')[0];
             if (!historyMap[dateKey] || new Date(record.createdAt) > new Date(historyMap[dateKey].createdAt)) {
               historyMap[dateKey] = record;
             }
           });
           
-          // Encontrar el registro más reciente para previousVitalsData
           const sortedRecords = [...validRecords].sort((a, b) => {
             const dateA = new Date(a.createdAt || 0);
             const dateB = new Date(b.createdAt || 0);
-            return dateB.getTime() - dateA.getTime(); // Más reciente primero
+            return dateB.getTime() - dateA.getTime(); 
           });
           
           const latestRecord = sortedRecords[0];
@@ -126,58 +168,231 @@ export default function SpreadsheetManagementScreen() {
     }
   };
 
-  // Función para cambiar la vista
   const handleViewChange = async (view) => {
     setVitalsView(view);
     if (view === 'anterior') {
-      // Siempre recargar datos al cambiar a vista "Anterior" para asegurar datos actualizados
       await loadPreviousVitals();
     }
   };
 
-  // Función para guardar signos vitales
   const handleSaveVitals = async () => {
-    if (saveRef.current) {
-      const success = await saveRef.current();
-      if (success) {
-        setSaveSuccess(true);
-        // Siempre recargar los datos después de guardar para actualizar el histórico
-        // Pequeño delay para asegurar que Firebase haya guardado
-        setTimeout(async () => {
-          await loadPreviousVitals();
-        }, 300);
+    setIsSaving(true);
+    try {
+      if (saveRef.current) {
+        const success = await saveRef.current();
+        if (success) {
+          setTimeout(async () => {
+            await loadPreviousVitals();
+          }, 300);
+          return true;
+        }
       }
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const loadPreviousMedication = async () => {
+    if (!user?.uid || !area || !personId) {
+      setIsLoadingMedication(false);
+      return;
+    }
+
+    setIsLoadingMedication(true);
+    try {
+      const medicationRef = ref(
+        database,
+        `admins/${user.uid}/areas/${area}/subjects/${personId}/planillas/medicacion`
+      );
+      const snapshot = await get(medicationRef);
+
+      if (snapshot.exists()) {
+        const allMedications = snapshot.val();
+
+        const records = Object.keys(allMedications).map(key => {
+          const record = allMedications[key];
+          return {
+            ...record,
+            personId: personId,
+            firebaseKey: key
+          };
+        });
+
+        const validRecords = records.filter(r => {
+          const hasCreatedAt = r.createdAt && r.createdAt.trim() !== '';
+          const hasMedications = r.medications && Object.keys(r.medications).length > 0;
+          return hasCreatedAt && hasMedications;
+        });
+
+        // Aplicar filtro por autoría
+        const filteredRecords = await filterMedicationByRole(validRecords, selectedAuthorRole);
+
+        if (filteredRecords.length > 0) {
+          // Ordenar por createdAt descendente para encontrar el más reciente
+          const sortedRecords = [...filteredRecords].sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0);
+            const dateB = new Date(b.createdAt || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          const latestRecord = sortedRecords[0];
+          const latestCreatedAt = latestRecord?.createdAt || '';
+          const latestCreatedAtTime = new Date(latestCreatedAt).getTime();
+          
+          // Agrupar por batch de guardado (ventana de 10 segundos)
+          // Todos los registros guardados dentro de 10 segundos se consideran del mismo batch
+          const BATCH_TIME_WINDOW_MS = 10000; // 10 segundos
+          const latestBatchRecords = filteredRecords.filter(record => {
+            const createdAt = record.createdAt || '';
+            const createdAtTime = new Date(createdAt).getTime();
+            const timeDiff = latestCreatedAtTime - createdAtTime;
+            // Si el registro está dentro de la ventana de tiempo del más reciente, es del mismo batch
+            return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
+          });
+          
+          // Crear mapa de historial por fecha (para el calendario)
+          // Agrupar medicamentos por fecha, agrupando por batch de guardado (ventana de 10 segundos)
+          const historyMap = {};
+          const recordsByDate = {};
+          
+          // Primero agrupar todos los registros filtrados por fecha
+          filteredRecords.forEach(record => {
+            const dateKey = record.createdAt.split('T')[0];
+            if (!recordsByDate[dateKey]) {
+              recordsByDate[dateKey] = [];
+            }
+            recordsByDate[dateKey].push(record);
+          });
+          
+          // Para cada fecha, agrupar por batch y crear un registro agrupado
+          Object.keys(recordsByDate).forEach(dateKey => {
+            const dateRecords = recordsByDate[dateKey];
+            
+            // Encontrar el batch más reciente para esta fecha
+            const sortedByTime = [...dateRecords].sort((a, b) => {
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
+            
+            const latestRecordForDate = sortedByTime[0];
+            const latestCreatedAtTime = new Date(latestRecordForDate.createdAt).getTime();
+            
+            // Agrupar registros del mismo batch (ventana de 10 segundos)
+            const BATCH_TIME_WINDOW_MS = 10000;
+            const batchRecords = dateRecords.filter(record => {
+              const createdAtTime = new Date(record.createdAt).getTime();
+              const timeDiff = latestCreatedAtTime - createdAtTime;
+              return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
+            });
+            
+            // Crear registro agrupado para esta fecha
+            const groupedRecordForDate = {
+              ...latestRecordForDate,
+              medicationsList: batchRecords.map(r => r.medications || {}).filter(m => m.droga),
+              personId: latestRecordForDate.personId || personId,
+            };
+            
+            historyMap[dateKey] = groupedRecordForDate;
+          });
+          
+          // Crear registro agrupado solo con los medicamentos del último batch
+          const groupedRecord = latestRecord ? {
+            ...latestRecord,
+            medicationsList: latestBatchRecords.map(r => r.medications || {}).filter(m => m.droga)
+          } : null;
+
+          setMedicationHistoryByDate(historyMap);
+          setPreviousMedicationData(groupedRecord);
+          setHasMedicationData(true);
+        } else {
+          setMedicationHistoryByDate({});
+          setPreviousMedicationData(null);
+          setHasMedicationData(false);
+        }
+      } else {
+        setMedicationHistoryByDate({});
+        setPreviousMedicationData(null);
+        setHasMedicationData(false);
+      }
+    } catch (error) {
+      console.error('Error loading previous medication:', error);
+      setMedicationHistoryByDate({});
+      setPreviousMedicationData(null);
+      setHasMedicationData(false);
+    } finally {
+      setIsLoadingMedication(false);
+    }
+  };
+
+  const handleMedicationViewChange = async (view) => {
+    setMedicationView(view);
+    if (view === 'anterior') {
+      await loadPreviousMedication();
+    }
+  };
+
+  // Recargar medicación cuando cambia el filtro de autoría
+  useEffect(() => {
+    if (medicationView === 'anterior' && showMedicationModal) {
+      loadPreviousMedication();
+    }
+  }, [selectedAuthorRole]);
+
+  const handleOpenMedication = () => {
+    setShowMedicationModal(true);
+    setHasMedicationData(false);
+    setMedicationView('nuevo');
+    setPreviousMedicationData(null);
+  };
+
+  const handleSaveMedication = async () => {
+    setIsSaving(true);
+    try {
+      if (medicationSaveRef.current) {
+        const success = await medicationSaveRef.current();
+        if (success) {
+          setHasMedicationData(true);
+          return true;
+        }
+      }
+      return false;
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
     <PaperProvider theme={theme}>
       <View style={styles.container}>
-      {!showSignosVitalesModal && (
+        {!showSignosVitalesModal && !showMedicationModal && (
         <TopBarHeader
           showTopBar={true}
           topBarTitle="Planilla"
           onBack={() => router.back()}
           centerTopbarTitle={true}
-          showMenu={true}
-          menuPosition="top-right"
+        />
+      )}
+      
+        {!showSignosVitalesModal && !showMedicationModal && (
+        <HamburgerMenu 
+          position="top-right" 
+          hasTopBar={true}
           onGoHome={() => {
             router.push('/');
           }}
           showGoHomeOption={true}
+          showInModal={false}
         />
       )}
       
-      {/* Nombre del paciente - solo cuando el modal está cerrado */}
-      {!showSignosVitalesModal && (
+        {!showSignosVitalesModal && !showMedicationModal && (
         <View style={styles.patientBox}>
-          <Text style={styles.patientText}>_Paciente: {patientName}</Text>
+            <Text style={styles.patientText}>{getPersonLabelPrefix()} {patientName}</Text>
         </View>
       )}
       
-      {!showSignosVitalesModal && (
+        {!showSignosVitalesModal && !showMedicationModal && (
         <>
-          {/* Botones */}
           <View style={styles.buttonsGrid}>
         <CustomLogButton
           icon={require('../assets/imageLogButtons/SV.png')}
@@ -189,7 +404,7 @@ export default function SpreadsheetManagementScreen() {
           icon={require('../assets/imageLogButtons/MED.png')}
           label="Medicación"
           color="#4a9cbb"
-                onPress={() => { }}
+                onPress={handleOpenMedication}
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/ALIM.png')}
@@ -213,7 +428,6 @@ export default function SpreadsheetManagementScreen() {
         </>
       )}
 
-      {/* Modal de Signos Vitales */}
       <CustomModal
         visible={showSignosVitalesModal}
           onRequestClose={() => setShowSignosVitalesModal(false)}
@@ -228,6 +442,7 @@ export default function SpreadsheetManagementScreen() {
           topbarMarginTop={80}
           vitalsInfoExtraMargin={20}
           onSavePress={() => {
+            setSavingType('vitals');
             setShowSignosVitalesModal(false);
             setShowConfirmModal(true);
           }}
@@ -252,7 +467,8 @@ export default function SpreadsheetManagementScreen() {
           adminUid: user?.uid,
           area: area,
           personId: personId,
-          patientName: patientName
+            patientName: patientName,
+            personType: personType
         }}
         >
           <EditPersonForm
@@ -267,29 +483,103 @@ export default function SpreadsheetManagementScreen() {
           />
         </CustomModal>
 
-        {/* MODAL DE CONFIRMACIÓN */}
+        <CustomModal
+          visible={showMedicationModal}
+          onDismiss={() => setShowMedicationModal(false)}
+          showTopbar={true}
+          topbarTitle="Medicación"
+          centerCard={true}
+          scrollable={true}
+          title={medicationView === 'anterior' ? MEDICATION_TEXTS.headerTitle : MEDICATION_TEXTS.formTitle}
+          isEditModal={true}
+          canEdit={true}
+          isMedicationModal={true}
+          offsetWithTopbar={true}
+          topbarMarginTop={80}
+          vitalsInfoExtraMargin={20}
+          onSavePress={() => {
+            setSavingType('medication');
+            setShowMedicationModal(false);
+            setShowConfirmModal(true);
+          }}
+          onModifyPress={() => {
+            if (medicationModifyRef.current) {
+              medicationModifyRef.current();
+            }
+          }}
+          onBack={() => setShowMedicationModal(false)}
+          onGoHome={() => {
+            router.push('/');
+          }}
+          showGoHomeOption={true}
+          cardMarginTop={height * 0.07}
+          hasVitalsData={hasMedicationData}
+          vitalsView={medicationView}
+          onVitalsViewChange={handleMedicationViewChange}
+          previousVitalsData={previousMedicationData}
+          vitalsHistoryByDate={medicationHistoryByDate}
+          vitalsData={{
+            adminUid: user?.uid,
+            area: area,
+            personId: personId,
+            patientName: patientName,
+            personType: personType
+          }}
+          medicationCount={medicationCount}
+          medicationHistoryByDate={medicationHistoryByDate}
+          selectedAuthorRole={selectedAuthorRole}
+          onAuthorRoleChange={setSelectedAuthorRole}
+          isLoadingMedication={isLoadingMedication}
+        >
+          <MedicationColumns
+            adminUid={user?.uid}
+            area={area}
+            personId={personId}
+            patientName={patientName}
+            visible={showMedicationModal}
+            onModify={medicationModifyRef}
+            onSave={medicationSaveRef}
+            onDataExistsChange={setHasMedicationData}
+            onMedicationCountChange={setMedicationCount}
+            vitalsView={medicationView}
+          />
+        </CustomModal>
+
         <CustomModal
           visible={showConfirmModal}
           onDismiss={() => {
-            setShowConfirmModal(false);
-            setSaveSuccess(false);
+            if (!isSaving) {
+              setShowConfirmModal(false);
+              setSaveSuccess(false);
+              setSavingType(null);
+              setIsSaving(false);
+            }
         }}
-          title={saveSuccess ? STATUS_MESSAGES.success : `¿${FORM_TEXTS.saveButton} todo?`}
+          title={saveSuccess ? STATUS_MESSAGES.success : FORM_TEXTS.confirmationModal}
           centerCard={true}
           showHamburgerMenu={false}
         >
           <View style={{ alignItems: 'center', padding: 20 }}>
-            {saveSuccess ? (
+            {isSaving ? (
+              <View style={{ alignItems: 'center', justifyContent: 'center', minHeight: 100 }}>
+                <ActivityIndicator size="large" color="#5124A5" />
+                <Text style={{ marginTop: 16, fontSize: 16, color: '#666' }}>
+                  Guardando...
+                </Text>
+              </View>
+            ) : saveSuccess ? (
               <CustomButton
                 label="OK"
-                onPress={async () => {
+                onPress={() => {
                   setShowConfirmModal(false);
                   setSaveSuccess(false);
-                  setShowSignosVitalesModal(false);
-                  // Recargar datos después de cerrar el modal para asegurar que estén actualizados
+                  const currentSavingType = savingType;
+                  setSavingType(null);
+                  if (currentSavingType === 'vitals') {
                   setTimeout(async () => {
                     await loadPreviousVitals();
                   }, 500);
+                  }
                 }}
               />
             ) : (
@@ -297,7 +587,28 @@ export default function SpreadsheetManagementScreen() {
                 <CustomButton
                   label="Sí"
                   onPress={async () => {
-                    await handleSaveVitals();
+                    let success = false;
+                    if (savingType === 'vitals') {
+                      success = await handleSaveVitals();
+                    } else if (savingType === 'medication') {
+                      success = await handleSaveMedication();
+                    }
+                    if (success) {
+                      setShowConfirmModal(false);
+                      setSaveSuccess(false);
+                      setTimeout(() => {
+                        setSaveSuccess(true);
+                        setShowConfirmModal(true);
+                      }, 300);
+                    } else {
+                      if (savingType === 'medication') {
+                        Alert.alert(
+                          'Error',
+                          'No se puede guardar medicación. Solo se puede guardar medicación para sujetos de tipo Paciente.',
+                          [{ text: 'OK' }]
+                        );
+                      }
+                    }
                   }}
                   style={{ marginBottom: 16 }}
                 />
@@ -305,6 +616,7 @@ export default function SpreadsheetManagementScreen() {
                   label="No"
                   onPress={() => {
                     setShowConfirmModal(false);
+                    setSavingType(null);
                   }}
                   buttonColor="#FF6B6B"
                 />
