@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   Modal as PaperModal,
   Portal,
@@ -393,7 +393,7 @@ const CustomModal = ({
           isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
           isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
           isVitalsModal && { marginTop: 0 },
-          isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: 36 },
+          isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: '20%' },
           isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { marginTop: 0 },
           isMedicationModal && vitalsView !== 'anterior' && { marginTop: 0 },
           isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && {
