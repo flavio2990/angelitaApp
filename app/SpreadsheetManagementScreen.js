@@ -54,6 +54,8 @@ export default function SpreadsheetManagementScreen() {
   const [personType, setPersonType] = useState(null);
   const [selectedAuthorRole, setSelectedAuthorRole] = useState('employee'); // Default: Empleados
   const [isLoadingMedication, setIsLoadingMedication] = useState(false);
+  const [showMedicationAdmin, setShowMedicationAdmin] = useState(false);
+  const [adminMedications, setAdminMedications] = useState([]);
   
   const modifyRef = useRef();
   const saveRef = useRef();
@@ -331,6 +333,120 @@ export default function SpreadsheetManagementScreen() {
     }
   };
 
+  // Obtener medicaciones actuales para el modal de administración
+  const getCurrentMedications = async () => {
+    // Si está en vista anterior, usar previousMedicationData
+    if (medicationView === 'anterior' && previousMedicationData) {
+      // medicationsList puede ser un array o puede estar en medications
+      if (previousMedicationData.medicationsList && Array.isArray(previousMedicationData.medicationsList)) {
+        const filtered = previousMedicationData.medicationsList.filter(med => med && med.droga && med.droga.trim() !== '');
+        if (filtered.length > 0) {
+          console.log('Admin Modal: Found medications from previousMedicationData.medicationsList', filtered.length);
+          return filtered;
+        }
+      }
+      // Si no hay medicationsList pero hay medications (formato antiguo)
+      if (previousMedicationData.medications && previousMedicationData.medications.droga) {
+        console.log('Admin Modal: Found medication from previousMedicationData.medications');
+        return [previousMedicationData.medications];
+      }
+    }
+    
+    // Si no hay datos locales, intentar cargar desde Firebase
+    if (user?.uid && area && personId) {
+      try {
+        console.log('Admin Modal: Loading medications from Firebase...');
+        const medicationRef = ref(
+          database,
+          `admins/${user.uid}/areas/${area}/subjects/${personId}/planillas/medicacion`
+        );
+        const snapshot = await get(medicationRef);
+        
+        if (snapshot.exists()) {
+          const allMedications = snapshot.val();
+          const records = Object.keys(allMedications).map(key => ({
+            ...allMedications[key],
+            firebaseKey: key
+          }));
+          
+          const validRecords = records.filter(r => {
+            const hasCreatedAt = r.createdAt && r.createdAt.trim() !== '';
+            const hasMedications = r.medications && Object.keys(r.medications).length > 0;
+            return hasCreatedAt && hasMedications;
+          });
+          
+          console.log('Admin Modal: Valid records found', validRecords.length);
+          
+          if (validRecords.length > 0) {
+            // Para el modal de administración, NO filtrar por rol - mostrar todas las medicaciones del admin
+            // El filtro de autoría es solo para la vista anterior, no para administración
+            const filteredRecords = validRecords;
+            console.log('Admin Modal: Using all valid records (no role filter)', filteredRecords.length);
+            
+            if (filteredRecords.length > 0) {
+              // Obtener el batch más reciente
+              const sortedRecords = [...filteredRecords].sort((a, b) => {
+                const dateA = new Date(a.createdAt || 0);
+                const dateB = new Date(b.createdAt || 0);
+                return dateB.getTime() - dateA.getTime();
+              });
+              
+              const latestRecord = sortedRecords[0];
+              const latestCreatedAtTime = new Date(latestRecord.createdAt).getTime();
+              const BATCH_TIME_WINDOW_MS = 10000;
+              
+              const latestBatchRecords = filteredRecords.filter(record => {
+                const createdAtTime = new Date(record.createdAt).getTime();
+                const timeDiff = latestCreatedAtTime - createdAtTime;
+                return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
+              });
+              
+              console.log('Admin Modal: Latest batch records', latestBatchRecords.length);
+              
+              // Extraer medicaciones del batch más reciente
+              const medicationsList = latestBatchRecords
+                .map(r => r.medications || {})
+                .filter(m => m.droga && m.droga.trim() !== '');
+              
+              console.log('Admin Modal: Medications list extracted', medicationsList.length);
+              
+              if (medicationsList.length > 0) {
+                return medicationsList;
+              }
+            }
+          }
+        } else {
+          console.log('Admin Modal: No snapshot exists in Firebase');
+        }
+      } catch (error) {
+        console.error('Error loading medications for admin modal:', error);
+      }
+    }
+    
+    console.log('Admin Modal: No medications found');
+    return [];
+  };
+
+  const handleAdminPress = async () => {
+    console.log('Admin Modal: handleAdminPress called');
+    
+    // Obtener las medicaciones
+    const medications = await getCurrentMedications();
+    console.log('Admin Modal: handleAdminPress - medications found', medications.length);
+    console.log('Admin Modal: medications data', JSON.stringify(medications, null, 2));
+    
+    // Establecer las medicaciones y abrir el modal de medicación en modo administración
+    setAdminMedications(medications || []);
+    setShowMedicationAdmin(true);
+    
+    // Si el modal de medicación no está abierto, abrirlo
+    if (!showMedicationModal) {
+      setShowMedicationModal(true);
+    }
+    
+    console.log('Admin Modal: showMedicationAdmin set to true');
+  };
+
   // Recargar medicación cuando cambia el filtro de autoría
   useEffect(() => {
     if (medicationView === 'anterior' && showMedicationModal) {
@@ -507,7 +623,11 @@ export default function SpreadsheetManagementScreen() {
               medicationModifyRef.current();
             }
           }}
-          onBack={() => setShowMedicationModal(false)}
+          onBack={() => {
+            setShowMedicationModal(false);
+            setShowMedicationAdmin(false);
+            setAdminMedications([]);
+          }}
           onGoHome={() => {
             router.push('/');
           }}
@@ -530,6 +650,9 @@ export default function SpreadsheetManagementScreen() {
           selectedAuthorRole={selectedAuthorRole}
           onAuthorRoleChange={setSelectedAuthorRole}
           isLoadingMedication={isLoadingMedication}
+          onAdminPress={handleAdminPress}
+          showMedicationAdmin={showMedicationAdmin}
+          adminMedications={adminMedications}
         >
           <MedicationColumns
             adminUid={user?.uid}
@@ -624,6 +747,7 @@ export default function SpreadsheetManagementScreen() {
             )}
           </View>
         </CustomModal>
+
       </View>
     </PaperProvider>
   );

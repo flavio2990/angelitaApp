@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal as PaperModal,
   Portal,
@@ -26,6 +26,7 @@ import VitalSignsColumns from './VitalSignsColumns';
 import CustomButton from './CustomButton';
 import VitalsDetails from './VitalsDetails';
 import MedicationDetails from './MedicationDetails';
+import MedicationAdminList from './MedicationAdminList';
 import { VITALS_TEXTS, FORM_TEXTS, MEDICATION_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
 import { Calendar } from 'react-native-calendars';
 import { useHistoryCalendar } from './hooks/useHistoryCalendar';
@@ -78,6 +79,9 @@ const CustomModal = ({
   selectedAuthorRole = 'employee',
   onAuthorRoleChange = null,
   isLoadingMedication = false,
+  onAdminPress = null,
+  showMedicationAdmin = false,
+  adminMedications = [],
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : (isMedicationModal && children ? `${MEDICATION_TEXTS.columns.droga}/${MEDICATION_TEXTS.columns.hora}/${MEDICATION_TEXTS.columns.dosis}` : title);
@@ -215,6 +219,13 @@ const CustomModal = ({
                   label={FORM_TEXTS.saveButton}
                   style={isMedicationModal ? { width: '100%', maxWidth: 400 } : {}}
                 />
+                {isMedicationModal && !showMedicationAdmin && (
+                  <CustomButton
+                    onPress={onAdminPress}
+                    label="Administrar"
+                    style={isMedicationModal ? { width: '100%', maxWidth: 400, marginTop: 15 } : {}}
+                  />
+                )}
               </>
             ) : (
               <Button
@@ -338,6 +349,11 @@ const CustomModal = ({
       );
     }
 
+    // Si es modal de medicación en modo administración
+    if (isMedicationModal && showMedicationAdmin) {
+      return <MedicationAdminList medications={adminMedications} />;
+    }
+
     // Si es modal de medicación
     if (isMedicationModal) {
       return children;
@@ -395,20 +411,18 @@ const CustomModal = ({
           isVitalsModal && { marginTop: 0 },
           isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: '20%' },
           isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { marginTop: 0 },
-          isMedicationModal && vitalsView !== 'anterior' && { marginTop: 0 },
+          isMedicationModal && showMedicationAdmin && { marginTop: height * 0.25 },
+          isMedicationModal && vitalsView !== 'anterior' && !showMedicationAdmin && { marginTop: 0 },
           isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && {
             maxHeight: height * 0.6,
             minHeight: 350,
           },
-          isMedicationModal && vitalsView !== 'anterior' && {
+          isMedicationModal && showMedicationAdmin && {
+            maxHeight: height * 0.7,
+            minHeight: 400,
+          },
+          isMedicationModal && vitalsView !== 'anterior' && !showMedicationAdmin && {
             maxHeight: height * 0.6,
-            ...(cardMarginTop === undefined && {
-              height: medicationCount ? (
-                medicationCount <= 3
-                  ? 60 + (medicationCount * 70) + 50
-                  : height * 0.6
-              ) : height * 0.4,
-            })
           }
         ]}
         pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'auto' : undefined}
@@ -419,7 +433,19 @@ const CustomModal = ({
             cardMarginTop === 0 && styles.fullScreenTitleWrapper,
             isMedicationModal && vitalsView !== 'anterior' && styles.medicationTitleWrapper
           ]}>
-            {isMedicationModal && vitalsView === 'anterior' ? (
+            {isMedicationModal && showMedicationAdmin ? (
+              <View style={styles.medicationTitleRow}>
+                <Text style={[styles.title, styles.medicationTitleDroga]}>
+                  {MEDICATION_TEXTS.columns.droga}
+                </Text>
+                <Text style={[styles.title, styles.medicationTitleDosis]}>
+                  {MEDICATION_TEXTS.columns.dosis}
+                </Text>
+                <Text style={[styles.title, styles.medicationTitleRealizado]}>
+                  Realizado
+                </Text>
+              </View>
+            ) : isMedicationModal && vitalsView === 'anterior' ? (
               <Text style={styles.title}>
                 {title}
               </Text>
@@ -444,14 +470,23 @@ const CustomModal = ({
         )}
         <Card.Content 
           style={[
-            !(isMedicationModal && vitalsView === 'anterior') && styles.cardContent, 
-            isMedicationModal && vitalsView !== 'anterior' && styles.medicationCardContent,
+            !(isMedicationModal && vitalsView === 'anterior') && !(isMedicationModal && showMedicationAdmin) && styles.cardContent, 
+            isMedicationModal && vitalsView !== 'anterior' && !showMedicationAdmin && styles.medicationCardContent,
             isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { padding: 0, width: '100%' },
             isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { 
               width: '100%',
               minHeight: 300,
               padding: 0,
               flexGrow: 1,
+            },
+            isMedicationModal && showMedicationAdmin && {
+              width: '100%',
+              flex: 1,
+              padding: 0,
+              minHeight: 300,
+            },
+            isMedicationModal && vitalsView !== 'anterior' && !showMedicationAdmin && {
+              flexShrink: 1,
             }
           ]}
           pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
@@ -751,6 +786,9 @@ const CustomModal = ({
                         minHeight: 300,
                         padding: 0,
                         flexGrow: 1,
+                      },
+                      isMedicationModal && vitalsView !== 'anterior' && {
+                        flexShrink: 1,
                       }
                     ]}
                     pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
@@ -794,12 +832,7 @@ const CustomModal = ({
                     isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
                     isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: 24 },
                     isMedicationModal && vitalsView !== 'anterior' && { marginTop: 0 },
-                    isMedicationModal && {
-                      height: medicationCount ? (
-                        medicationCount <= 3
-                          ? 60 + (medicationCount * 70) + 50
-                          : height * 0.6
-                      ) : height * 0.4,
+                    isMedicationModal && vitalsView !== 'anterior' && {
                       maxHeight: height * 0.6,
                     }
                   ]}
@@ -834,23 +867,32 @@ const CustomModal = ({
                       )}
                     </View>
                   )}
-                  <Card.Content 
-                    style={[
-                      !(isMedicationModal && vitalsView === 'anterior') && styles.cardContent, 
-                      isMedicationModal && vitalsView !== 'anterior' && styles.medicationCardContent,
-                      isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { padding: 0, width: '100%' },
-                      isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { 
-                        width: '100%',
-                        minHeight: 300,
-                        padding: 0,
-                        flexGrow: 1,
-                      }
-                    ]}
-                    pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
-                    onStartShouldSetResponder={() => false}
-                  >
-                    {renderCardContent()}
-                  </Card.Content>
+        <Card.Content 
+          style={[
+            !(isMedicationModal && vitalsView === 'anterior') && !(isMedicationModal && showMedicationAdmin) && styles.cardContent, 
+            isMedicationModal && vitalsView !== 'anterior' && !showMedicationAdmin && styles.medicationCardContent,
+            isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { padding: 0, width: '100%' },
+            isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { 
+              width: '100%',
+              minHeight: 300,
+              padding: 0,
+              flexGrow: 1,
+            },
+            isMedicationModal && showMedicationAdmin && {
+              width: '100%',
+              flex: 1,
+              padding: 0,
+              minHeight: 300,
+            },
+            isMedicationModal && vitalsView !== 'anterior' && !showMedicationAdmin && {
+              flexShrink: 1,
+            }
+          ]}
+          pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
+          onStartShouldSetResponder={() => false}
+        >
+          {renderCardContent()}
+        </Card.Content>
                 </Card>
 
                 {isHistoryMode ? renderHistoryFooter() : renderEditFooter()}
@@ -1123,6 +1165,9 @@ const styles = StyleSheet.create({
   },
   medicationCardContent: {
     flex: 1,
+    maxHeight: height * 0.4,
+    minHeight: 200,
+    overflow: 'hidden',
   },
   medicationButtonContainer: {
     marginTop: 20,
@@ -1150,6 +1195,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   medicationTitleDosis: {
+    textAlign: 'center',
+  },
+  medicationTitleRealizado: {
     textAlign: 'center',
   },
   authorSelectorContainer: {

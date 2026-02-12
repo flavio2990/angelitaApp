@@ -134,7 +134,7 @@ export default function MedicationColumns({
     { ...INITIAL_MEDICATION, id: Date.now().toString() },
     { ...INITIAL_MEDICATION, id: (Date.now() + 1).toString() },
     { ...INITIAL_MEDICATION, id: (Date.now() + 2).toString() },
-    { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
+    // { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -264,7 +264,7 @@ export default function MedicationColumns({
         { ...INITIAL_MEDICATION, id: Date.now().toString() },
         { ...INITIAL_MEDICATION, id: (Date.now() + 1).toString() },
         { ...INITIAL_MEDICATION, id: (Date.now() + 2).toString() },
-        { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
+        // { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
       ];
     });
   }, []);
@@ -274,7 +274,7 @@ export default function MedicationColumns({
       { ...INITIAL_MEDICATION, id: Date.now().toString() },
       { ...INITIAL_MEDICATION, id: (Date.now() + 1).toString() },
       { ...INITIAL_MEDICATION, id: (Date.now() + 2).toString() },
-      { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
+      // { ...INITIAL_MEDICATION, id: (Date.now() + 3).toString() },
     ]);
     setDataExists(false);
     setCreatedBy(null);
@@ -625,10 +625,12 @@ export default function MedicationColumns({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    flex: 1,
+    height: '100%',
+    flexDirection: 'column',
   },
   scrollView: {
     flex: 1,
+    maxHeight: '100%',
   },
   scrollContent: {
     paddingBottom: 8,
@@ -657,7 +659,6 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#FFFFFF',
-    marginBottom: 0,
     width: '100%',
   },
   inputContent: {
@@ -686,6 +687,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
+    flexShrink: 0,
   },
   addLineButton: {
     flexDirection: 'row',
