@@ -341,13 +341,11 @@ export default function SpreadsheetManagementScreen() {
       if (previousMedicationData.medicationsList && Array.isArray(previousMedicationData.medicationsList)) {
         const filtered = previousMedicationData.medicationsList.filter(med => med && med.droga && med.droga.trim() !== '');
         if (filtered.length > 0) {
-          console.log('Admin Modal: Found medications from previousMedicationData.medicationsList', filtered.length);
           return filtered;
         }
       }
       // Si no hay medicationsList pero hay medications (formato antiguo)
       if (previousMedicationData.medications && previousMedicationData.medications.droga) {
-        console.log('Admin Modal: Found medication from previousMedicationData.medications');
         return [previousMedicationData.medications];
       }
     }
@@ -355,7 +353,6 @@ export default function SpreadsheetManagementScreen() {
     // Si no hay datos locales, intentar cargar desde Firebase
     if (user?.uid && area && personId) {
       try {
-        console.log('Admin Modal: Loading medications from Firebase...');
         const medicationRef = ref(
           database,
           `admins/${user.uid}/areas/${area}/subjects/${personId}/planillas/medicacion`
@@ -375,14 +372,10 @@ export default function SpreadsheetManagementScreen() {
             return hasCreatedAt && hasMedications;
           });
           
-          console.log('Admin Modal: Valid records found', validRecords.length);
-          
           if (validRecords.length > 0) {
             // Para el modal de administración, NO filtrar por rol - mostrar todas las medicaciones del admin
             // El filtro de autoría es solo para la vista anterior, no para administración
             const filteredRecords = validRecords;
-            console.log('Admin Modal: Using all valid records (no role filter)', filteredRecords.length);
-            
             if (filteredRecords.length > 0) {
               // Obtener el batch más reciente
               const sortedRecords = [...filteredRecords].sort((a, b) => {
@@ -401,40 +394,29 @@ export default function SpreadsheetManagementScreen() {
                 return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
               });
               
-              console.log('Admin Modal: Latest batch records', latestBatchRecords.length);
-              
               // Extraer medicaciones del batch más reciente
               const medicationsList = latestBatchRecords
                 .map(r => r.medications || {})
                 .filter(m => m.droga && m.droga.trim() !== '');
-              
-              console.log('Admin Modal: Medications list extracted', medicationsList.length);
-              
+
               if (medicationsList.length > 0) {
                 return medicationsList;
               }
             }
           }
-        } else {
-          console.log('Admin Modal: No snapshot exists in Firebase');
         }
       } catch (error) {
         console.error('Error loading medications for admin modal:', error);
       }
     }
-    
-    console.log('Admin Modal: No medications found');
+
     return [];
   };
 
   const handleAdminPress = async () => {
-    console.log('Admin Modal: handleAdminPress called');
-    
     // Obtener las medicaciones
     const medications = await getCurrentMedications();
-    console.log('Admin Modal: handleAdminPress - medications found', medications.length);
-    console.log('Admin Modal: medications data', JSON.stringify(medications, null, 2));
-    
+
     // Establecer las medicaciones y abrir el modal de medicación en modo administración
     setAdminMedications(medications || []);
     setShowMedicationAdmin(true);
@@ -443,8 +425,6 @@ export default function SpreadsheetManagementScreen() {
     if (!showMedicationModal) {
       setShowMedicationModal(true);
     }
-    
-    console.log('Admin Modal: showMedicationAdmin set to true');
   };
 
   // Recargar medicación cuando cambia el filtro de autoría
@@ -624,6 +604,19 @@ export default function SpreadsheetManagementScreen() {
             }
           }}
           onBack={() => {
+            // Siempre volver a la vista principal del modal de medicación (inputs y botón Administrar)
+            // Si está en modo administración, salir del modo administración
+            if (showMedicationAdmin) {
+              setShowMedicationAdmin(false);
+              setAdminMedications([]);
+              return;
+            }
+            // Si está en vista anterior, volver a vista nuevo
+            if (medicationView === 'anterior') {
+              setMedicationView('nuevo');
+              return;
+            }
+            // Si ya está en vista nuevo y no en modo admin, cerrar el modal
             setShowMedicationModal(false);
             setShowMedicationAdmin(false);
             setAdminMedications([]);

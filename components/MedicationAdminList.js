@@ -1,39 +1,36 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions } from 'react-native';
 import { Checkbox } from 'react-native-paper';
+
+const { height } = Dimensions.get('window');
 
 export default function MedicationAdminList({ medications = [] }) {
   const [checkedItems, setCheckedItems] = useState({});
-
-  console.log('MedicationAdminList: Rendering with medications:', medications.length);
 
   const handleToggleCheck = (itemId) => {
     setCheckedItems(prev => ({
       ...prev,
       [itemId]: !prev[itemId]
     }));
-    console.log('Checkbox toggled', itemId);
   };
 
-  // Preparar datos de medicaciones con IDs únicos
-  const medicationEntries = medications && medications.length > 0 
+  // Preparar los datos para mostrar
+  const medicationEntries = Array.isArray(medications) 
     ? medications.map((med, index) => ({
-        id: med.id || `med-${index}`,
-        droga: med.droga || 'N/A',
-        dosis: med.dosis || 'N/A',
+        id: med.id || `med-${index}-${med.droga}-${med.dosis}`,
+        droga: med.droga || '',
+        dosis: med.dosis || '',
       }))
     : [];
-
-  console.log('MedicationAdminList: medicationEntries prepared:', medicationEntries.length);
 
   const renderMedicationItem = ({ item }) => (
     <View style={styles.listItemContainer}>
       <View style={styles.tableRow}>
         <View style={styles.tableCellDroga}>
-          <Text style={styles.cellText}>{item.droga}</Text>
+          <Text style={styles.cellText}>{item.droga || 'N/A'}</Text>
         </View>
         <View style={styles.tableCellDosis}>
-          <Text style={styles.cellText}>{item.dosis}</Text>
+          <Text style={styles.cellText}>{item.dosis || 'N/A'}</Text>
         </View>
         <View style={styles.tableCellRealizado}>
           <Checkbox
@@ -63,8 +60,8 @@ export default function MedicationAdminList({ medications = [] }) {
         renderItem={renderMedicationItem}
         keyExtractor={(item, index) => item.id || `med-${index}-${item.droga}-${item.dosis}`}
         ListEmptyComponent={renderEmptyComponent}
-        showsVerticalScrollIndicator={true}
-        scrollEnabled={true}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={medicationEntries.length > 0}
         nestedScrollEnabled={true}
         removeClippedSubviews={false}
         scrollEventThrottle={16}
@@ -76,17 +73,17 @@ export default function MedicationAdminList({ medications = [] }) {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    flex: 1,
-    minHeight: 200,
+    maxHeight: 300,
+    flexGrow: 0,
   },
   flatList: {
     width: '100%',
-    flex: 1,
-    minHeight: 200,
+    maxHeight: 300,
+    flexGrow: 0,
   },
   flatListContent: {
-    flexGrow: 1,
     paddingBottom: 8,
+    flexGrow: 0,
   },
   listItemContainer: {
     paddingHorizontal: 16,
@@ -123,6 +120,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 8,
   },
   cellText: {
     fontSize: 16,
@@ -131,7 +129,7 @@ const styles = StyleSheet.create({
   noDataContainer: {
     width: '100%',
     paddingHorizontal: 16,
-    paddingVertical: 40,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -140,5 +138,7 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
     textAlign: 'center',
+    width: '100%',
+    padding: 20,
   },
 });
