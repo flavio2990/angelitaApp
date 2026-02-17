@@ -13,7 +13,7 @@ import HamburgerMenu from '../components/HamburgerMenu';
 import MedicationColumns from '../components/MedicationColumns';
 import { useAuth } from '../components/UserContext';
 import { STATUS_MESSAGES, FORM_TEXTS, MEDICATION_TEXTS, PERSON_TYPE_TEXTS } from '../constants/Strings';
-import { ref, get } from 'firebase/database';
+import { ref, get, set } from 'firebase/database';
 import { database } from '../env/firebase';
 import { filterMedicationByRole, filterHistoryByRole } from '../utils/medicationFilters';
 import AuthorRoleSelector from '../components/AuthorRoleSelector';
@@ -56,6 +56,8 @@ export default function SpreadsheetManagementScreen() {
   const [isLoadingMedication, setIsLoadingMedication] = useState(false);
   const [showMedicationAdmin, setShowMedicationAdmin] = useState(false);
   const [adminMedications, setAdminMedications] = useState([]);
+  const [adminMedicationSheetId, setAdminMedicationSheetId] = useState(null);
+  const [adminMedicationUpdates, setAdminMedicationUpdates] = useState({});
   
   const modifyRef = useRef();
   const saveRef = useRef();
@@ -227,11 +229,9 @@ export default function SpreadsheetManagementScreen() {
           return hasCreatedAt && hasMedications;
         });
 
-        // Aplicar filtro por autoría
         const filteredRecords = await filterMedicationByRole(validRecords, selectedAuthorRole);
 
         if (filteredRecords.length > 0) {
-          // Ordenar por createdAt descendente para encontrar el más reciente
           const sortedRecords = [...filteredRecords].sort((a, b) => {
             const dateA = new Date(a.createdAt || 0);
             const dateB = new Date(b.createdAt || 0);
@@ -242,23 +242,17 @@ export default function SpreadsheetManagementScreen() {
           const latestCreatedAt = latestRecord?.createdAt || '';
           const latestCreatedAtTime = new Date(latestCreatedAt).getTime();
           
-          // Agrupar por batch de guardado (ventana de 10 segundos)
-          // Todos los registros guardados dentro de 10 segundos se consideran del mismo batch
-          const BATCH_TIME_WINDOW_MS = 10000; // 10 segundos
+            const BATCH_TIME_WINDOW_MS = 10000;
           const latestBatchRecords = filteredRecords.filter(record => {
             const createdAt = record.createdAt || '';
             const createdAtTime = new Date(createdAt).getTime();
             const timeDiff = latestCreatedAtTime - createdAtTime;
-            // Si el registro está dentro de la ventana de tiempo del más reciente, es del mismo batch
             return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
           });
           
-          // Crear mapa de historial por fecha (para el calendario)
-          // Agrupar medicamentos por fecha, agrupando por batch de guardado (ventana de 10 segundos)
           const historyMap = {};
           const recordsByDate = {};
           
-          // Primero agrupar todos los registros filtrados por fecha
           filteredRecords.forEach(record => {
             const dateKey = record.createdAt.split('T')[0];
             if (!recordsByDate[dateKey]) {
@@ -267,11 +261,9 @@ export default function SpreadsheetManagementScreen() {
             recordsByDate[dateKey].push(record);
           });
           
-          // Para cada fecha, agrupar por batch y crear un registro agrupado
           Object.keys(recordsByDate).forEach(dateKey => {
             const dateRecords = recordsByDate[dateKey];
             
-            // Encontrar el batch más reciente para esta fecha
             const sortedByTime = [...dateRecords].sort((a, b) => {
               return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             });
@@ -279,7 +271,6 @@ export default function SpreadsheetManagementScreen() {
             const latestRecordForDate = sortedByTime[0];
             const latestCreatedAtTime = new Date(latestRecordForDate.createdAt).getTime();
             
-            // Agrupar registros del mismo batch (ventana de 10 segundos)
             const BATCH_TIME_WINDOW_MS = 10000;
             const batchRecords = dateRecords.filter(record => {
               const createdAtTime = new Date(record.createdAt).getTime();
@@ -287,7 +278,6 @@ export default function SpreadsheetManagementScreen() {
               return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
             });
             
-            // Crear registro agrupado para esta fecha
             const groupedRecordForDate = {
               ...latestRecordForDate,
               medicationsList: batchRecords.map(r => r.medications || {}).filter(m => m.droga),
@@ -297,7 +287,6 @@ export default function SpreadsheetManagementScreen() {
             historyMap[dateKey] = groupedRecordForDate;
           });
           
-          // Crear registro agrupado solo con los medicamentos del último batch
           const groupedRecord = latestRecord ? {
             ...latestRecord,
             medicationsList: latestBatchRecords.map(r => r.medications || {}).filter(m => m.droga)
@@ -333,24 +322,51 @@ export default function SpreadsheetManagementScreen() {
     }
   };
 
-  // Obtener medicaciones actuales para el modal de administración
+  const getMedicationConfig = async () => {
+    if (!personId) {
+      return null;
+    }
+
+    try {
+      const configRef = ref(
+        database,
+        `subjects/${personId}/medications`
+      );
+      const snapshot = await get(configRef);
+      if (snapshot.exists()) {
+        return snapshot.val();
+      }
+    } catch (error) {
+      const message = error?.message || '';
+      if (!message.includes('Permission denied')) {
+        console.error('Error loading medication config:', error);
+      }
+    }
+
+    return null;
+  };
+
   const getCurrentMedications = async () => {
-    // Si está en vista anterior, usar previousMedicationData
+    const configMedications = await getMedicationConfig();
+    if (configMedications) {
+      setAdminMedicationSheetId(null);
+      return configMedications;
+    }
+
     if (medicationView === 'anterior' && previousMedicationData) {
-      // medicationsList puede ser un array o puede estar en medications
       if (previousMedicationData.medicationsList && Array.isArray(previousMedicationData.medicationsList)) {
         const filtered = previousMedicationData.medicationsList.filter(med => med && med.droga && med.droga.trim() !== '');
         if (filtered.length > 0) {
+          setAdminMedicationSheetId(previousMedicationData.firebaseKey || null);
           return filtered;
         }
       }
-      // Si no hay medicationsList pero hay medications (formato antiguo)
       if (previousMedicationData.medications && previousMedicationData.medications.droga) {
+        setAdminMedicationSheetId(previousMedicationData.firebaseKey || null);
         return [previousMedicationData.medications];
       }
     }
     
-    // Si no hay datos locales, intentar cargar desde Firebase
     if (user?.uid && area && personId) {
       try {
         const medicationRef = ref(
@@ -373,11 +389,8 @@ export default function SpreadsheetManagementScreen() {
           });
           
           if (validRecords.length > 0) {
-            // Para el modal de administración, NO filtrar por rol - mostrar todas las medicaciones del admin
-            // El filtro de autoría es solo para la vista anterior, no para administración
             const filteredRecords = validRecords;
             if (filteredRecords.length > 0) {
-              // Obtener el batch más reciente
               const sortedRecords = [...filteredRecords].sort((a, b) => {
                 const dateA = new Date(a.createdAt || 0);
                 const dateB = new Date(b.createdAt || 0);
@@ -385,6 +398,7 @@ export default function SpreadsheetManagementScreen() {
               });
               
               const latestRecord = sortedRecords[0];
+              setAdminMedicationSheetId(latestRecord?.firebaseKey || null);
               const latestCreatedAtTime = new Date(latestRecord.createdAt).getTime();
               const BATCH_TIME_WINDOW_MS = 10000;
               
@@ -394,7 +408,6 @@ export default function SpreadsheetManagementScreen() {
                 return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
               });
               
-              // Extraer medicaciones del batch más reciente
               const medicationsList = latestBatchRecords
                 .map(r => r.medications || {})
                 .filter(m => m.droga && m.droga.trim() !== '');
@@ -414,20 +427,91 @@ export default function SpreadsheetManagementScreen() {
   };
 
   const handleAdminPress = async () => {
-    // Obtener las medicaciones
     const medications = await getCurrentMedications();
 
-    // Establecer las medicaciones y abrir el modal de medicación en modo administración
     setAdminMedications(medications || []);
     setShowMedicationAdmin(true);
+    setAdminMedicationUpdates({});
     
-    // Si el modal de medicación no está abierto, abrirlo
     if (!showMedicationModal) {
       setShowMedicationModal(true);
     }
   };
 
-  // Recargar medicación cuando cambia el filtro de autoría
+  const handleAdminCheckChange = (itemId, checked) => {
+    if (!itemId) {
+      return;
+    }
+    setAdminMedicationUpdates(prev => ({
+      ...prev,
+      [itemId]: checked
+    }));
+  };
+
+  const handleSaveMedicationAdmin = async () => {
+    setIsSaving(true);
+    try {
+      if (!user?.uid || !area || !personId || !adminMedicationSheetId) {
+        return false;
+      }
+
+      const pendingEntries = Object.entries(adminMedicationUpdates || {});
+      if (pendingEntries.length === 0) {
+        return true;
+      }
+
+      const uid = user.uid;
+      const administeredAt = new Date().toISOString();
+
+      for (const [itemId, checked] of pendingEntries) {
+        if (checked === true) {
+          const adminRef = ref(
+            database,
+            `admins/${uid}/areas/${area}/subjects/${personId}/planillas/medicacion/${adminMedicationSheetId}/medications/administration/${itemId}`
+          );
+          await set(adminRef, {
+            administered: true,
+            administeredAt,
+            administeredBy: uid,
+          });
+        }
+      }
+
+      const appliedIds = new Set(
+        pendingEntries.filter(([, checked]) => checked === true).map(([itemId]) => itemId)
+      );
+
+      if (appliedIds.size > 0) {
+        setAdminMedications(prev => {
+          if (!prev) return prev;
+          if (Array.isArray(prev)) {
+            return prev.map((med, index) => {
+              const id = med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`;
+              if (appliedIds.has(id)) {
+                return { ...med, administrado: true };
+              }
+              return med;
+            });
+          }
+          if (typeof prev === 'object') {
+            return Object.fromEntries(
+              Object.entries(prev).map(([id, med]) => [
+                id,
+                appliedIds.has(id) ? { ...med, administrado: true } : med,
+              ])
+            );
+          }
+          return prev;
+        });
+      }
+
+      setAdminMedicationUpdates({});
+      return true;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (medicationView === 'anterior' && showMedicationModal) {
       loadPreviousMedication();
@@ -594,7 +678,7 @@ export default function SpreadsheetManagementScreen() {
           topbarMarginTop={80}
           vitalsInfoExtraMargin={20}
           onSavePress={() => {
-            setSavingType('medication');
+            setSavingType(showMedicationAdmin ? 'medicationAdmin' : 'medication');
             setShowMedicationModal(false);
             setShowConfirmModal(true);
           }}
@@ -604,22 +688,20 @@ export default function SpreadsheetManagementScreen() {
             }
           }}
           onBack={() => {
-            // Siempre volver a la vista principal del modal de medicación (inputs y botón Administrar)
-            // Si está en modo administración, salir del modo administración
             if (showMedicationAdmin) {
               setShowMedicationAdmin(false);
               setAdminMedications([]);
+              setAdminMedicationUpdates({});
               return;
             }
-            // Si está en vista anterior, volver a vista nuevo
             if (medicationView === 'anterior') {
               setMedicationView('nuevo');
               return;
             }
-            // Si ya está en vista nuevo y no en modo admin, cerrar el modal
             setShowMedicationModal(false);
             setShowMedicationAdmin(false);
             setAdminMedications([]);
+            setAdminMedicationUpdates({});
           }}
           onGoHome={() => {
             router.push('/');
@@ -646,6 +728,8 @@ export default function SpreadsheetManagementScreen() {
           onAdminPress={handleAdminPress}
           showMedicationAdmin={showMedicationAdmin}
           adminMedications={adminMedications}
+          medicationSheetId={adminMedicationSheetId}
+          onAdminCheckChange={handleAdminCheckChange}
         >
           <MedicationColumns
             adminUid={user?.uid}
@@ -696,6 +780,10 @@ export default function SpreadsheetManagementScreen() {
                     await loadPreviousVitals();
                   }, 500);
                   }
+                  if (currentSavingType === 'medicationAdmin') {
+                    setShowMedicationModal(true);
+                    setShowMedicationAdmin(true);
+                  }
                 }}
               />
             ) : (
@@ -708,14 +796,11 @@ export default function SpreadsheetManagementScreen() {
                       success = await handleSaveVitals();
                     } else if (savingType === 'medication') {
                       success = await handleSaveMedication();
+                    } else if (savingType === 'medicationAdmin') {
+                      success = await handleSaveMedicationAdmin();
                     }
                     if (success) {
-                      setShowConfirmModal(false);
-                      setSaveSuccess(false);
-                      setTimeout(() => {
-                        setSaveSuccess(true);
-                        setShowConfirmModal(true);
-                      }, 300);
+                      setSaveSuccess(true);
                     } else {
                       if (savingType === 'medication') {
                         Alert.alert(

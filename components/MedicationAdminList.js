@@ -1,27 +1,70 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 
-const { height } = Dimensions.get('window');
-
-export default function MedicationAdminList({ medications = [] }) {
+export default function MedicationAdminList({
+  medications = [],
+  medId = null,
+  personId = null,
+  area = null,
+  uid = null,
+  onAdminCheckChange = null,
+  administrationState = null,
+}) {
   const [checkedItems, setCheckedItems] = useState({});
 
-  const handleToggleCheck = (itemId) => {
-    setCheckedItems(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId]
-    }));
-  };
-
-  // Preparar los datos para mostrar
-  const medicationEntries = Array.isArray(medications) 
-    ? medications.map((med, index) => ({
-        id: med.id || `med-${index}-${med.droga}-${med.dosis}`,
+  const medicationEntries = useMemo(() => {
+    if (Array.isArray(medications)) {
+      return medications.map((med, index) => ({
+        id: med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`,
+        medIndex: index,
         droga: med.droga || '',
         dosis: med.dosis || '',
-      }))
-    : [];
+        hora: med.hora || '',
+        administrado: med.administrado === true
+          || administrationState?.[med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`] === true
+          || administrationState?.[med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`]?.administered === true
+          || administrationState?.[med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`]?.administrado === true,
+      }));
+    }
+
+    if (medications && typeof medications === 'object') {
+      return Object.entries(medications).map(([id, med]) => ({
+        id,
+        medIndex: id,
+        droga: med?.droga || '',
+        dosis: med?.dosis || '',
+        hora: med?.hora || '',
+        administrado: med?.administrado === true
+          || administrationState?.[id] === true
+          || administrationState?.[id]?.administered === true
+          || administrationState?.[id]?.administrado === true,
+      }));
+    }
+
+    return [];
+  }, [medications, administrationState]);
+
+  useEffect(() => {
+    const initialChecked = {};
+    medicationEntries.forEach((item) => {
+      if (item.administrado === true) {
+        initialChecked[item.medIndex] = true;
+      }
+    });
+    setCheckedItems(initialChecked);
+  }, [medicationEntries]);
+
+  const handleToggleCheck = (itemId, medIndex) => {
+    const nextChecked = !checkedItems[medIndex];
+    setCheckedItems(prev => ({
+      ...prev,
+      [medIndex]: nextChecked
+    }));
+    if (onAdminCheckChange) {
+      onAdminCheckChange(itemId, nextChecked);
+    }
+  };
 
   const renderMedicationItem = ({ item }) => (
     <View style={styles.listItemContainer}>
@@ -32,11 +75,15 @@ export default function MedicationAdminList({ medications = [] }) {
         <View style={styles.tableCellDosis}>
           <Text style={styles.cellText}>{item.dosis || 'N/A'}</Text>
         </View>
+        <View style={styles.tableCellHora}>
+          <Text style={styles.cellText}>{item.hora || 'N/A'}</Text>
+        </View>
         <View style={styles.tableCellRealizado}>
           <Checkbox
-            status={checkedItems[item.id] ? 'checked' : 'unchecked'}
-            onPress={() => handleToggleCheck(item.id)}
+            status={checkedItems[item.medIndex] ? 'checked' : 'unchecked'}
+            onPress={() => handleToggleCheck(item.id, item.medIndex)}
             color="#5124A5"
+            disabled={item.administrado === true}
           />
         </View>
       </View>
@@ -107,6 +154,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   tableCellDosis: {
+    flex: 1,
+    marginRight: 8,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 4,
+    padding: 8,
+    backgroundColor: '#ffffff',
+  },
+  tableCellHora: {
     flex: 1,
     marginRight: 8,
     justifyContent: 'center',

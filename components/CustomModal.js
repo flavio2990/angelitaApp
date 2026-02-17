@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal as PaperModal,
   Portal,
@@ -82,11 +82,13 @@ const CustomModal = ({
   onAdminPress = null,
   showMedicationAdmin = false,
   adminMedications = [],
+  medicationSheetId = null,
+  onAdminCheckChange = null,
+  medicationAdministrationState = {},
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : (isMedicationModal && children ? `${MEDICATION_TEXTS.columns.droga}/${MEDICATION_TEXTS.columns.hora}/${MEDICATION_TEXTS.columns.dosis}` : title);
 
-  // Use the history calendar hook for vitals history management
   const vitalsHistoryCalendar = useHistoryCalendar({
     historyByDate: vitalsHistoryByDate,
     currentPersonId: vitalsData?.personId,
@@ -97,7 +99,6 @@ const CustomModal = ({
     futureDateMessage: 'No se pueden seleccionar fechas futuras.',
   });
 
-  // Use the history calendar hook for medication history management
   const medicationHistoryCalendar = useHistoryCalendar({
     historyByDate: medicationHistoryByDate,
     currentPersonId: vitalsData?.personId,
@@ -107,7 +108,6 @@ const CustomModal = ({
     futureDateMessage: 'No se pueden seleccionar fechas futuras.',
   });
 
-  // Select the appropriate hook based on modal type
   const historyCalendar = isMedicationModal ? medicationHistoryCalendar : vitalsHistoryCalendar;
   const {
     showCalendar: showHistoryCalendar,
@@ -119,7 +119,6 @@ const CustomModal = ({
     handleDayPress,
   } = historyCalendar;
 
-  // Helper booleans for footer logic
   const isAnteriorView = vitalsView === 'anterior';
   const isHistoryMode = isAnteriorView && (isVitalsModal || (isMedicationModal && !showMedicationAdmin));
 
@@ -138,7 +137,6 @@ const CustomModal = ({
     return `_${personType}:`;
   };
 
-  // Render history footer (Ver historial / Cancelar)
   const renderHistoryFooter = () => {
     if (!isHistoryMode || isKeyboardVisible || !(previousVitalsData || hasVitalsData)) {
       return null;
@@ -155,7 +153,6 @@ const CustomModal = ({
     );
   };
 
-  // Render admin footer (Guardar + Ver historial)
   const renderAdminFooter = () => {
     if (!showMedicationAdmin || !isMedicationModal) {
       return null;
@@ -190,17 +187,15 @@ const CustomModal = ({
     );
   };
 
-  // Render edit/detail footer (Guardar, Modificar, etc.)
   const renderEditFooter = () => {
     if (isHistoryMode || showMedicationAdmin) {
-      return null; // Never show edit footer in history mode or admin mode
+      return null;
     }
 
     if (!isDetailModal && !isEditModal) {
       return null;
     }
 
-    // Skip if keyboard is visible for vitals modal
     if (isVitalsModal && isKeyboardVisible) {
       return null;
     }
@@ -301,13 +296,11 @@ const CustomModal = ({
 
   useEffect(() => {
     if (!visible || vitalsView !== 'anterior') {
-      // Clear selection when modal closes or view changes (reset state)
       handleCancelHistory(true);
     }
   }, [visible, vitalsView, handleCancelHistory]);
 
   const renderCardContent = () => {
-    // Si es modal de vitals y vista anterior
     if (isVitalsModal && vitalsView === 'anterior') {
       if (showHistoryCalendar) {
         return (
@@ -332,7 +325,6 @@ const CustomModal = ({
       return <VitalsDetails vitalsData={historySelectedData || previousVitalsData} />;
     }
 
-    // Si es modal de medicación y vista anterior
     if (isMedicationModal && vitalsView === 'anterior') {
       if (showHistoryCalendar) {
         return (
@@ -355,7 +347,6 @@ const CustomModal = ({
         );
       }
       
-      // Mostrar spinner mientras carga dentro del card
       if (isLoadingMedication) {
         return (
           <View style={styles.loadingContainer}>
@@ -411,8 +402,21 @@ const CustomModal = ({
         historySelectedData?.medicationsList ||
         historySelectedData?.medications ||
         adminMedications;
+      const adminHistoryAdministration =
+        historySelectedData?.medications?.administration ||
+        medicationAdministrationState;
 
-      return <MedicationAdminList medications={adminHistoryMedications} />;
+      return (
+        <MedicationAdminList
+          medications={adminHistoryMedications}
+          medId={historySelectedData?.firebaseKey || medicationSheetId}
+          personId={vitalsData?.personId}
+          area={vitalsData?.area}
+          uid={vitalsData?.adminUid}
+          onAdminCheckChange={onAdminCheckChange}
+          administrationState={adminHistoryAdministration}
+        />
+      );
     }
 
     // Si es modal de medicación
@@ -472,15 +476,12 @@ const CustomModal = ({
           isVitalsModal && { marginTop: 0 },
           isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: '20%' },
           isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { marginTop: 0 },
-          // Para modo administración (solo cuando NO está en vista anterior), reducir marginTop para que el card quede más arriba
-          isMedicationModal && showMedicationAdmin && vitalsView !== 'anterior' && { marginTop: '15%' },
-          // Para modo nuevo sin administración, quitar el marginTop del estilo base
+            isMedicationModal && showMedicationAdmin && vitalsView !== 'anterior' && { marginTop: '15%' },
           isMedicationModal && vitalsView !== 'anterior' && !showMedicationAdmin && { marginTop: 0 },
           isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && {
             maxHeight: height * 0.6,
             minHeight: 350,
           },
-          // Estilos del checklist (solo cuando NO está en vista anterior)
           isMedicationModal && showMedicationAdmin && vitalsView !== 'anterior' && {
             maxHeight: height * 0.5,
             minHeight: 300,
@@ -505,6 +506,9 @@ const CustomModal = ({
                 </Text>
                 <Text style={[styles.title, styles.medicationTitleDosis]}>
                   {MEDICATION_TEXTS.columns.dosis}
+                </Text>
+                <Text style={[styles.title, styles.medicationTitleHora]}>
+                  {MEDICATION_TEXTS.columns.hora}
                 </Text>
                 <Text style={[styles.title, styles.medicationTitleRealizado]}>
                   Hecho
@@ -564,8 +568,6 @@ const CustomModal = ({
 
     return (
       <>
-        {/* Selector de autoría para vista anterior de medicación */}
-        {/* No se muestra cuando está visible el calendario histórico o en modo administración */}
         {isMedicationModal && vitalsView === 'anterior' && onAuthorRoleChange && !showHistoryCalendar && !showMedicationAdmin && (
           <View style={styles.authorSelectorContainer}>
             <AuthorRoleSelector
@@ -715,7 +717,6 @@ const CustomModal = ({
         )}
 
         {(isMedicationModal && vitalsView === 'anterior') || (isMedicationModal && showMedicationAdmin) ? (
-          // Para medication anterior o modo administración, no usar TouchableWithoutFeedback para permitir scroll
           <View style={styles.flex}>
             {centerCard ? (
               <View style={styles.flex}>
@@ -733,9 +734,6 @@ const CustomModal = ({
                     isMedicationModal && {
                       justifyContent: 'flex-start',
                       alignItems: 'stretch',
-                      // Vista histórica: paddingTop original (30 o 50) - el card tiene marginTop: 0 o '20%'
-                      // Modo administración: paddingTop reducido (30 o 50) - el card tiene marginTop: height * 0.25 (del estilo base)
-                      // Modo nuevo normal: paddingTop estándar (90 o 110) - el card tiene marginTop: 0
                       paddingTop: vitalsView === 'anterior'
                         ? (showTopbar ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 30) : 50)
                         : showMedicationAdmin && vitalsView !== 'anterior'
@@ -764,9 +762,6 @@ const CustomModal = ({
                     isMedicationModal && {
                       justifyContent: 'flex-start',
                       alignItems: 'stretch',
-                      // Vista histórica: paddingTop original (30 o 50) - el card tiene marginTop: 0 o '20%'
-                      // Modo administración: paddingTop reducido (30 o 50) - el card tiene marginTop: height * 0.25 (del estilo base)
-                      // Modo nuevo normal: paddingTop estándar (90 o 110) - el card tiene marginTop: 0
                       paddingTop: vitalsView === 'anterior'
                         ? (showTopbar ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 30) : 50)
                         : showMedicationAdmin && vitalsView !== 'anterior'
@@ -818,7 +813,6 @@ const CustomModal = ({
               >
                 <Card 
                   style={[
-                    // Para medicación vista anterior, siempre usar vitalsCard para mantener ancho consistente
                     isMedicationModal && vitalsView === 'anterior' ? styles.vitalsCard : (isMedicationModal ? styles.medicationCard : styles.theCard),
                     !(isVitalsModal && vitalsView === 'anterior') && !isMedicationModal && styles.centerCard,
                     isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
@@ -912,7 +906,6 @@ const CustomModal = ({
               >
                 <Card 
                   style={[
-                    // Para medicación vista anterior, siempre usar vitalsCard para mantener ancho consistente
                     isMedicationModal && vitalsView === 'anterior' ? styles.vitalsCard : (isMedicationModal ? styles.medicationCard : styles.theCard),
                     !isMedicationModal && cardMarginTop !== undefined && { marginTop: cardMarginTop },
                     !isMedicationModal && cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
