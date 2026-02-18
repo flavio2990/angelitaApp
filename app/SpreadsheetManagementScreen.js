@@ -197,6 +197,22 @@ export default function SpreadsheetManagementScreen() {
     }
   };
 
+  const normalizeMedicationEntries = (medicationsNode) => {
+    if (!medicationsNode) return [];
+    if (Array.isArray(medicationsNode)) {
+      return medicationsNode.filter(med => med && med.droga);
+    }
+    if (medicationsNode.droga) {
+      return [medicationsNode];
+    }
+    if (typeof medicationsNode === 'object') {
+      return Object.entries(medicationsNode)
+        .filter(([id, med]) => med && med.droga)
+        .map(([id, med]) => ({ ...med, id }));
+    }
+    return [];
+  };
+
   const loadPreviousMedication = async () => {
     if (!user?.uid || !area || !personId) {
       setIsLoadingMedication(false);
@@ -278,9 +294,15 @@ export default function SpreadsheetManagementScreen() {
               return timeDiff >= 0 && timeDiff <= BATCH_TIME_WINDOW_MS;
             });
             
+            const medicationsList = batchRecords.flatMap(record =>
+              normalizeMedicationEntries(record.medications)
+            );
+
             const groupedRecordForDate = {
               ...latestRecordForDate,
-              medicationsList: batchRecords.map(r => r.medications || {}).filter(m => m.droga),
+              createdAt: latestRecordForDate.createdAt || '',
+              createdBy: latestRecordForDate.createdBy || '',
+              medicationsList,
               personId: latestRecordForDate.personId || personId,
             };
             
@@ -289,7 +311,12 @@ export default function SpreadsheetManagementScreen() {
           
           const groupedRecord = latestRecord ? {
             ...latestRecord,
-            medicationsList: latestBatchRecords.map(r => r.medications || {}).filter(m => m.droga)
+            createdAt: latestRecord.createdAt || '',
+            createdBy: latestRecord.createdBy || '',
+            personId: latestRecord.personId || personId,
+            medicationsList: latestBatchRecords.flatMap(record =>
+              normalizeMedicationEntries(record.medications)
+            )
           } : null;
 
           setMedicationHistoryByDate(historyMap);
@@ -355,15 +382,19 @@ export default function SpreadsheetManagementScreen() {
 
     if (medicationView === 'anterior' && previousMedicationData) {
       if (previousMedicationData.medicationsList && Array.isArray(previousMedicationData.medicationsList)) {
-        const filtered = previousMedicationData.medicationsList.filter(med => med && med.droga && med.droga.trim() !== '');
+        const normalizedList = previousMedicationData.medicationsList.flatMap(med =>
+          normalizeMedicationEntries(med)
+        );
+        const filtered = normalizedList.filter(med => med && med.droga && med.droga.trim() !== '');
         if (filtered.length > 0) {
           setAdminMedicationSheetId(previousMedicationData.firebaseKey || null);
           return filtered;
         }
       }
-      if (previousMedicationData.medications && previousMedicationData.medications.droga) {
+      const previousEntries = normalizeMedicationEntries(previousMedicationData.medications);
+      if (previousEntries.length > 0) {
         setAdminMedicationSheetId(previousMedicationData.firebaseKey || null);
-        return [previousMedicationData.medications];
+        return previousEntries;
       }
     }
     
@@ -409,7 +440,7 @@ export default function SpreadsheetManagementScreen() {
               });
               
               const medicationsList = latestBatchRecords
-                .map(r => r.medications || {})
+                .flatMap(record => normalizeMedicationEntries(record.medications))
                 .filter(m => m.droga && m.droga.trim() !== '');
 
               if (medicationsList.length > 0) {
@@ -426,10 +457,94 @@ export default function SpreadsheetManagementScreen() {
     return [];
   };
 
+  const parseMedicationTime = (hora, baseDate = new Date()) => {
+    if (!hora || typeof hora !== 'string') return null;
+    
+    const match = hora.match(/(\d{1,2})[:\s]+(\d{2})/);
+    if (!match) return null;
+    
+    const hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return null;
+    }
+    
+    const medTime = new Date(baseDate);
+    medTime.setHours(hours, minutes, 0, 0);
+    
+    return medTime;
+  };
+
+  const filterMedicationsNext4Hours = (medications) => {
+    if (!medications || medications.length === 0) return [];
+    
+    const now = new Date();
+    const fourHoursBefore = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+    const fourHoursAfter = new Date(now.getTime() + (4 * 60 * 60 * 1000));
+    
+    return medications.filter(med => {
+      if (!med || !med.hora) return false;
+      
+      const today = new Date();
+      const yesterday = new Date(today.getTime() - (24 * 60 * 60 * 1000));
+      const tomorrow = new Date(today.getTime() + (24 * 60 * 60 * 1000));
+      
+      // Calculate medication time for yesterday, today, and tomorrow
+      const medTimeYesterday = parseMedicationTime(med.hora, yesterday);
+      const medTimeToday = parseMedicationTime(med.hora, today);
+      const medTimeTomorrow = parseMedicationTime(med.hora, tomorrow);
+      
+      if (!medTimeToday) return false;
+      
+      // Check if any of the three occurrences fall within the ±4h window
+      const isWithinWindow = (medTime) => {
+        return medTime && medTime >= fourHoursBefore && medTime <= fourHoursAfter;
+      };
+      
+      return isWithinWindow(medTimeYesterday) || 
+             isWithinWindow(medTimeToday) || 
+             isWithinWindow(medTimeTomorrow);
+    });
+  };
+
+  const getTodayAdministrations = async () => {
+    if (!user?.uid || !area || !personId || !adminMedicationSheetId) {
+      return {};
+    }
+
+    try {
+      const dateKey = new Date().toISOString().split('T')[0];
+      const administrationsRef = ref(
+        database,
+        `admins/${user.uid}/areas/${area}/subjects/${personId}/planillas/medicacion/${adminMedicationSheetId}/administrations/${dateKey}`
+      );
+      const snapshot = await get(administrationsRef);
+      
+      if (snapshot.exists()) {
+        return snapshot.val();
+      }
+      return {};
+    } catch (error) {
+      console.error('Error loading today administrations:', error);
+      return {};
+    }
+  };
+
   const handleAdminPress = async () => {
     const medications = await getCurrentMedications();
+    const filteredByTime = filterMedicationsNext4Hours(medications || []);
+    
+    // Get today's administrations to exclude already administered medications
+    const todayAdministrations = await getTodayAdministrations();
+    
+    // Filter out medications that were already administered today
+    const filteredMedications = filteredByTime.filter(med => {
+      const medId = med.id;
+      return medId && !todayAdministrations[medId];
+    });
 
-    setAdminMedications(medications || []);
+    setAdminMedications(filteredMedications);
     setShowMedicationAdmin(true);
     setAdminMedicationUpdates({});
     
@@ -462,12 +577,13 @@ export default function SpreadsheetManagementScreen() {
 
       const uid = user.uid;
       const administeredAt = new Date().toISOString();
+      const dateKey = new Date().toISOString().split('T')[0];
 
       for (const [itemId, checked] of pendingEntries) {
         if (checked === true) {
           const adminRef = ref(
             database,
-            `admins/${uid}/areas/${area}/subjects/${personId}/planillas/medicacion/${adminMedicationSheetId}/medications/administration/${itemId}`
+            `admins/${uid}/areas/${area}/subjects/${personId}/planillas/medicacion/${adminMedicationSheetId}/administrations/${dateKey}/${itemId}`
           );
           await set(adminRef, {
             administered: true,
@@ -481,24 +597,19 @@ export default function SpreadsheetManagementScreen() {
         pendingEntries.filter(([, checked]) => checked === true).map(([itemId]) => itemId)
       );
 
+      // Remove administered medications from the list (they shouldn't show today anymore)
       if (appliedIds.size > 0) {
         setAdminMedications(prev => {
           if (!prev) return prev;
           if (Array.isArray(prev)) {
-            return prev.map((med, index) => {
-              const id = med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`;
-              if (appliedIds.has(id)) {
-                return { ...med, administrado: true };
-              }
-              return med;
+            return prev.filter((med) => {
+              const id = med.id || med.medicationId || med.firebaseKey || `med-${med.droga}-${med.dosis}`;
+              return !appliedIds.has(id);
             });
           }
           if (typeof prev === 'object') {
             return Object.fromEntries(
-              Object.entries(prev).map(([id, med]) => [
-                id,
-                appliedIds.has(id) ? { ...med, administrado: true } : med,
-              ])
+              Object.entries(prev).filter(([id]) => !appliedIds.has(id))
             );
           }
           return prev;

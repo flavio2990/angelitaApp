@@ -9,7 +9,6 @@ export default function MedicationAdminList({
   area = null,
   uid = null,
   onAdminCheckChange = null,
-  administrationState = null,
 }) {
   const [checkedItems, setCheckedItems] = useState({});
 
@@ -21,10 +20,6 @@ export default function MedicationAdminList({
         droga: med.droga || '',
         dosis: med.dosis || '',
         hora: med.hora || '',
-        administrado: med.administrado === true
-          || administrationState?.[med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`] === true
-          || administrationState?.[med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`]?.administered === true
-          || administrationState?.[med.id || med.medicationId || med.firebaseKey || `med-${index}-${med.droga}-${med.dosis}`]?.administrado === true,
       }));
     }
 
@@ -35,25 +30,11 @@ export default function MedicationAdminList({
         droga: med?.droga || '',
         dosis: med?.dosis || '',
         hora: med?.hora || '',
-        administrado: med?.administrado === true
-          || administrationState?.[id] === true
-          || administrationState?.[id]?.administered === true
-          || administrationState?.[id]?.administrado === true,
       }));
     }
 
     return [];
-  }, [medications, administrationState]);
-
-  useEffect(() => {
-    const initialChecked = {};
-    medicationEntries.forEach((item) => {
-      if (item.administrado === true) {
-        initialChecked[item.medIndex] = true;
-      }
-    });
-    setCheckedItems(initialChecked);
-  }, [medicationEntries]);
+  }, [medications]);
 
   const handleToggleCheck = (itemId, medIndex) => {
     const nextChecked = !checkedItems[medIndex];
@@ -83,7 +64,6 @@ export default function MedicationAdminList({
             status={checkedItems[item.medIndex] ? 'checked' : 'unchecked'}
             onPress={() => handleToggleCheck(item.id, item.medIndex)}
             color="#5124A5"
-            disabled={item.administrado === true}
           />
         </View>
       </View>

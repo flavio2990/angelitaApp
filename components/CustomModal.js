@@ -84,7 +84,6 @@ const CustomModal = ({
   adminMedications = [],
   medicationSheetId = null,
   onAdminCheckChange = null,
-  medicationAdministrationState = {},
 }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const resolvedTitle = (isVitalsModal && !children) ? VITALS_TEXTS.headerColumns : (isMedicationModal && children ? `${MEDICATION_TEXTS.columns.droga}/${MEDICATION_TEXTS.columns.hora}/${MEDICATION_TEXTS.columns.dosis}` : title);
@@ -402,9 +401,6 @@ const CustomModal = ({
         historySelectedData?.medicationsList ||
         historySelectedData?.medications ||
         adminMedications;
-      const adminHistoryAdministration =
-        historySelectedData?.medications?.administration ||
-        medicationAdministrationState;
 
       return (
         <MedicationAdminList
@@ -414,7 +410,6 @@ const CustomModal = ({
           area={vitalsData?.area}
           uid={vitalsData?.adminUid}
           onAdminCheckChange={onAdminCheckChange}
-          administrationState={adminHistoryAdministration}
         />
       );
     }

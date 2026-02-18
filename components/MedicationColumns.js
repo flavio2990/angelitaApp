@@ -447,7 +447,7 @@ export default function MedicationColumns({
 
       const firebasePath = `admins/${adminUid}/areas/${area}/subjects/${personId}/planillas/medicacion`;
 
-      for (const med of validMedications) {
+      for (const [index, med] of validMedications.entries()) {
         await createPlanillaRecord(
           adminUid,
           adminUid,
@@ -458,6 +458,7 @@ export default function MedicationColumns({
             droga: med.droga || '',
             hora: med.hora || '',
             dosis: med.dosis || '1',
+            index,
           }
         );
       }

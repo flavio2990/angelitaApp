@@ -44,10 +44,26 @@ export default function MedicationDetails({ medicationData }) {
   const displayDate = medicationData.createdAt;
   const displayBy = medicationData.createdBy || 'N/A';
   
+  const normalizeMedicationEntries = (medicationsNode) => {
+    if (!medicationsNode) return [];
+    if (Array.isArray(medicationsNode)) {
+      return medicationsNode.filter(med => med && med.droga);
+    }
+    if (medicationsNode.droga) {
+      return [medicationsNode];
+    }
+    if (typeof medicationsNode === 'object') {
+      return Object.entries(medicationsNode)
+        .filter(([id, med]) => med && med.droga)
+        .map(([id, med]) => ({ ...med, id }));
+    }
+    return [];
+  };
+
   // Use medicationsList if available (grouped medications from same day), otherwise use single medications object
-  const medicationEntries = medicationData.medicationsList 
-    ? medicationData.medicationsList 
-    : (medicationData.medications?.droga ? [medicationData.medications] : []);
+  const medicationEntries = medicationData.medicationsList
+    ? medicationData.medicationsList.flatMap(med => normalizeMedicationEntries(med))
+    : normalizeMedicationEntries(medicationData.medications);
 
   // Prepare data for FlatList with unique keys
   const flatListData = medicationEntries.length > 0 
