@@ -59,10 +59,18 @@ export const createPlanillaRecord = async (authUid, ownerUid, area, personId, ty
   };
 
   if (type === 'medicacion') {
+    const droga = payload.droga || '';
+    const hora = payload.hora || '';
+    const dosis = payload.dosis || '1';
+    const medIndex = Number.isFinite(payload.index) ? payload.index : 0;
+    const medicationId = `med-${medIndex}-${droga}-${dosis}`;
+
     record.medications = {
-      droga: payload.droga || '',
-      hora: payload.hora || '',
-      dosis: payload.dosis || '1',
+      [medicationId]: {
+        droga,
+        hora,
+        dosis,
+      },
     };
   } else if (type === 'signosVitales') {
     record.taSystolic = payload.taSystolic || '';
