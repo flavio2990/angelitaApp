@@ -6,6 +6,7 @@ import { database } from '../env/firebase';
 import { createPlanillaRecord } from '../components/services/helpers';
 import { MEDICATION_TEXTS } from '../constants/Strings.js';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { colors } from '../constants/Theme';
 
 const INITIAL_MEDICATION = {
   id: Date.now().toString(),
@@ -558,7 +559,7 @@ export default function MedicationColumns({
                   ]}
                 />
                 {inputEditable && (
-                  <Icon name="keyboard-arrow-up" size={16} color="#666" style={styles.arrowIcon} />
+                  <Icon name="keyboard-arrow-up" size={16} color={colors.textLight} style={styles.arrowIcon} />
                 )}
               </View>
               <View style={styles.horaColumn}>
@@ -599,7 +600,7 @@ export default function MedicationColumns({
                     onPress={() => removeMedicationLine(medication.id)}
                     style={styles.removeButton}
                   >
-                    <Icon name="close" size={16} color="#666" />
+                    <Icon name="close" size={16} color={colors.textLight} />
                   </TouchableOpacity>
                 )}
               </View>

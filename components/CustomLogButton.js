@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import { TouchableOpacity, Image, Text, StyleSheet, View } from 'react-native';
+import { colors, typography, spacing, borderRadius, shadows, sizes } from '../constants/Theme';
 
 export default function CustomLogButton({ icon, label, color, onPress }) {
   return (
@@ -14,17 +15,13 @@ export default function CustomLogButton({ icon, label, color, onPress }) {
 
 const styles = StyleSheet.create({
   button: {
-    width: 150,
-    height: 150,
-    borderRadius: 32,
+    width: sizes.logButtonSize,
+    height: sizes.logButtonSize,
+    borderRadius: borderRadius.logButton,
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    margin: spacing.lg,
+    ...shadows.sm,
   },
   content: {
     flex: 1,
@@ -32,14 +29,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon: {
-    width: 80,
-    height: 80,
-    marginBottom: 12,
+    width: sizes.logButtonIcon,
+    height: sizes.logButtonIcon,
+    marginBottom: spacing.md,
   },
   label: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: colors.white,
+    fontWeight: typography.fontWeights.bold,
+    fontSize: typography.fontSizes.md,
     textAlign: 'center',
     textTransform: 'uppercase',
   },

@@ -1,5 +1,6 @@
 ﻿import { View, Text, StyleSheet } from 'react-native';
 import { FORM_TEXTS } from '../constants/Strings';
+import { colors, typography, spacing } from '../constants/Theme';
 
 export default function PersonDetails({ person, userType }) {
   const isEmployee = person?.tipo && 
@@ -72,13 +73,13 @@ export default function PersonDetails({ person, userType }) {
       alignItems: 'center',
     },
     detailsModal: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      marginRight: 8,
+      fontSize: typography.fontSizes.lg,
+      fontWeight: typography.fontWeights.bold,
+      marginRight: spacing.sm,
     },
     dynamicText: {
-      fontSize: 18,
-      color: '#0a0a1e',
-      fontWeight: 'regular',
+      fontSize: typography.fontSizes.lg,
+      color: colors.textDark,
+      fontWeight: typography.fontWeights.regular,
     },
   });

@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { colors, typography, spacing } from '../constants/Theme';
 
 export default function VitalsDetails({ vitalsData }) {
   if (!vitalsData) {
@@ -115,8 +116,8 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'flex-start',
     width: '100%',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   detailsRow: {
     flexDirection: 'row',
@@ -130,34 +131,34 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   detailsModal: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 8,
+    fontSize: typography.fontSizes.lg,
+    fontWeight: typography.fontWeights.bold,
+    marginRight: spacing.sm,
   },
   dynamicText: {
-    fontSize: 18,
-    color: '#0a0a1e',
-    fontWeight: 'regular',
+    fontSize: typography.fontSizes.lg,
+    color: colors.textDark,
+    fontWeight: typography.fontWeights.regular,
   },
   dynamicTextWrap: {
-    fontSize: 18,
-    color: '#0a0a1e',
-    fontWeight: 'regular',
+    fontSize: typography.fontSizes.lg,
+    color: colors.textDark,
+    fontWeight: typography.fontWeights.regular,
     flex: 1,
     flexWrap: 'wrap',
   },
   separator: {
     width: '100%',
     height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 16,
+    backgroundColor: colors.separator,
+    marginVertical: spacing.lg,
   },
   noDataText: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: typography.fontSizes.lg,
+    color: colors.textLight,
     fontStyle: 'italic',
     textAlign: 'center',
     width: '100%',
-    padding: 20,
+    padding: spacing.xl,
   },
 });

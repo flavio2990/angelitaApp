@@ -1,14 +1,14 @@
 ﻿import React from 'react';
 import { Button } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
-//start comment
-//end comment
+import { colors, typography, sizes, borderRadius } from '../constants/Theme';
+
 export default function CustomButton({ onPress, label, disabled, style, ...props }) {
   return (
     <Button
       mode="contained"
       onPress={onPress}
-      buttonColor="#5124A5"
+      buttonColor={colors.primary}
       style={[styles.button, style]}
       labelStyle={styles.buttonLabel}
       disabled={disabled}
@@ -21,13 +21,13 @@ export default function CustomButton({ onPress, label, disabled, style, ...props
 
 const styles = StyleSheet.create({
   button: {
-    width: 260,
-    height: 50,
+    width: sizes.buttonWidth,
+    height: sizes.buttonHeight,
     justifyContent: 'center',
-    borderRadius: 50,
+    borderRadius: borderRadius.pill,
   },
   buttonLabel: {
-    fontWeight: 'bold',
-    fontSize: 20,
+    fontWeight: typography.fontWeights.bold,
+    fontSize: typography.fontSizes.xl,
   },
 });

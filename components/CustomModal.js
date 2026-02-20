@@ -22,6 +22,7 @@ import {
 
 import TopBarHeader from '@/components/TopBarHeader';
 import HamburgerMenu from './HamburgerMenu';
+import { colors, typography, spacing, borderRadius, calendarTheme } from '../constants/Theme';
 import VitalSignsColumns from './VitalSignsColumns';
 import CustomButton from './CustomButton';
 import VitalsDetails from './VitalsDetails';
@@ -216,7 +217,7 @@ const CustomModal = ({
                 onPress={onModifyPress}
                 style={styles.detailButton}
                 labelStyle={styles.detailButtonLabel}
-                buttonColor="#5124A5"
+                buttonColor={colors.primary}
               >
                 Modificar
               </Button>
@@ -226,7 +227,7 @@ const CustomModal = ({
               onPress={onGoToPlanPress}
               style={styles.detailButton}
               labelStyle={styles.detailButtonLabel}
-              buttonColor="#5124A5"
+              buttonColor={colors.primary}
             >
               Ir a planilla
             </Button>
@@ -262,7 +263,7 @@ const CustomModal = ({
                 onPress={onSavePress}
                 style={styles.detailButton}
                 labelStyle={styles.detailButtonLabel}
-                buttonColor="#5124A5"
+                buttonColor={colors.primary}
               >
                 {FORM_TEXTS.saveButton}
               </Button>
@@ -309,14 +310,9 @@ const CustomModal = ({
               maxDate={new Date().toISOString().split('T')[0]}
               onDayPress={handleDayPress}
               markedDates={{
-                [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#5124A5' }
+                [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: colors.primary }
               }}
-              theme={{
-                selectedDayBackgroundColor: '#5124A5',
-                todayTextColor: '#5124A5',
-                arrowColor: '#5124A5',
-                textDisabledColor: '#d3d3d3',
-              }}
+              theme={calendarTheme}
             />
           </View>
         );
@@ -333,14 +329,9 @@ const CustomModal = ({
               maxDate={new Date().toISOString().split('T')[0]}
               onDayPress={handleDayPress}
               markedDates={{
-                [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#5124A5' }
+                [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: colors.primary }
               }}
-              theme={{
-                selectedDayBackgroundColor: '#5124A5',
-                todayTextColor: '#5124A5',
-                arrowColor: '#5124A5',
-                textDisabledColor: '#d3d3d3',
-              }}
+              theme={calendarTheme}
             />
           </View>
         );
@@ -349,7 +340,7 @@ const CustomModal = ({
       if (isLoadingMedication) {
         return (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#5124A5" />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Cargando medicación...</Text>
           </View>
         );
@@ -384,14 +375,9 @@ const CustomModal = ({
               maxDate={new Date().toISOString().split('T')[0]}
               onDayPress={handleDayPress}
               markedDates={{
-                [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#5124A5' }
+                [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: colors.primary }
               }}
-              theme={{
-                selectedDayBackgroundColor: '#5124A5',
-                todayTextColor: '#5124A5',
-                arrowColor: '#5124A5',
-                textDisabledColor: '#d3d3d3',
-              }}
+              theme={calendarTheme}
             />
           </View>
         );
@@ -432,7 +418,7 @@ const CustomModal = ({
             style={[styles.button, action.style]}
             labelStyle={styles.buttonLabel}
             icon={action.icon}
-            textColor={action.textColor || "#5124A5"}
+            textColor={action.textColor || colors.primary}
             buttonColor={action.buttonColor || "white"}
           >
             {action.label}
@@ -702,7 +688,7 @@ const CustomModal = ({
                 onPress={action.onPress}
                 style={[styles.outsideActionButton, action.style]}
                 labelStyle={[styles.outsideActionLabel, action.labelStyle]}
-                textColor={action.textColor || "#666"}
+                textColor={action.textColor || colors.textLight}
                 buttonColor={action.buttonColor || "transparent"}
               >
                 {action.label}
@@ -992,11 +978,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   fullscreenContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: colors.white,
     width,
     height,
     justifyContent: 'flex-start',
-    borderColor: '#5124A5',
+    borderColor: colors.primary,
     zIndex: 9999,
     elevation: 9999,
   },
@@ -1017,24 +1003,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   titleWrapper: {
-    backgroundColor: '#5124A5',
+    backgroundColor: colors.primary,
     width: '100%',
-    paddingVertical: 12,
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
+    paddingVertical: spacing.md,
+    borderTopLeftRadius: borderRadius.pill,
+    borderTopRightRadius: borderRadius.pill,
   },
   fullScreenTitleWrapper: {
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: typography.fontSizes.xxl,
+    fontWeight: typography.fontWeights.bold,
     textAlign: 'center',
-    color: '#ffffff',
+    color: colors.white,
   },
   theCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.white,
     width: '95%',
     borderRadius: 50,
     marginVertical: 10,
@@ -1095,26 +1081,26 @@ const styles = StyleSheet.create({
     width: 260,
     height: 50,
     justifyContent: 'center',
-    borderRadius: 50,
+    borderRadius: borderRadius.pill,
     borderWidth: 2,
-    borderColor: '#5124A5',
+    borderColor: colors.primary,
     marginVertical: 10,
   },
   buttonLabel: {
-    fontWeight: 'bold',
-    fontSize: 18,
+    fontWeight: typography.fontWeights.bold,
+    fontSize: typography.fontSizes.lg,
   },
   detailButton: {
     width: 260,
     height: 50,
     justifyContent: 'center',
-    borderRadius: 50,
+    borderRadius: borderRadius.pill,
     marginHorizontal: 10,
     marginVertical: 10,
   },
   detailButtonLabel: {
-    fontWeight: 'regular',
-    fontSize: 20,
+    fontWeight: typography.fontWeights.regular,
+    fontSize: typography.fontSizes.xl,
   },
   scrollContent: {
     alignItems: 'center',
@@ -1151,7 +1137,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
+    backgroundColor: colors.white,
   },
   noDataContainer: {
     width: '100%',
@@ -1159,8 +1145,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noDataText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: typography.fontSizes.md,
+    color: colors.textLight,
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -1186,26 +1172,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   outsideActionLabel: {
-    fontSize: 16,
+    fontSize: typography.fontSizes.md,
     fontWeight: 'normal',
     textDecorationLine: 'none',
   },
   patientBoxModal: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    backgroundColor: '#EDE7F6',
-    borderRadius: 8,
+    left: spacing.lg,
+    right: spacing.lg,
+    backgroundColor: colors.primaryAccent,
+    borderRadius: borderRadius.md,
     padding: 10,
     alignItems: 'center',
     zIndex: 10001,
     elevation: 10001,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   patientTextModal: {
-    fontSize: 24,
-    color: '#5124A5',
-    fontWeight: 'bold',
+    fontSize: typography.fontSizes.xxxl,
+    color: colors.primary,
+    fontWeight: typography.fontWeights.bold,
   },
   vitalsViewButtons: {
     position: 'absolute',
@@ -1225,16 +1211,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 36,
   },
   vitalsViewButtonText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: typography.fontSizes.md,
+    color: colors.textLight,
     fontWeight: 'normal',
   },
   vitalsViewButtonTextActive: {
-    color: '#5124A5',
+    color: colors.primary,
     fontWeight: 'normal',
   },
   medicationCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.white,
     maxWidth: '97%',
     overflow: 'hidden',
     borderRadius: 50,
@@ -1296,10 +1282,10 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
+    marginTop: spacing.lg,
+    fontSize: typography.fontSizes.md,
+    color: colors.textLight,
+    fontWeight: typography.fontWeights.medium,
   },
 });
 

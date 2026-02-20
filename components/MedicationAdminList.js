@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Checkbox } from 'react-native-paper';
+import { colors, typography, spacing, borderRadius } from '../constants/Theme';
 
 export default function MedicationAdminList({
   medications = [],
@@ -63,7 +64,7 @@ export default function MedicationAdminList({
           <Checkbox
             status={checkedItems[item.medIndex] ? 'checked' : 'unchecked'}
             onPress={() => handleToggleCheck(item.id, item.medIndex)}
-            color="#5124A5"
+            color={colors.primary}
           />
         </View>
       </View>
@@ -109,73 +110,73 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   flatListContent: {
-    paddingBottom: 8,
+    paddingBottom: spacing.sm,
     flexGrow: 0,
   },
   listItemContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
   },
   tableRow: {
     flexDirection: 'row',
     width: '100%',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.separator,
     alignItems: 'center',
   },
   tableCellDroga: {
     flex: 1.5,
-    marginRight: 8,
+    marginRight: spacing.sm,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 4,
-    padding: 8,
-    backgroundColor: '#ffffff',
+    borderColor: colors.separator,
+    borderRadius: borderRadius.sm,
+    padding: spacing.sm,
+    backgroundColor: colors.white,
   },
   tableCellDosis: {
     flex: 1,
-    marginRight: 8,
+    marginRight: spacing.sm,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 4,
-    padding: 8,
-    backgroundColor: '#ffffff',
+    borderColor: colors.separator,
+    borderRadius: borderRadius.sm,
+    padding: spacing.sm,
+    backgroundColor: colors.white,
   },
   tableCellHora: {
     flex: 1,
-    marginRight: 8,
+    marginRight: spacing.sm,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 4,
-    padding: 8,
-    backgroundColor: '#ffffff',
+    borderColor: colors.separator,
+    borderRadius: borderRadius.sm,
+    padding: spacing.sm,
+    backgroundColor: colors.white,
   },
   tableCellRealizado: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 8,
+    padding: spacing.sm,
   },
   cellText: {
-    fontSize: 16,
-    color: '#0a0a1e',
+    fontSize: typography.fontSizes.md,
+    color: colors.textDark,
   },
   noDataContainer: {
     width: '100%',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   noDataText: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: typography.fontSizes.lg,
+    color: colors.textLight,
     fontStyle: 'italic',
     textAlign: 'center',
     width: '100%',
-    padding: 20,
+    padding: spacing.xl,
   },
 });

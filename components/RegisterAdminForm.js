@@ -1,8 +1,9 @@
 ﻿import React, { useState } from 'react';
-import { Text } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import CustomButton from './CustomButton';
 import { useAuth } from './UserContext';
+import { colors, typography, spacing, sizes } from '../constants/Theme';
 
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -36,13 +37,11 @@ export default function RegisterAdminForm({ onRegister }) {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                style={{ marginBottom: 12, width: 260 }}
+                style={styles.input}
                 onBlur={() => setRegisterEmailTouched(true)}
             />
             {registerEmailTouched && !isValidEmail(registerEmail) && (
-                <Text style={{ color: 'red', fontSize: 14, marginBottom: 8 }}>
-                    Ingrese un mail válido
-                </Text>
+                <Text style={styles.errorText}>Ingrese un mail válido</Text>
             )}
             <TextInput
                 label="Crea Una Contraseña"
@@ -52,13 +51,11 @@ export default function RegisterAdminForm({ onRegister }) {
                     if (!registerPasswordTouched) setRegisterPasswordTouched(true);
                 }}
                 secureTextEntry
-                style={{ marginBottom: 12, width: 260 }}
+                style={styles.input}
                 onBlur={() => setRegisterPasswordTouched(true)}
             />
             {registerPasswordTouched && registerPassword.length > 0 && registerPassword.length < 6 && (
-                <Text style={{ color: 'red', fontSize: 14, marginBottom: 8 }}>
-                    La contraseña debe tener al menos 6 caracteres
-                </Text>
+                <Text style={styles.errorText}>La contraseña debe tener al menos 6 caracteres</Text>
             )}
             <CustomButton
                 label="Crear Usuario"
@@ -68,3 +65,15 @@ export default function RegisterAdminForm({ onRegister }) {
         </>
     );
 }
+
+const styles = StyleSheet.create({
+    input: {
+        marginBottom: spacing.md,
+        width: sizes.buttonWidth,
+    },
+    errorText: {
+        color: colors.error,
+        fontSize: typography.fontSizes.sm,
+        marginBottom: spacing.sm,
+    },
+});

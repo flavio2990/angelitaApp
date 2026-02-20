@@ -3,6 +3,7 @@
 import { Card, TouchableRipple, FAB } from 'react-native-paper';
 
 import TopBarHeader from './TopBarHeader';
+import { colors, typography, spacing, borderRadius } from '../constants/Theme';
 
 
 export default function CustomList({ data, onPress, topBarTitleEmploy, onItemPress, onAddPress, canEdit = false }) {
@@ -49,33 +50,33 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   topbarTitle: {
-    color: 'white',
-    fontSize: 30,
-    fontWeight: 'bold',
+    color: colors.white,
+    fontSize: typography.fontSizes.title,
+    fontWeight: typography.fontWeights.bold,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 34
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.giant,
   },
   cardStyle: {
     marginBottom: 10,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
+    padding: spacing.lg,
+    borderRadius: borderRadius.xxl,
+    backgroundColor: colors.white,
   },
   cardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: typography.fontSizes.xl,
+    fontWeight: typography.fontWeights.bold,
+    color: colors.textMedium,
   },
   cardText: {
-    fontSize: 18,
+    fontSize: typography.fontSizes.lg,
   },
   fabStyle: {
     position: 'absolute',
-    right: 24,
+    right: spacing.xxl,
     bottom: 50,
-    backgroundColor: '#5124A5',
+    backgroundColor: colors.primary,
     zIndex: 10,
   },
 });

@@ -17,6 +17,7 @@ import { FORM_TEXTS, PERSON_TYPE_TEXTS, VITALS_TEXTS } from '../constants/String
 import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
 import { createPlanillaRecord } from '../components/services/helpers';
+import { colors, typography, spacing, borderRadius, shadows, sizes, dropdownTheme } from '../constants/Theme';
 
 const VITALS_INITIAL_VALUES = {
   taSystolic: '',
@@ -474,13 +475,7 @@ export default function EditPersonForm({
                     setShowUserTypeDropDown(false);
                   }}
                   options={getTypeOptions()}
-                  theme={{
-                    colors: {
-                      text: '#000',
-                      primary: '#5124A5',
-                      placeholder: '#A9A9A9',
-                    },
-                  }}
+                  theme={dropdownTheme}
                   style={styles.dropdown}
                 />
               </View>
@@ -503,13 +498,7 @@ export default function EditPersonForm({
                     { label: 'UTI', value: 'UTI' },
                     { label: 'UCG', value: 'UCG' },
                   ]}
-                  theme={{
-                    colors: {
-                      text: '#000',
-                      primary: '#5124A5',
-                      placeholder: '#A9A9A9',
-                    },
-                  }}
+                  theme={dropdownTheme}
                   style={styles.dropdown}
                 />
               </View>
@@ -710,24 +699,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   styleInput: {
-    width: 340,
-    marginBottom: 8,
+    width: sizes.formInputWidth,
+    marginBottom: spacing.sm,
   },
   dropDownContainer: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
     width: '100%',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    margin: 20,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    margin: spacing.xl,
     minWidth: 300,
     maxWidth: 400,
   },
@@ -735,18 +724,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   datePickerContainer: {
-    backgroundColor: '#5124A5',
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
     padding: 15,
     marginVertical: 10,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...shadows.md,
   },
   customDatePicker: {
     height: 200,

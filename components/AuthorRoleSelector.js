@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Dropdown } from 'react-native-paper-dropdown';
 import { MEDICATION_TEXTS } from '../constants/Strings';
+import { colors, spacing, dropdownTheme } from '../constants/Theme';
 
 /**
  * Componente selector de autoría para filtrar medicación por rol
@@ -44,13 +45,7 @@ export default function AuthorRoleSelector({
           setShowDropdown(false);
         }}
         options={roles}
-        theme={{
-          colors: {
-            text: '#000',
-            primary: '#5124A5',
-            placeholder: '#A9A9A9',
-          },
-        }}
+        theme={dropdownTheme}
         style={styles.dropdown}
       />
     </View>
@@ -60,9 +55,9 @@ export default function AuthorRoleSelector({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   dropdown: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.white,
   },
 });

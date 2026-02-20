@@ -31,6 +31,7 @@ import {
   NAVIGATION_TEXTS,
   VALIDATION_TEXTS
 } from '../constants/Strings';
+import { colors, typography, spacing, borderRadius, shadows, sizes, paperTheme } from '../constants/Theme';
 
 import { ref, onValue, set, update } from 'firebase/database';
 import { database } from '../env/firebase';
@@ -82,11 +83,7 @@ export default function MasterScreen() {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      primary: '#007AFF',
-      background: '#FFFFFF',
-      surface: '#FFFFFF',
-      text: '#000000',
-      placeholder: '#A9A9A9',
+      ...paperTheme.colors,
     },
   };
 
@@ -490,7 +487,7 @@ export default function MasterScreen() {
       <PaperProvider theme={theme}>
         <StatusBar />
         <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-          <Text style={{ fontSize: 18, color: '#5124A5' }}>Cargando...</Text>
+          <Text style={{ fontSize: typography.fontSizes.lg, color: colors.primary }}>Cargando...</Text>
         </View>
       </PaperProvider>
     );
@@ -522,11 +519,11 @@ export default function MasterScreen() {
           >
             <View style={{ padding: 20 }}>
               <Text style={{
-                fontSize: 18,
+                fontSize: typography.fontSizes.lg,
                 textAlign: 'center',
-                marginBottom: 30,
-                color: '#5124A5',
-                fontWeight: '500'
+                marginBottom: spacing.xxxl,
+                color: colors.primary,
+                fontWeight: typography.fontWeights.medium,
               }}>
                 ¿Qué tipo de usuario eres?
               </Text>
@@ -584,21 +581,21 @@ export default function MasterScreen() {
           >
             <View style={{ padding: 16, alignItems: 'center' }}>
               <Text style={{
-                marginBottom: 10,
-                fontSize: 16,
+                marginBottom: spacing.sm,
+                fontSize: typography.fontSizes.md,
                 textAlign: 'center',
-                color: '#666'
+                color: colors.textLight,
               }}>
                 Ingresa estos datos para crear una cuenta
               </Text>
 
               {!globalUserRole && (
                 <Text style={{
-                  marginBottom: 12,
-                  fontSize: 14,
+                  marginBottom: spacing.md,
+                  fontSize: typography.fontSizes.sm,
                   textAlign: 'center',
-                  color: '#FF6B6B',
-                  fontWeight: '600'
+                  color: colors.errorLight,
+                  fontWeight: typography.fontWeights.semiBold,
                 }}>
                   {AUTH_TEXTS.selectRoleFirst}
                 </Text>
@@ -611,8 +608,8 @@ export default function MasterScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                style={{ marginBottom: 16, width: 260 }}
-                theme={{ colors: { text: '#000', primary: '#007AFF' } }}
+                style={{ marginBottom: spacing.lg, width: sizes.buttonWidth }}
+                theme={{ colors: { text: colors.black, primary: colors.secondary } }}
               />
 
               <TextInput
@@ -620,8 +617,8 @@ export default function MasterScreen() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                style={{ marginBottom: 16, width: 260 }}
-                theme={{ colors: { text: '#000', primary: '#007AFF' } }}
+                style={{ marginBottom: spacing.lg, width: sizes.buttonWidth }}
+                theme={{ colors: { text: colors.black, primary: colors.secondary } }}
               />
 
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
@@ -673,10 +670,10 @@ export default function MasterScreen() {
           >
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{
-                marginBottom: 20,
-                fontSize: 16,
+                marginBottom: spacing.xl,
+                fontSize: typography.fontSizes.md,
                 textAlign: 'center',
-                color: '#666'
+                color: colors.textLight,
               }}>
                 {AUTH_TEXTS.forgotPasswordMessage}
               </Text>
@@ -688,8 +685,8 @@ export default function MasterScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                style={{ marginBottom: 20, width: 260 }}
-                theme={{ colors: { text: '#000', primary: '#007AFF' } }}
+                style={{ marginBottom: spacing.xl, width: sizes.buttonWidth }}
+                theme={{ colors: { text: colors.black, primary: colors.secondary } }}
               />
 
               <View style={{ flexDirection: 'column', alignItems: 'center', width: 260 }}>
@@ -715,10 +712,10 @@ export default function MasterScreen() {
           >
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{
-                marginBottom: 20,
-                fontSize: 16,
+                marginBottom: spacing.xl,
+                fontSize: typography.fontSizes.md,
                 textAlign: 'center',
-                color: '#666'
+                color: colors.textLight,
               }}>
                 {AUTH_TEXTS.verificationMessage}
               </Text>
@@ -767,14 +764,14 @@ export default function MasterScreen() {
                 }}
                 label={AUTH_TEXTS.emailLabel}
                 style={styles.textInput}
-                theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+                theme={{ colors: { text: colors.black, primary: colors.secondary, placeholder: colors.textMuted } }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 onBlur={() => setEmailTouched(true)}
               />
               {emailTouched && !isValidEmail(email) && (
-                <Text style={{ color: 'red', marginTop: 4, marginBottom: 4, fontSize: 18 }}>
+                <Text style={{ color: colors.error, marginTop: spacing.xs, marginBottom: spacing.xs, fontSize: typography.fontSizes.lg }}>
                   Ingrese un mail válido
                 </Text>
               )}
@@ -785,7 +782,7 @@ export default function MasterScreen() {
                 value={password}
                 onChangeText={setPassword}
                 style={styles.textInput}
-                theme={{ colors: { text: '#000', primary: '#007AFF', placeholder: '#A9A9A9' } }}
+                theme={{ colors: { text: colors.black, primary: colors.secondary, placeholder: colors.textMuted } }}
               />
               <View style={{ margin: 8 }} />
               <CustomButton
@@ -794,7 +791,7 @@ export default function MasterScreen() {
                 disabled={!isValidEmail(email) || !password || password.length < 6 || loading}
               />
               {loginError && (
-                <Text style={{ color: 'red', marginTop: 8, fontSize: 16, textAlign: 'center' }}>
+                <Text style={{ color: colors.error, marginTop: spacing.sm, fontSize: typography.fontSizes.md, textAlign: 'center' }}>
                   {loginError}
                 </Text>
               )}
@@ -802,23 +799,16 @@ export default function MasterScreen() {
               {/* Botón Olvidé mi contraseña */}
               <TouchableOpacity
                 onPress={() => setShowForgotPasswordModal(true)}
-                style={{
-                  marginTop: 16,
-                  paddingVertical: 8
-                }}
+                style={{ marginTop: spacing.lg, paddingVertical: spacing.sm }}
               >
-                <Text style={{
-                  color: '#5124A5',
-                  fontSize: 16,
-                  textAlign: 'center'
-                }}>
+                <Text style={{ color: colors.primary, fontSize: typography.fontSizes.md, textAlign: 'center' }}>
                   {AUTH_TEXTS.forgotPassword}
                 </Text>
               </TouchableOpacity>
 
               {globalUserRole === 'admin' && (
-                <TouchableOpacity onPress={() => setShowRegisterModal(true)} style={{ marginTop: 16 }}>
-                  <Text style={{ color: '#5124A5', fontWeight: 'bold', fontSize: 18 }}>
+                <TouchableOpacity onPress={() => setShowRegisterModal(true)} style={{ marginTop: spacing.lg }}>
+                  <Text style={{ color: colors.primary, fontWeight: typography.fontWeights.bold, fontSize: typography.fontSizes.lg }}>
                     {AUTH_TEXTS.noAccount} {AUTH_TEXTS.createAccount}
                   </Text>
                 </TouchableOpacity>
@@ -830,26 +820,20 @@ export default function MasterScreen() {
                   try {
                     await clearUserRole();
                     setIsAdminSelected(false);
-
                     await logout();
-
                   } catch (error) {
                     await logout();
                   }
                 }}
                 style={{
-                  marginTop: 16,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  backgroundColor: '#FF6B6B',
-                  borderRadius: 20
+                  marginTop: spacing.lg,
+                  paddingHorizontal: spacing.lg,
+                  paddingVertical: spacing.sm,
+                  backgroundColor: colors.errorLight,
+                  borderRadius: 20,
                 }}
               >
-                <Text style={{
-                  color: 'white',
-                  fontSize: 16,
-                  fontWeight: '600'
-                }}>
+                <Text style={{ color: colors.white, fontSize: typography.fontSizes.md, fontWeight: typography.fontWeights.semiBold }}>
                   {AUTH_TEXTS.changeRole}
                 </Text>
               </TouchableOpacity>
@@ -1111,7 +1095,7 @@ export default function MasterScreen() {
                     setShowConfirmModal(false);
                     setIsCreatingNewPerson(false);
                   }}
-                  buttonColor="#FF6B6B"
+                  buttonColor={colors.errorLight}
                 />
               </View>
             )}
@@ -1126,63 +1110,59 @@ export default function MasterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: colors.white,
   },
   content: {
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
     marginTop: 60,
     flex: 1,
     justifyContent: 'flex-start',
   },
   imageContainer: {
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 20,
+    marginBottom: spacing.xxl,
+    marginTop: spacing.xl,
   },
   homeLogo: {
-    height: 150,
-    width: 150,
-    borderRadius: 100,
-    marginBottom: 12,
+    height: sizes.homeLogo,
+    width: sizes.homeLogo,
+    borderRadius: borderRadius.circle,
+    marginBottom: spacing.md,
   },
   titleText: {
-    fontSize: 30,
-    color: '#000',
+    fontSize: typography.fontSizes.title,
+    color: colors.black,
   },
   card: {
-    backgroundColor: '#ffffff',
-    width: 320,
-    borderRadius: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    backgroundColor: colors.white,
+    width: sizes.cardWidth,
+    borderRadius: borderRadius.xxl,
+    ...shadows.md,
   },
   cardContent: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xl,
   },
   bigWelcomeText: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.fontSizes.display,
+    fontWeight: typography.fontWeights.bold,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   textInput: {
-    width: 260,
+    width: sizes.buttonWidth,
   },
   button: {
-    width: 260,
-    height: 50,
+    width: sizes.buttonWidth,
+    height: sizes.buttonHeight,
     justifyContent: 'center',
-    borderRadius: 50,
+    borderRadius: borderRadius.pill,
   },
   buttonLabel: {
-    fontWeight: 'bold',
-    fontSize: 20,
+    fontWeight: typography.fontWeights.bold,
+    fontSize: typography.fontSizes.xl,
   },
 });

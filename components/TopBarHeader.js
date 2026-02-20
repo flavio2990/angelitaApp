@@ -4,6 +4,7 @@ import { Text, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from './UserContext';
 import { ROLE_TEXTS, AUTH_TEXTS, NAVIGATION_TEXTS } from '../constants/Strings';
+import { colors, typography, spacing, borderRadius, shadows, sizes } from '../constants/Theme';
 
 const TopBarHeader = ({
   // Existing props
@@ -38,28 +39,14 @@ const TopBarHeader = ({
   const getRoleInfo = (role) => {
     switch (role) {
       case 'admin':
-        return {
-          icon: ROLE_TEXTS.adminIcon,
-          text: ROLE_TEXTS.admin,
-          color: '#5124A5',
-          bgColor: '#E8E4F7',
-          borderColor: '#8B5CF6'
-        };
+        return { icon: ROLE_TEXTS.adminIcon, text: ROLE_TEXTS.admin, ...colors.roles.admin };
       case 'empleado':
-        return {
-          icon: ROLE_TEXTS.employeeIcon,
-          text: ROLE_TEXTS.employee,
-          color: '#007AFF',
-          bgColor: '#E3F2FD',
-          borderColor: '#3B82F6'
-        };
+        return { icon: ROLE_TEXTS.employeeIcon, text: ROLE_TEXTS.employee, ...colors.roles.employee };
       default:
         return {
           icon: ROLE_TEXTS.employeeIcon,
           text: role ? role.toUpperCase() : 'USUARIO',
-          color: '#666',
-          bgColor: '#F5F5F5',
-          borderColor: '#9CA3AF'
+          ...colors.roles.default,
         };
     }
   };
@@ -242,13 +229,13 @@ const TopBarHeader = ({
           >
             {isLoggingOut ? (
               <View style={styles.logoutLoadingContainer}>
-                <ActivityIndicator size="small" color="#DC3545" />
-                <Text style={[styles.menuItemText, { color: '#DC3545', marginLeft: 8 }]}>
+                <ActivityIndicator size="small" color={colors.error} />
+                <Text style={[styles.menuItemText, { color: colors.error, marginLeft: spacing.sm }]}>
                   Cerrando...
                 </Text>
               </View>
             ) : (
-              <Text style={[styles.menuItemText, { color: '#DC3545' }]}>
+              <Text style={[styles.menuItemText, { color: colors.error }]}>
                 {AUTH_TEXTS.logoutButton}
               </Text>
             )}
@@ -260,7 +247,7 @@ const TopBarHeader = ({
       {isLoggingOut && (
         <View style={styles.logoutOverlay}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#5124A5" />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Cerrando sesión...</Text>
           </View>
         </View>
@@ -273,7 +260,7 @@ export default TopBarHeader;
 
 const styles = StyleSheet.create({
   safeAreaStyle: {
-    backgroundColor: '#5124A5',
+    backgroundColor: colors.primary,
     paddingTop: 0,
   },
   topBar: {
@@ -281,16 +268,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    minHeight: 50,
-    backgroundColor: '#5124A5',
+    minHeight: sizes.topBarMinHeight,
+    backgroundColor: colors.primary,
   },
   left: {
-    width: 36,
+    width: sizes.hamburgerInHeaderSize,
     alignItems: 'center',
     justifyContent: 'center',
   },
   right: {
-    width: 36,
+    width: sizes.hamburgerInHeaderSize,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -304,60 +291,46 @@ const styles = StyleSheet.create({
     marginRight: 0,
   },
   topbarTextTitle: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
+    color: colors.white,
+    fontSize: typography.fontSizes.xl,
+    fontWeight: typography.fontWeights.bold,
     textAlign: 'center',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Menu-only container (when no header)
   menuOnlyContainer: {
     position: 'absolute',
     zIndex: 99999,
   },
-
-  // Hamburger button in header
   hamburgerButtonInHeader: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: sizes.hamburgerInHeaderSize,
+    height: sizes.hamburgerInHeaderSize,
+    borderRadius: borderRadius.lg,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Standalone hamburger button
   hamburgerButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#E8E4F7',
+    width: sizes.hamburgerButtonSize,
+    height: sizes.hamburgerButtonSize,
+    borderRadius: borderRadius.round,
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'rgba(0,0,0,0.1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 8,
+    ...shadows.lg,
   },
-
   hamburgerIcon: {
     justifyContent: 'space-between',
-    height: 18,
-    width: 20,
+    height: sizes.hamburgerIconHeight,
+    width: sizes.hamburgerIconWidth,
   },
-
   hamburgerLine: {
-    height: 3,
+    height: sizes.hamburgerLineHeight,
     width: '100%',
-    borderRadius: 2,
+    borderRadius: borderRadius.xs,
   },
-
-  // Overlay to close menu
   overlay: {
     position: 'absolute',
     top: 0,
@@ -366,97 +339,75 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 99998,
   },
-
-  // Menu dropdown
   menuContainer: {
     position: 'absolute',
-    width: 200,
-    borderRadius: 12,
+    width: sizes.menuWidth,
+    borderRadius: borderRadius.lg,
     borderWidth: 2,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 10,
+    paddingVertical: spacing.sm,
+    ...shadows.xl,
     zIndex: 99999,
   },
-
   menuHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-
   roleIcon: {
-    fontSize: 24,
-    marginRight: 8,
+    fontSize: sizes.iconSize,
+    marginRight: spacing.sm,
   },
-
   roleText: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.fontWeights.bold,
     flex: 1,
   },
-
   separator: {
     height: 1,
-    marginVertical: 8,
-    marginHorizontal: 16,
+    marginVertical: spacing.sm,
+    marginHorizontal: spacing.lg,
     opacity: 0.3,
   },
-
   menuItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-
   menuItemText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.fontWeights.medium,
   },
-
   disabledMenuItem: {
     opacity: 0.6,
   },
-
   logoutLoadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Logout overlay
   logoutOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     zIndex: 10000,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   loadingContainer: {
-    backgroundColor: 'white',
-    padding: 30,
-    borderRadius: 15,
+    backgroundColor: colors.white,
+    padding: spacing.xxxl,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    ...shadows.xl,
   },
-
   loadingText: {
     marginTop: 15,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#5124A5',
+    fontSize: typography.fontSizes.md,
+    fontWeight: typography.fontWeights.semiBold,
+    color: colors.primary,
     textAlign: 'center',
   },
 });

@@ -17,6 +17,7 @@ import { ref, get, set } from 'firebase/database';
 import { database } from '../env/firebase';
 import { filterMedicationByRole, filterHistoryByRole } from '../utils/medicationFilters';
 import AuthorRoleSelector from '../components/AuthorRoleSelector';
+import { colors, typography, spacing, borderRadius, paperTheme } from '../constants/Theme';
 
 const { height } = Dimensions.get('window');
 
@@ -24,11 +25,8 @@ const theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: '#5124A5',
-    background: '#FFFFFF',
-    surface: '#FFFFFF',
-    text: '#000000',
-    placeholder: '#A9A9A9',
+    ...paperTheme.colors,
+    primary: colors.primary,
   },
 };
 
@@ -873,8 +871,8 @@ export default function SpreadsheetManagementScreen() {
           <View style={{ alignItems: 'center', padding: 20 }}>
             {isSaving ? (
               <View style={{ alignItems: 'center', justifyContent: 'center', minHeight: 100 }}>
-                <ActivityIndicator size="large" color="#5124A5" />
-                <Text style={{ marginTop: 16, fontSize: 16, color: '#666' }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ marginTop: spacing.lg, fontSize: typography.fontSizes.md, color: colors.textLight }}>
                   Guardando...
                 </Text>
               </View>
@@ -930,7 +928,7 @@ export default function SpreadsheetManagementScreen() {
                     setShowConfirmModal(false);
                     setSavingType(null);
                   }}
-                  buttonColor="#FF6B6B"
+                  buttonColor={colors.errorLight}
                 />
               </View>
             )}
@@ -949,17 +947,17 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   patientBox: {
-    backgroundColor: '#EDE7F6',
-    marginHorizontal: 16,
+    backgroundColor: colors.primaryAccent,
+    marginHorizontal: spacing.lg,
     marginTop: 60,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     padding: 10,
     alignItems: 'center',
   },
   patientText: {
-    fontSize: 24,
-    color: '#5124A5',
-    fontWeight: 'bold',
+    fontSize: typography.fontSizes.xxxl,
+    color: colors.primary,
+    fontWeight: typography.fontWeights.bold,
   },
   buttonsGrid: {
     flexDirection: 'row',
