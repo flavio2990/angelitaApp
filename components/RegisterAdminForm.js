@@ -1,9 +1,9 @@
 ﻿import React, { useState } from 'react';
-import { Text, StyleSheet } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
 import CustomButton from './CustomButton';
 import { useAuth } from './UserContext';
-import { colors, typography, spacing, sizes } from '../constants/Theme';
+import { spacing } from '../constants/Theme';
+import AppInput from './AppInput';
 
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -27,36 +27,30 @@ export default function RegisterAdminForm({ onRegister }) {
 
     return (
         <>
-            <TextInput
+            <AppInput
+                type="email"
                 label="Email"
                 value={registerEmail}
-                onChangeText={text => {
+                onChange={text => {
                     setRegisterEmail(text);
                     if (!registerEmailTouched) setRegisterEmailTouched(true);
                 }}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
                 style={styles.input}
                 onBlur={() => setRegisterEmailTouched(true)}
+                error={registerEmailTouched && !isValidEmail(registerEmail) ? 'Ingrese un mail válido' : undefined}
             />
-            {registerEmailTouched && !isValidEmail(registerEmail) && (
-                <Text style={styles.errorText}>Ingrese un mail válido</Text>
-            )}
-            <TextInput
+            <AppInput
+                type="password"
                 label="Crea Una Contraseña"
                 value={registerPassword}
-                onChangeText={text => {
+                onChange={text => {
                     setRegisterPassword(text);
                     if (!registerPasswordTouched) setRegisterPasswordTouched(true);
                 }}
-                secureTextEntry
                 style={styles.input}
                 onBlur={() => setRegisterPasswordTouched(true)}
+                error={registerPasswordTouched && registerPassword.length > 0 && registerPassword.length < 6 ? 'La contraseña debe tener al menos 6 caracteres' : undefined}
             />
-            {registerPasswordTouched && registerPassword.length > 0 && registerPassword.length < 6 && (
-                <Text style={styles.errorText}>La contraseña debe tener al menos 6 caracteres</Text>
-            )}
             <CustomButton
                 label="Crear Usuario"
                 onPress={handleRegister}
@@ -69,11 +63,6 @@ export default function RegisterAdminForm({ onRegister }) {
 const styles = StyleSheet.create({
     input: {
         marginBottom: spacing.md,
-        width: sizes.buttonWidth,
-    },
-    errorText: {
-        color: colors.error,
-        fontSize: typography.fontSizes.sm,
-        marginBottom: spacing.sm,
+        alignSelf: 'stretch',
     },
 });

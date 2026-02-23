@@ -1076,6 +1076,7 @@ const styles = StyleSheet.create({
   cardContent: {
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.sm,
   },
   button: {
     width: 260,
