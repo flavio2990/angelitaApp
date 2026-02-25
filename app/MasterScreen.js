@@ -6,7 +6,8 @@ import { useRouter } from 'expo-router';
 import { StatusBar, StyleSheet, View, Image, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Provider as PaperProvider, DefaultTheme, Card, Text, TextInput } from 'react-native-paper';
+import { Provider as PaperProvider, DefaultTheme, Card, Text } from 'react-native-paper';
+import AppInput from '@/components/AppInput';
 
 import CustomModal from '@/components/CustomModal';
 import CustomList from '@/components/CustomList';
@@ -601,23 +602,21 @@ export default function MasterScreen() {
                 </Text>
               )}
 
-              <TextInput
+              <AppInput
+                type="email"
                 label={AUTH_TEXTS.emailLabel}
                 value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={{ marginBottom: spacing.lg, width: sizes.buttonWidth }}
+                onChange={setEmail}
+                style={{ marginBottom: spacing.lg, width: '100%' }}
                 theme={{ colors: { text: colors.black, primary: colors.secondary } }}
               />
 
-              <TextInput
+              <AppInput
+                type="password"
                 label={AUTH_TEXTS.passwordLabel}
                 value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={{ marginBottom: spacing.lg, width: sizes.buttonWidth }}
+                onChange={setPassword}
+                style={{ marginBottom: spacing.lg, width: '100%' }}
                 theme={{ colors: { text: colors.black, primary: colors.secondary } }}
               />
 
@@ -678,14 +677,12 @@ export default function MasterScreen() {
                 {AUTH_TEXTS.forgotPasswordMessage}
               </Text>
 
-              <TextInput
+              <AppInput
+                type="email"
                 label={AUTH_TEXTS.emailLabel}
                 value={forgotPasswordEmail}
-                onChangeText={setForgotPasswordEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={{ marginBottom: spacing.xl, width: sizes.buttonWidth }}
+                onChange={setForgotPasswordEmail}
+                style={{ marginBottom: spacing.xl, width: '100%' }}
                 theme={{ colors: { text: colors.black, primary: colors.secondary } }}
               />
 
@@ -756,31 +753,25 @@ export default function MasterScreen() {
               <Text variant="titleLarge" style={styles.bigWelcomeText}>
                 {AUTH_TEXTS.loginTitle}
               </Text>
-              <TextInput
+              <AppInput
+                type="email"
+                label={AUTH_TEXTS.emailLabel}
                 value={email}
-                onChangeText={text => {
+                onChange={text => {
                   setEmail(text);
                   if (!emailTouched) setEmailTouched(true);
                 }}
-                label={AUTH_TEXTS.emailLabel}
                 style={styles.textInput}
                 theme={{ colors: { text: colors.black, primary: colors.secondary, placeholder: colors.textMuted } }}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
                 onBlur={() => setEmailTouched(true)}
+                error={emailTouched && !isValidEmail(email) ? 'Ingrese un mail válido' : undefined}
               />
-              {emailTouched && !isValidEmail(email) && (
-                <Text style={{ color: colors.error, marginTop: spacing.xs, marginBottom: spacing.xs, fontSize: typography.fontSizes.lg }}>
-                  Ingrese un mail válido
-                </Text>
-              )}
               <View style={{ margin: 8 }} />
-              <TextInput
+              <AppInput
+                type="password"
                 label={AUTH_TEXTS.passwordLabel}
-                secureTextEntry
                 value={password}
-                onChangeText={setPassword}
+                onChange={setPassword}
                 style={styles.textInput}
                 theme={{ colors: { text: colors.black, primary: colors.secondary, placeholder: colors.textMuted } }}
               />
@@ -1153,7 +1144,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   textInput: {
-    width: sizes.buttonWidth,
+    width: '100%',
   },
   button: {
     width: sizes.buttonWidth,

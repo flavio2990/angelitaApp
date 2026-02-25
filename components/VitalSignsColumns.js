@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Keyboard, ScrollView } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import AppInput from './AppInput';
 import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
 import { createPlanillaRecord } from './services/helpers';
@@ -224,57 +224,51 @@ export default function VitalSignsColumns({
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.container}>
-        <TextInput
-          mode="outlined"
+        <AppInput
+          type="numeric"
           label={VITALS_TEXTS.fields.taSystolic}
           value={formValues.taSystolic}
-          onChangeText={handleChange('taSystolic')}
-          keyboardType="number-pad"
+          onChange={handleChange('taSystolic')}
           style={styles.input}
           editable={inputEditable}
         />
-        <TextInput
-          mode="outlined"
+        <AppInput
+          type="numeric"
           label={VITALS_TEXTS.fields.taDiastolic}
           value={formValues.taDiastolic}
-          onChangeText={handleChange('taDiastolic')}
-          keyboardType="number-pad"
+          onChange={handleChange('taDiastolic')}
           style={styles.input}
           editable={inputEditable}
         />
-            <TextInput
-          mode="outlined"
+        <AppInput
+          type="numeric"
           label={VITALS_TEXTS.fields.heartRate}
           value={formValues.heartRate}
-          onChangeText={handleChange('heartRate')}
-              keyboardType="number-pad"
+          onChange={handleChange('heartRate')}
           style={styles.input}
           editable={inputEditable}
         />
-            <TextInput
-          mode="outlined"
+        <AppInput
+          type="numeric"
           label={VITALS_TEXTS.fields.spo2}
           value={formValues.spo2}
-          onChangeText={handleChange('spo2')}
-              keyboardType="number-pad"
+          onChange={handleChange('spo2')}
           style={styles.input}
           editable={inputEditable}
         />
-        <TextInput
-          mode="outlined"
+        <AppInput
+          type="decimal"
           label={VITALS_TEXTS.fields.temperature}
           value={formValues.temperature}
-          onChangeText={handleChange('temperature', true)}
-          keyboardType="decimal-pad"
+          onChange={handleChange('temperature', true)}
           style={styles.input}
           editable={inputEditable}
         />
-            <TextInput
-          mode="outlined"
+        <AppInput
+          type="numeric"
           label={VITALS_TEXTS.fields.glucose}
           value={formValues.glucose}
-          onChangeText={handleChange('glucose')}
-              keyboardType="number-pad"
+          onChange={handleChange('glucose')}
           style={styles.input}
           editable={inputEditable}
         />

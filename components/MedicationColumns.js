@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, Keyboard, ScrollView, Text, TouchableOpacity } from 'react-native';
-import { TextInput } from 'react-native-paper';
+import AppInput from './AppInput';
 import { ref, get } from 'firebase/database';
 import { database } from '../env/firebase';
 import { createPlanillaRecord } from '../components/services/helpers';
@@ -545,11 +545,10 @@ export default function MedicationColumns({
           return (
             <View key={medication.id} style={styles.tableRow}>
               <View style={styles.drogaColumn}>
-                <TextInput
-                  mode="outlined"
+                <AppInput
                   placeholder={placeholderDroga}
                   value={medication.droga}
-                  onChangeText={(value) => handleMedicationChange(medication.id, 'droga', value)}
+                  onChange={(value) => handleMedicationChange(medication.id, 'droga', value)}
                   style={styles.input}
                   editable={inputEditable}
                   contentStyle={[
@@ -563,13 +562,12 @@ export default function MedicationColumns({
                 )}
               </View>
               <View style={styles.horaColumn}>
-                <TextInput
-                  mode="outlined"
+                <AppInput
+                  type="numeric"
                   placeholder="HH:MM"
                   value={medication.hora}
-                  onChangeText={(value) => handleMedicationChange(medication.id, 'hora', value)}
+                  onChange={(value) => handleMedicationChange(medication.id, 'hora', value)}
                   onBlur={() => handleHoraBlur(medication.id, medication.hora)}
-                  keyboardType="numeric"
                   maxLength={6}
                   style={styles.input}
                   editable={inputEditable}
@@ -581,12 +579,10 @@ export default function MedicationColumns({
                 />
               </View>
               <View style={styles.dosisColumn}>
-                <TextInput
-                  mode="outlined"
+                <AppInput
                   placeholder={placeholderDosis}
                   value={medication.dosis}
-                  onChangeText={(value) => handleMedicationChange(medication.id, 'dosis', value.replace(/[^0-9/ ]/g, ''))}
-                  keyboardType="default"
+                  onChange={(value) => handleMedicationChange(medication.id, 'dosis', value.replace(/[^0-9/ ]/g, ''))}
                   style={styles.input}
                   editable={inputEditable}
                   contentStyle={[
