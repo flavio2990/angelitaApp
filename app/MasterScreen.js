@@ -1016,10 +1016,7 @@ export default function MasterScreen() {
           onGoHome={handleGoHome}
           showGoHomeOption={true}
         >
-          <View
-            contentContainerStyle={{ padding: 20, backgroundColor: 'rgba(0, 255, 0, 0.2)' }}
-            style={{ flexGrow: 1 }}
-          >
+          <View style={{ width: '100%', flexGrow: 1 }}>
             <EditPersonForm
               person={editablePerson}
               onChange={setEditablePerson}
