@@ -1,12 +1,22 @@
-﻿import React from 'react';
-import { TouchableOpacity, Image, Text, StyleSheet, View } from 'react-native';
-import { colors, typography, spacing, borderRadius, shadows, sizes } from '../constants/Theme';
+import React from 'react';
+import { TouchableOpacity, Image, Text, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { colors, typography, spacing, borderRadius, shadows } from '../constants/Theme';
+
+const BUTTONS_PER_ROW = 2;
 
 export default function CustomLogButton({ icon, label, color, onPress }) {
+  const { width } = useWindowDimensions();
+  const buttonSize = Math.floor(width / BUTTONS_PER_ROW) - spacing.lg * 2;
+  const iconSize = Math.round(buttonSize * 0.5);
+
   return (
-    <TouchableOpacity style={[styles.button, { backgroundColor: color }]} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={[styles.button, { backgroundColor: color, width: buttonSize, height: buttonSize }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
       <View style={styles.content}>
-        <Image source={icon} style={styles.icon} resizeMode="contain" />
+        <Image source={icon} style={[styles.icon, { width: iconSize, height: iconSize }]} resizeMode="contain" />
         <Text style={styles.label}>{label}</Text>
       </View>
     </TouchableOpacity>
@@ -15,8 +25,6 @@ export default function CustomLogButton({ icon, label, color, onPress }) {
 
 const styles = StyleSheet.create({
   button: {
-    width: sizes.logButtonSize,
-    height: sizes.logButtonSize,
     borderRadius: borderRadius.logButton,
     justifyContent: 'center',
     alignItems: 'center',
@@ -29,8 +37,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon: {
-    width: sizes.logButtonIcon,
-    height: sizes.logButtonIcon,
     marginBottom: spacing.md,
   },
   label: {

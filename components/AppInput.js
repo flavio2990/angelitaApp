@@ -237,6 +237,7 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: spacing.sm,
     width: '100%',
+    alignSelf: 'stretch',
   },
   errorText: {
     color: colors.error,
