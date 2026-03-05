@@ -177,6 +177,15 @@ export const VITALS_TEXTS = {
   },
 };
 
+// ===== MODO DE INTERVENCIÓN =====
+export const INTERVENTION_MODE_TEXTS = {
+  label: "Modo de Intervención",
+  admin: "Administrador",
+  assistant: "Asistente",
+  assistantBanner: "Actuando como: ASISTENTE",
+  assistantBannerSub: "Vista de enfermería activa",
+};
+
 // ===== TEXTO DE MEDICACIÓN =====
 export const MEDICATION_TEXTS = {
   patientLabelPrefix: "_Paciente:",

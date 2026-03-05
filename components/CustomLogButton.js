@@ -4,10 +4,10 @@ import { colors, typography, spacing, borderRadius, shadows } from '../constants
 
 const BUTTONS_PER_ROW = 2;
 
-export default function CustomLogButton({ icon, label, color, onPress }) {
+export default function CustomLogButton({ icon, label, color, onPress, scale = 1 }) {
   const { width } = useWindowDimensions();
-  const buttonSize = Math.floor(width / BUTTONS_PER_ROW) - spacing.lg * 2;
-  const iconSize = Math.round(buttonSize * 0.5);
+  const buttonSize = Math.floor((Math.floor(width / BUTTONS_PER_ROW) - spacing.lg * 2) * scale);
+  const iconSize = Math.round(buttonSize * 0.45);
 
   return (
     <TouchableOpacity

@@ -249,7 +249,7 @@ const CustomModal = ({
                   label={FORM_TEXTS.saveButton}
                   style={isMedicationModal ? { width: '100%', maxWidth: 400 } : {}}
                 />
-                {isMedicationModal && !showMedicationAdmin && (
+                {isMedicationModal && !showMedicationAdmin && onAdminPress && (
                   <CustomButton
                     onPress={onAdminPress}
                     label="Administrar"

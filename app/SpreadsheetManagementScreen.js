@@ -17,7 +17,9 @@ import { ref, get, set } from 'firebase/database';
 import { database } from '../env/firebase';
 import { filterMedicationByRole, filterHistoryByRole } from '../utils/medicationFilters';
 import AuthorRoleSelector from '../components/AuthorRoleSelector';
+import InterventionModeToggle from '../components/InterventionModeToggle';
 import { colors, typography, spacing, borderRadius, paperTheme } from '../constants/Theme';
+import { INTERVENTION_MODE_TEXTS } from '../constants/Strings';
 
 const { height } = Dimensions.get('window');
 
@@ -56,7 +58,8 @@ export default function SpreadsheetManagementScreen() {
   const [adminMedications, setAdminMedications] = useState([]);
   const [adminMedicationSheetId, setAdminMedicationSheetId] = useState(null);
   const [adminMedicationUpdates, setAdminMedicationUpdates] = useState({});
-  
+  const [interventionMode, setInterventionMode] = useState('admin');
+
   const modifyRef = useRef();
   const saveRef = useRef();
 
@@ -102,6 +105,12 @@ export default function SpreadsheetManagementScreen() {
     setHasVitalsData(false);
     setVitalsView('nuevo');
     setPreviousVitalsData(null);
+  };
+
+  const handleOpenSignosVitalesAdmin = async () => {
+    setShowSignosVitalesModal(true);
+    setVitalsView('anterior');
+    await loadPreviousVitals();
   };
 
   const loadPreviousVitals = async () => {
@@ -634,6 +643,12 @@ export default function SpreadsheetManagementScreen() {
     setPreviousMedicationData(null);
   };
 
+  const handleOpenMedicationAdmin = async () => {
+    setShowMedicationModal(true);
+    setMedicationView('anterior');
+    await loadPreviousMedication();
+  };
+
   const handleSaveMedication = async () => {
     setIsSaving(true);
     try {
@@ -679,7 +694,14 @@ export default function SpreadsheetManagementScreen() {
             <Text style={styles.patientText}>{getPersonLabelPrefix()} {patientName}</Text>
         </View>
       )}
-      
+
+        {!showSignosVitalesModal && !showMedicationModal && interventionMode === 'assistant' && (
+          <View style={styles.assistantBanner}>
+            <Text style={styles.assistantBannerText}>{INTERVENTION_MODE_TEXTS.assistantBanner}</Text>
+            <Text style={styles.assistantBannerSub}>{INTERVENTION_MODE_TEXTS.assistantBannerSub}</Text>
+          </View>
+        )}
+
         {!showSignosVitalesModal && !showMedicationModal && (
         <>
           <View style={styles.buttonsGrid}>
@@ -687,33 +709,43 @@ export default function SpreadsheetManagementScreen() {
           icon={require('../assets/imageLogButtons/SV.png')}
           label="Signos Vitales"
           color="#e85158"
-          onPress={handleOpenSignosVitales}
+          onPress={interventionMode === 'admin' ? handleOpenSignosVitalesAdmin : handleOpenSignosVitales}
+          scale={0.82}
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/MED.png')}
           label="Medicación"
           color="#4a9cbb"
-                onPress={handleOpenMedication}
+          onPress={interventionMode === 'assistant' ? handleAdminPress : handleOpenMedicationAdmin}
+          scale={0.82}
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/ALIM.png')}
           label="Alimentación"
           color="#f1a137"
-                onPress={() => { }}
+          onPress={() => { }}
+          scale={0.82}
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/DEPO.png')}
           label="Deposiciones"
           color="#549f82"
-                onPress={() => { }}
+          onPress={() => { }}
+          scale={0.82}
         />
         <CustomLogButton
           icon={require('../assets/imageLogButtons/OBS.png')}
           label="Observaciones"
           color="#7d76b3"
-                onPress={() => { }}
+          onPress={() => { }}
+          scale={0.82}
         />
           </View>
+
+          <InterventionModeToggle
+            mode={interventionMode}
+            onModeChange={setInterventionMode}
+          />
         </>
       )}
 
@@ -834,7 +866,7 @@ export default function SpreadsheetManagementScreen() {
           selectedAuthorRole={selectedAuthorRole}
           onAuthorRoleChange={setSelectedAuthorRole}
           isLoadingMedication={isLoadingMedication}
-          onAdminPress={handleAdminPress}
+          onAdminPress={interventionMode !== 'admin' ? handleAdminPress : null}
           showMedicationAdmin={showMedicationAdmin}
           adminMedications={adminMedications}
           medicationSheetId={adminMedicationSheetId}
@@ -945,13 +977,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingTop: 0,
+    flexDirection: 'column',
   },
   patientBox: {
     backgroundColor: colors.primaryAccent,
     marginHorizontal: spacing.lg,
-    marginTop: 60,
+    marginTop: 44,
+    marginBottom: spacing.xs,
     borderRadius: borderRadius.md,
-    padding: 10,
+    padding: 8,
     alignItems: 'center',
   },
   patientText: {
@@ -963,6 +997,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginTop: 32,
+    marginTop: 4,
+    flex: 1,
+    alignContent: 'flex-start',
+  },
+  assistantBanner: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: '#E3F2FD',
+    borderWidth: 1.5,
+    borderColor: colors.secondary,
+    alignItems: 'center',
+  },
+  assistantBannerText: {
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.fontWeights.bold,
+    color: colors.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  assistantBannerSub: {
+    fontSize: typography.fontSizes.sm - 1,
+    color: colors.secondary,
+    marginTop: 2,
+    opacity: 0.8,
   },
 });

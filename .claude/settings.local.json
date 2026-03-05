@@ -4,7 +4,8 @@
       "Bash(npm install:*)",
       "Bash(npx expo start:*)",
       "Bash(Get-Process:*)",
-      "Bash(Stop-Process -Force)"
+      "Bash(Stop-Process -Force)",
+      "WebFetch(domain:www.figma.com)"
     ]
   }
 }
