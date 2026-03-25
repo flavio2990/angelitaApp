@@ -754,7 +754,7 @@ export default function SpreadsheetManagementScreen() {
           onRequestClose={() => setShowSignosVitalesModal(false)}
           showTopbar={true}
         topbarTitle="Signos Vitales"
-        centerCard={true}
+        centerCard={vitalsView === 'anterior'}
           scrollable={true}
           title="Ingresar Aquí:"
           isEditModal={true}
