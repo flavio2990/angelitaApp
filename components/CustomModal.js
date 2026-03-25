@@ -247,7 +247,7 @@ const CustomModal = ({
                 <CustomButton
                   onPress={onSavePress}
                   label={FORM_TEXTS.saveButton}
-                  style={isMedicationModal ? { width: '100%', maxWidth: 400 } : {}}
+                  style={(isVitalsModal || isMedicationModal) ? { width: '100%', maxWidth: 400 } : {}}
                 />
                 {isMedicationModal && !showMedicationAdmin && onAdminPress && (
                   <CustomButton
@@ -782,6 +782,7 @@ const CustomModal = ({
                       ? ((topbarMarginTop || vitalsInfoMarginTop) + vitalsInfoExtraMargin + 90)
                       : 110
                   },
+                  isVitalsModal && vitalsView === 'nuevo' && { alignItems: 'stretch' },
                   isMedicationModal && {
                     justifyContent: 'flex-start',
                     alignItems: 'stretch',
@@ -792,13 +793,14 @@ const CustomModal = ({
                 ]}
                 pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
               >
-                <Card 
+                <Card
                   style={[
                     isMedicationModal && vitalsView === 'anterior' ? styles.vitalsCard : (isMedicationModal ? styles.medicationCard : styles.theCard),
                     !(isVitalsModal && vitalsView === 'anterior') && !isMedicationModal && styles.centerCard,
                     isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
                     isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
                     isVitalsModal && { marginTop: 0 },
+                    isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardFullScreen,
                     isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: 24 },
                     isMedicationModal && vitalsView !== 'anterior' && { marginTop: 0 },
                     isMedicationModal && {
@@ -810,7 +812,7 @@ const CustomModal = ({
                   {resolvedTitle && (
                     <View style={[
                       styles.titleWrapper,
-                      isMedicationModal && vitalsView !== 'anterior' && styles.medicationTitleWrapper
+                      isMedicationModal && vitalsView !== 'anterior' && styles.medicationTitleWrapper,
                     ]}>
                       {isMedicationModal && vitalsView === 'anterior' ? (
                         <Text style={styles.title}>
@@ -835,12 +837,12 @@ const CustomModal = ({
                       )}
                     </View>
                   )}
-                  <Card.Content 
+                  <Card.Content
                     style={[
-                      !(isMedicationModal && vitalsView === 'anterior') && styles.cardContent, 
+                      !(isMedicationModal && vitalsView === 'anterior') && styles.cardContent,
                       isMedicationModal && vitalsView !== 'anterior' && styles.medicationCardContent,
                       isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { padding: 0, width: '100%' },
-                      isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && { 
+                      isMedicationModal && vitalsView === 'anterior' && !showHistoryCalendar && {
                         width: '100%',
                         minHeight: 300,
                         padding: 0,
@@ -848,7 +850,12 @@ const CustomModal = ({
                       },
                       isMedicationModal && vitalsView !== 'anterior' && {
                         flexShrink: 1,
-                      }
+                      },
+                      isVitalsModal && vitalsView === 'nuevo' && {
+                        alignItems: 'stretch',
+                        paddingHorizontal: spacing.lg,
+                        paddingBottom: spacing.xxl,
+                      },
                     ]}
                     pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
                   >
@@ -875,6 +882,7 @@ const CustomModal = ({
                   cardMarginTop === 0 && !showTopbar && styles.fullScreenModalContent,
                   showTopbar && offsetWithTopbar && topbarMarginTop !== undefined && { paddingTop: topbarMarginTop },
                   isVitalsModal && { paddingBottom: 20 },
+                  isVitalsModal && vitalsView === 'nuevo' && { paddingTop: (topbarMarginTop || 0) + (vitalsInfoExtraMargin || 0) + 90 },
                   isMedicationModal && {
                     justifyContent: 'flex-start',
                     alignItems: 'stretch',
@@ -892,6 +900,7 @@ const CustomModal = ({
                     !isMedicationModal && cardMarginTop === 0 && !showTopbar && styles.fullScreenCard,
                     isVitalsModal && vitalsView === 'anterior' && styles.vitalsCard,
                     isVitalsModal && vitalsView === 'nuevo' && styles.vitalsCardNew,
+                    isVitalsModal && vitalsView === 'nuevo' && { marginTop: 0, width: '100%', alignSelf: 'stretch' },
                     isMedicationModal && vitalsView === 'anterior' && showHistoryCalendar && { marginTop: 24 },
                     isMedicationModal && vitalsView !== 'anterior' && { marginTop: 0 },
                     isMedicationModal && vitalsView !== 'anterior' && {
@@ -948,7 +957,12 @@ const CustomModal = ({
             },
             isMedicationModal && vitalsView !== 'anterior' && !showMedicationAdmin && {
               flexShrink: 1,
-            }
+            },
+            isVitalsModal && vitalsView === 'nuevo' && {
+              alignItems: 'stretch',
+              paddingHorizontal: spacing.lg,
+              paddingBottom: spacing.xxl,
+            },
           ]}
           pointerEvents={isMedicationModal && vitalsView === 'anterior' ? 'box-none' : 'auto'}
           onStartShouldSetResponder={() => false}
@@ -1066,12 +1080,20 @@ const styles = StyleSheet.create({
   },
   vitalsCardNew: {
     width: '95%',
-    maxHeight: height * 0.6,
+    maxHeight: height * 0.68,
     borderRadius: 50,
     marginHorizontal: 'auto',
     marginBottom: -5,
     marginTop: height * 0.25,
     alignSelf: 'center',
+  },
+  vitalsCardFullScreen: {
+    width: '100%',
+    flex: 1,
+    borderRadius: borderRadius.xxl,
+    marginHorizontal: 0,
+    marginBottom: 0,
+    alignSelf: 'stretch',
   },
   cardContent: {
     justifyContent: 'center',
@@ -1134,6 +1156,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingTop: 10,
     paddingBottom: 20,
+    paddingHorizontal: 0,
     marginTop: 0,
     width: '100%',
     alignItems: 'center',
